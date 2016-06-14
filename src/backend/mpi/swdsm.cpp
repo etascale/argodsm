@@ -1413,9 +1413,11 @@ void argo_acquire(){
 
 
 void argo_release(){
+	int flag;
 	pthread_mutex_lock(&cachemutex);
 	sem_wait(&ibsem);
 	flushWriteBuffer();
+	MPI_Iprobe(MPI_ANY_SOURCE,MPI_ANY_TAG,workcomm,&flag,MPI_STATUS_IGNORE);
 	sem_post(&ibsem);
 	pthread_mutex_unlock(&cachemutex);
 }
