@@ -1,0 +1,122 @@
+body {
+	line-height: 1.4em;
+	color: black;
+	padding:1em;
+	margin:auto;
+	max-width:48em;
+}
+
+li {
+	color: black;
+}
+
+h1,
+h2, 
+h3, 
+h4, 
+h5, 
+h6 {
+    border: 0 none !important;
+}
+
+h1 {    
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    border-bottom: 2px solid #000080 !important;
+}
+
+h2 {
+    margin-top: 1em;
+    margin-bottom: 0.5em;    
+	border-bottom: 2px solid #000080 !important;    
+}
+
+pre {
+    overflow: auto;
+    padding: 5px;
+	margin: 0px 0px;
+}
+
+div > pre {
+	background-color: #f8f8f8;    
+    border: 1px solid #2f6fab;
+    border-radius: 3px;
+    overflow: auto;
+    padding: 5px;
+}
+
+pre code {
+    background-color: inherit;
+    border: none;    
+    padding: 0;
+}
+
+code {
+	background-color: #ffffd0;
+    /* border: 1px solid orange; */
+    /* border-radius: 3px; */
+    padding: 0 0.2em;
+}
+
+a {
+	text-decoration: underline;	
+}
+
+ul, ol {
+	padding-left: 30px;
+}
+
+li {
+	margin: 0.2em 0 0 0em; padding: 0px;
+}
+
+em {
+	color: #b05000;
+}
+
+table.text th, table.text td {
+	vertical-align: top;
+	border-top: 1px solid #ccc;
+	padding:5px;
+}
+
+td.lineNumbers {
+	padding-right: 0px;
+	border-right: none; 
+}
+
+td.sourceCode {
+	padding-left: 0px;
+}
+
+table.sourceCode {
+	background-color: #f8f8f8;    
+    border: 1px solid #2f6fab;
+    border-radius: 3px;
+}
+
+nav {
+    background-color: #000080;
+    margin: 0;
+    overflow: hidden;
+}
+
+nav ul{
+    margin: 0;
+    padding: 0px 5px;
+}
+nav ul li {
+    /* This allow us to arrange list items in a row, without using float */
+    display: inline-block;
+    list-style-type: none;
+}
+
+/* Create a style for the first level items */
+nav > ul > li > a {
+    color: black;
+    background-color:#f8f8f8;
+    display: block;
+    line-height: 2em;
+    padding: 0.5em 0.5em;
+    text-decoration: none;
+}
