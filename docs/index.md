@@ -34,8 +34,9 @@ respectively are required.
 git clone https://github.com/etascale/argodsm.git
 cd argodsm
 cd tests
-wget https://googletest.googlecode.com/files/gtest-1.7.0.zip
-unzip gtest-1.7.0.zip
+wget https://github.com/google/googletest/archive/release-1.7.0.zip
+unzip release-1.7.0.zip
+mv googletest-release-1.7.0 gtest-1.7.0
 cd ..
 mkdir build
 cd build
@@ -60,13 +61,14 @@ cd argodsm
 ~~~
 
 If you are planning on building the ArgoDSM tests (recommended), you also need
-the [googletest](https://code.google.com/p/googletest/) framework. Extract it
-into the `tests` folder.
+the [googletest](https://github.com/google/googletest/) framework. Extract it
+into the `tests` folder, and make sure that its folder is named `gtest-1.7.0`.
 
 ~~~{.Bash}
 cd tests
-wget https://googletest.googlecode.com/files/gtest-1.7.0.zip
-unzip gtest-1.7.0.zip
+wget https://github.com/google/googletest/archive/release-1.7.0.zip
+unzip release-1.7.0.zip
+mv googletest-release-1.7.0 gtest-1.7.0
 cd ..
 ~~~
 
