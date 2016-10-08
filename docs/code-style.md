@@ -1,6 +1,6 @@
 ---
-pagetitle: Code Style
-navbar: true
+layout: default
+title: Code Style
 ---
 
 The ArgoDSM Programming Guidelines

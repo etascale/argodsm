@@ -1,6 +1,6 @@
 ---
-pagetitle: About
-navbar: true
+layout: default
+title: About
 ---
 
 About

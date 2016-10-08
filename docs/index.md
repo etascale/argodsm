@@ -1,6 +1,6 @@
 ---
-pagetitle: Home
-navbar: true
+layout: default
+title: Home
 ---
 
 # ArgoDSM

@@ -1,6 +1,6 @@
 ---
-pagetitle: Tutorial
-navbar: true
+layout: default
+title: Tutorial
 ---
 
 Tutorial
@@ -10,7 +10,8 @@ This is a set of small tutorials on how to convert pthreads applications to run
 on ArgoDSM. We will start with a very simple example, and then move to real
 pthreads applications.
 
-We assume that you have already [compiled the ArgoDSM libraries](/argodsm/) and
+We assume that you have already [compiled the ArgoDSM libraries]({{
+site.baseurl}}) and
 that you have installed them in a user local directory. We will also assume
 knowledge of the Pthreads library and programming model, as well as very basic
 knowledge of MPI. If you are not familiar with either, you might find this

@@ -1,6 +1,6 @@
 ---
-pagetitle: Advanced
-navbar: true
+layout: default
+title: Advanced
 ---
 
 Advanced Topics
