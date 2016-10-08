@@ -1,6 +1,6 @@
 ---
-pagetitle: Home
-navbar: true
+layout: default
+title: Home
 ---
 
 # ArgoDSM
@@ -30,7 +30,7 @@ respectively are required.
 
 ### Building ArgoDSM
 
-~~~{.Bash}
+~~~ bash
 git clone https://github.com/etascale/argodsm.git
 cd argodsm
 cd tests
@@ -55,7 +55,7 @@ Initially, you need to get the ArgoDSM sources. If you already have a tarball,
 you can skip this step and just extract its contents. Otherwise, if you have
 access to it, you can get the latest code from the Github repository.
 
-~~~{.Bash}
+~~~ bash
 git clone https://github.com/etascale/argodsm.git
 cd argodsm
 ~~~
@@ -64,7 +64,7 @@ If you are planning on building the ArgoDSM tests (recommended), you also need
 the [googletest](https://github.com/google/googletest/) framework. Extract it
 into the `tests` folder, and make sure that its folder is named `gtest-1.7.0`.
 
-~~~{.Bash}
+~~~ bash
 cd tests
 wget https://github.com/google/googletest/archive/release-1.7.0.zip
 unzip release-1.7.0.zip
@@ -76,7 +76,7 @@ CMake supports building in a separate folder. This is recommended for two
 reasons. First of all, it makes cleaning up much easier. Second, it allows for
 different builds with different configurations to exist in parallel.
 
-~~~{.Bash}
+~~~ bash
 mkdir build
 cd build
 ~~~
@@ -89,7 +89,7 @@ arguments. If you plan on contributing to the ArgoDSM source code, you should
 also enable the `ARGO_DEBUG` option. After generating the makefiles, then just
 build the library and executables with a simple make command.
 
-~~~{.Bash}
+~~~ bash
 cmake -DARGO_BACKEND_MPI=ON        \
       -DARGO_BACKEND_SINGLENODE=ON \
       -DARGO_TESTS=ON              \
@@ -109,7 +109,7 @@ If you want to build and manually compile your own applications, you can find
 the libraries in the `lib` directory. You need to link with the main `libargo`
 library, as well as *exactly* one of the backend libraries.
 
-~~~{.Bash}
+~~~ bash
 make test
 ~~~
 
@@ -128,7 +128,7 @@ application. You should refer to your MPI's vendor documentation for more
 details. If you are using OpenMPI on a cluster with InfiniBand interconnects, we
 recommend the following:
 
-~~~{.Bash}
+~~~ bash
 mpirun --map-by ppr:1:node      \
        --mca mpi_leave_pinned 1 \
        --mca btl openib,self,sm \

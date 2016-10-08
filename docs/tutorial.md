@@ -1,6 +1,6 @@
 ---
-pagetitle: Tutorial
-navbar: true
+layout: default
+title: Tutorial
 ---
 
 Tutorial
@@ -10,7 +10,8 @@ This is a set of small tutorials on how to convert pthreads applications to run
 on ArgoDSM. We will start with a very simple example, and then move to real
 pthreads applications.
 
-We assume that you have already [compiled the ArgoDSM libraries](/argodsm/) and
+We assume that you have already [compiled the ArgoDSM libraries]({{
+site.baseurl}}) and
 that you have installed them in a user local directory. We will also assume
 knowledge of the Pthreads library and programming model, as well as very basic
 knowledge of MPI. If you are not familiar with either, you might find this
@@ -26,7 +27,8 @@ also omit error checking code.
 
 ### Just Pthreads
 
-~~~{.Cpp .numberLines include="pthreads_example.cpp"}
+~~~cpp
+{% include pthreads_example.cpp %}
 ~~~
 
 The example finds the biggest number in an integer array. The astute reader
@@ -74,13 +76,13 @@ ArgoDSM allocators. Specifically, we need to replace `new int[data_length]` with
 pointer to all of them, thus initializing the `data` variable in all of them. So
 this:
 
-~~~{.Cpp}
+~~~ cpp
 data = new int[data_length];
 ~~~
 
 needs to become this:
 
-~~~{.Cpp}
+~~~ cpp
 data = argo::conew_array<int>(data_length);
 ~~~
 
@@ -91,13 +93,13 @@ memory. We will use the `argo::conew_<int>` function for this, giving as an
 initialization argument the same argument as we have in the pthreads example.
 This means changing this:
 
-~~~{.Cpp}
+~~~ cpp
 int max = std::numeric_limits<int>::min();
 ~~~
 
 to this:
 
-~~~{.Cpp}
+~~~ cpp
 int *max;
 ... // Somewhere inside main
 max = argo::conew_<int>(std::numeric_limits<int>::min());
@@ -117,7 +119,7 @@ but the `argo::simple_lock`, which will be made available soon, should be used
 instead. The `global_tas_lock` requires as an argument a boolean variable to
 spin on, which of course has to be allocated on the global memory.
 
-~~~{.Cpp}
+~~~ cpp
 lock_flag = argo::conew_<bool>(false);
 lock = new argo::globallock::global_tas_lock(lock_flag);
 ~~~
@@ -135,7 +137,7 @@ statement in conjunction with `argo::barrier`. The same goes for any work done
 by the application after the threads have finished; we want to make sure that
 work that needs to be done by only one thread will be done by only one node.
 
-~~~{.Cpp}
+~~~ cpp
 if (argo::node_id() == 0) {
 	for (int i = 0; i < data_length; ++i)
 		data[i] = i * 11 + 3;
@@ -148,7 +150,7 @@ either change how many threads each node starts or how we partition the shared
 data. In this example we decided to simple evenly split the number of threads
 between the available nodes.
 
-~~~{.Cpp}
+~~~ cpp
 local_num_threads = num_threads / argo::number_of_nodes();
 ...
 int chunk = data_length / num_threads;
@@ -164,7 +166,8 @@ for (int i = 0; i < local_num_threads; ++i) {
 
 The final result of all the changes is this:
 
-~~~{.Cpp .numberLines include="argo_example.cpp"}
+~~~ cpp
+{% include argo_example.cpp %}
 ~~~
 
 We can now compile the application. We assume that `${ARGO_INSTALL_DIRECTORY}` is
@@ -173,7 +176,7 @@ where you installed ArgoDSM. If the ArgoDSM files are already in your
 switches. If you have no idea what we are talking about, you should ask your
 system administrator.
 
-~~~{.Bash}
+~~~ bash
 mpic++ -O3 -std=c++11 -o argo_example   \
 	-L${ARGO_INSTALL_DIRECTORY}/lib     \
 	-I${ARGO_INSTALL_DIRECTORY}/include \
@@ -185,7 +188,7 @@ instructions on how to run MPI applications you should contact your local
 support office. A generic example with OpenMPI on a cluster utilizing Slurm
 might look like this:
 
-~~~{.Bash}
+~~~ bash
 mpirun --map-by ppr:1:node                                               \
 	--mca mpi_leave_pinned 1 --mca btl openib,self,sm -n ${SLURM_NNODES} \
 	./argo_example

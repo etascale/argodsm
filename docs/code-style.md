@@ -1,6 +1,6 @@
 ---
-pagetitle: Code Style
-navbar: true
+layout: default
+title: Code Style
 ---
 
 The ArgoDSM Programming Guidelines
@@ -60,7 +60,7 @@ The ArgoDSM Programming Guidelines
 
 2. `const` qualifiers should be to the left of the type.
 
-    ```
+    ``` cpp
     const int a; // A constant integer
     const int& b; // A reference to a constant integer
     ```

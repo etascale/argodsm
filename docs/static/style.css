@@ -74,27 +74,6 @@ em {
 	color: #b05000;
 }
 
-table.text th, table.text td {
-	vertical-align: top;
-	border-top: 1px solid #ccc;
-	padding:5px;
-}
-
-td.lineNumbers {
-	padding-right: 0px;
-	border-right: none; 
-}
-
-td.sourceCode {
-	padding-left: 0px;
-}
-
-table.sourceCode {
-	background-color: #f8f8f8;    
-    border: 1px solid #2f6fab;
-    border-radius: 3px;
-}
-
 nav {
     background-color: #000080;
     margin: 0;

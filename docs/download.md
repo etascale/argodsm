@@ -1,6 +1,6 @@
 ---
-pagetitle: Download
-navbar: true
+layout: default
+title: Download
 ---
 
 Download

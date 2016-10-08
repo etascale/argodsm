@@ -1,6 +1,6 @@
 ---
-pagetitle: Advanced
-navbar: true
+layout: default
+title: Advanced
 ---
 
 Advanced Topics
@@ -37,7 +37,7 @@ array allocations, but not for all cases. Specifically, if the allocated type is
 of [`TrivialType`](http://en.cppreference.com/w/cpp/concept/TrivialType) then it
 will not be initialized, unless constructor arguments are provided. For example:
 
-```{.Cpp}
+``` cpp
 int *a = argo::new_<int>(); // Not initialized
 int *b = argo::new_<int>(0); // Initialized
 ```
@@ -55,7 +55,7 @@ possible to explicitly enable or disable both the initialization and the
 synchronization that each function might perform, with the exception that the
 dynamic allocation functions ignore the synchronization arguments. For example:
 
-```{.Cpp}
+``` cpp
 int *a = argo::new_<int, argo::allocation::initialize>(); // Initialized
 int *b = argo::new_<int, argo::allocation::no_initialize>(0); // Not initialized
 ```
