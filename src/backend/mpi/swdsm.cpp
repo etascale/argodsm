@@ -143,6 +143,11 @@ unsigned long GLOBAL_NULL;
 /** @brief  Statistics */
 argo_statistics stats;
 
+namespace {
+	/** @brief constant for invalid ArgoDSM node */
+	constexpr unsigned long invalid_node = static_cast<unsigned long>(-1);
+}
+
 unsigned long isPowerOf2(unsigned long x){
   unsigned long retval =  ((x & (x - 1)) == 0); //Checks if x is power of 2 (or zero)
   return retval;
@@ -770,15 +775,14 @@ void * loadcacheline(void * x){
 		unsigned long offset = getOffset(lineAddr);
 		if(isPowerOf2((tempsharer)&invid) && tempsharer != id && prevsharer == 0){ //Other private. but may not have loaded page yet.
 			unsigned long ownid = tempsharer&invid; // remove own bit
-			constexpr unsigned long invalid_owner = static_cast<unsigned long>(-1);
-			unsigned long owner = invalid_owner; // initialize to failsafe value
+			unsigned long owner = invalid_node; // initialize to failsafe value
 			for(n=0; n<numtasks; n++) {
 				if(1ul<<n==ownid) {
 					owner = n; //just get rank...
 					break;
 				}
 			}
-			if(owner != invalid_owner) {
+			if(owner != invalid_node) {
 				MPI_Win_lock(MPI_LOCK_SHARED, owner, 0, sharerWindow);
 				MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx, 1, MPI_LONG, MPI_BOR, sharerWindow);
 				MPI_Win_unlock(owner, sharerWindow);
@@ -926,15 +930,14 @@ void * prefetchcacheline(void * x){
 		unsigned long offset = getOffset(lineAddr);
 		if(isPowerOf2((tempsharer)&invid) && prevsharer == 0){ //Other private. but may not have loaded page yet.
 			unsigned long ownid = tempsharer&invid; // remove own bit
-			constexpr unsigned long invalid_owner = static_cast<unsigned long>(-1);
-			unsigned long owner = invalid_owner; // initialize to failsafe value
+			unsigned long owner = invalid_node; // initialize to failsafe value
 			for(n=0; n<numtasks; n++) {
 				if(1ul<<n == ownid) {
 					owner = n; //just get rank...
 					break;
 				}
 			}
-			if(owner != invalid_owner) {
+			if(owner != invalid_node) {
 				MPI_Win_lock(MPI_LOCK_SHARED, owner, 0, sharerWindow);
 				MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx, 1, MPI_LONG, MPI_BOR, sharerWindow);
 				MPI_Win_unlock(owner, sharerWindow);
