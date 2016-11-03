@@ -770,7 +770,7 @@ void * loadcacheline(void * x){
 		unsigned long offset = getOffset(lineAddr);
 		if(isPowerOf2((tempsharer)&invid) && tempsharer != id && prevsharer == 0){ //Other private. but may not have loaded page yet.
 			unsigned long ownid = tempsharer&invid; // remove own bit
-			static const unsigned long invalid_owner = static_cast<unsigned long>(-1);
+			constexpr unsigned long invalid_owner = static_cast<unsigned long>(-1);
 			unsigned long owner = invalid_owner; // initialize to failsafe value
 			for(n=0; n<numtasks; n++) {
 				if(1ul<<n==ownid) {
@@ -926,7 +926,7 @@ void * prefetchcacheline(void * x){
 		unsigned long offset = getOffset(lineAddr);
 		if(isPowerOf2((tempsharer)&invid) && prevsharer == 0){ //Other private. but may not have loaded page yet.
 			unsigned long ownid = tempsharer&invid; // remove own bit
-			static const unsigned long invalid_owner = static_cast<unsigned long>(-1);
+			constexpr unsigned long invalid_owner = static_cast<unsigned long>(-1);
 			unsigned long owner = invalid_owner; // initialize to failsafe value
 			for(n=0; n<numtasks; n++) {
 				if(1ul<<n == ownid) {
