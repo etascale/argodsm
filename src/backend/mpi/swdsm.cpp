@@ -769,17 +769,20 @@ void * loadcacheline(void * x){
 
 		unsigned long offset = getOffset(lineAddr);
 		if(isPowerOf2((tempsharer)&invid) && tempsharer != id && prevsharer == 0){ //Other private. but may not have loaded page yet.
-			long ownid = (long)(tempsharer&invid);
-			unsigned long owner;
-			for(n=0; n<numtasks; n++){
-				if((unsigned)(1<<n)==(unsigned)ownid){
+			unsigned long ownid = tempsharer&invid; // remove own bit
+			static const unsigned long invalid_owner = static_cast<unsigned long>(-1);
+			unsigned long owner = invalid_owner; // initialize to failsafe value
+			for(n=0; n<numtasks; n++) {
+				if(1ul<<n==ownid) {
 					owner = n; //just get rank...
 					break;
 				}
 			}
-			MPI_Win_lock(MPI_LOCK_SHARED, owner, 0, sharerWindow);
-			MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx,1,MPI_LONG,MPI_BOR,sharerWindow);
-			MPI_Win_unlock(owner, sharerWindow);
+			if(owner != invalid_owner) {
+				MPI_Win_lock(MPI_LOCK_SHARED, owner, 0, sharerWindow);
+				MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx, 1, MPI_LONG, MPI_BOR, sharerWindow);
+				MPI_Win_unlock(owner, sharerWindow);
+			}
 
 		}
 
@@ -922,18 +925,20 @@ void * prefetchcacheline(void * x){
 
 		unsigned long offset = getOffset(lineAddr);
 		if(isPowerOf2((tempsharer)&invid) && prevsharer == 0){ //Other private. but may not have loaded page yet.
-			unsigned long ownid = tempsharer&invid;
-			unsigned long owner;
-			for(n=0; n<numtasks; n++){
-				if((unsigned)(1<<n)==(unsigned)ownid){
+			unsigned long ownid = tempsharer&invid; // remove own bit
+			static const unsigned long invalid_owner = static_cast<unsigned long>(-1);
+			unsigned long owner = invalid_owner; // initialize to failsafe value
+			for(n=0; n<numtasks; n++) {
+				if(1ul<<n == ownid) {
 					owner = n; //just get rank...
 					break;
 				}
 			}
-
-			MPI_Win_lock(MPI_LOCK_SHARED, owner, 0, sharerWindow);
-			MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx,1,MPI_LONG,MPI_BOR,sharerWindow);
-			MPI_Win_unlock(owner, sharerWindow);
+			if(owner != invalid_owner) {
+				MPI_Win_lock(MPI_LOCK_SHARED, owner, 0, sharerWindow);
+				MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx, 1, MPI_LONG, MPI_BOR, sharerWindow);
+				MPI_Win_unlock(owner, sharerWindow);
+			}
 
 		}
 
