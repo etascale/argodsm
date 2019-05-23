@@ -1031,7 +1031,13 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		pthread_barrier_init(&threadbarrier[i],NULL,i);
 	}
 
-	cachesize = cache_size+pagesize*CACHELINE;
+	cachesize = 0;
+	if(cache_size > argo_size) {
+		cachesize += argo_size;
+	} else {
+		cachesize += cache_size;
+	}
+	cachesize += pagesize*CACHELINE;
 	cachesize /= pagesize;
 	cachesize /= CACHELINE;
 	cachesize *= CACHELINE;
