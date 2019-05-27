@@ -1044,15 +1044,15 @@ void set_sighandler(){
 	sigaction(SIGSEGV, &sa, &old_sigaction);
 }
 
-void argo_initialize(unsigned long long size){
+void argo_initialize(unsigned long long argo_size, size_t cache_size){
 	int i;
 	unsigned long j;
 	initmpi();
 	unsigned long alignment = pagesize*CACHELINE*numtasks;
-	if((size%alignment)>0){
-		size += alignment - 1;
-		size /= alignment;
-		size *= alignment;
+	if((argo_size%alignment)>0){
+		argo_size += alignment - 1;
+		argo_size /= alignment;
+		argo_size *= alignment;
 	}
 
 	startAddr = vm::start_address();
@@ -1065,7 +1065,7 @@ void argo_initialize(unsigned long long size){
 		pthread_barrier_init(&threadbarrier[i],NULL,i);
 	}
 
-	cachesize = size+pagesize*CACHELINE;
+	cachesize = cache_size+pagesize*CACHELINE;
 	cachesize /= pagesize;
 	cachesize /= CACHELINE;
 	cachesize *= CACHELINE;
@@ -1107,19 +1107,19 @@ void argo_initialize(unsigned long long size){
 	MPI_Comm_create(MPI_COMM_WORLD,workgroup,&workcomm);
 	MPI_Group_rank(workgroup,&workrank);
 
-	if(size < pagesize*numtasks){
-		size = pagesize*numtasks;
+	if(argo_size < pagesize*numtasks){
+		argo_size = pagesize*numtasks;
 	}
 
 	alignment = CACHELINE*pagesize;
-	if(size % (alignment*numtasks) != 0){
-		size = alignment*numtasks * (1+(size)/(alignment*numtasks));
+	if(argo_size % (alignment*numtasks) != 0){
+		argo_size = alignment*numtasks * (1+(argo_size)/(alignment*numtasks));
 	}
 
 	//Allocate local memory for each node,
-	size_of_all = size; //total distr. global memory
+	size_of_all = argo_size; //total distr. global memory
 	GLOBAL_NULL=size_of_all+1;
-	size_of_chunk = size/(numtasks); //part on each node
+	size_of_chunk = argo_size/(numtasks); //part on each node
 	set_sighandler();
 
 	unsigned long cacheControlSize = sizeof(control_data)*cachesize;
@@ -1199,14 +1199,7 @@ void argo_initialize(unsigned long long size){
 								 MPI_INFO_NULL, MPI_COMM_WORLD, &sharerWindow);
 	MPI_Win_create(lockbuffer, pagesize, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &lockWindow);
 
-	memset(pagecopy, 0, cachesize*pagesize);
-	memset(touchedcache, 0, cachesize);
-	memset(globalData, 0, size_of_chunk*sizeof(argo_byte));
-	memset(cacheData, 0, cachesize*pagesize);
-	memset(lockbuffer, 0, pagesize);
-	memset(globalSharers, 0, gwritersize);
-	memset(cacheControl, 0, cachesize*sizeof(control_data));
-
+	//Sets cache control structures to initial state.
 	for(j=0; j<cachesize; j++){
 		cacheControl[j].tag = GLOBAL_NULL;
 		cacheControl[j].state = INVALID;

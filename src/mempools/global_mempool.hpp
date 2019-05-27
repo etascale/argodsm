@@ -50,7 +50,7 @@ namespace argo {
 				 */
 				global_memory_pool(std::size_t size) {
 					size+=reserved;
-					backend::init(size);
+					backend::init(size, 1<<30); // 1GB of memory for cache as default (= 1<<30 bytes)
 					auto nodes = backend::number_of_nodes();
 					memory = backend::global_base();
 					max_size = backend::global_size();

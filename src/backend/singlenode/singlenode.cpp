@@ -57,7 +57,7 @@ std::size_t memory_size;
 namespace argo {
 	namespace backend {
 
-		void init(std::size_t size) {
+		void init(std::size_t argo_size, std::size_t cache_size){
 			memory = static_cast<char*>(vm::allocate_mappable(4096, size));
 			memory_size = size;
 			using namespace data_distribution;

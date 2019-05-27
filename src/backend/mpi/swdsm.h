@@ -138,9 +138,10 @@ void set_sighandler();
 /*ArgoDSM init and finish*/
 /**
  * @brief Initializes ArgoDSM runtime
- * @param size Size of wanted global address space
+ * @param argo_size Size of wanted global address space
+ * @param cache_size Size in bytes of your cache, will be rounded to nearest multiple of cacheline size (in bytes)
  */
-void argo_initialize(unsigned long long size);
+void argo_initialize(unsigned long long argo_size, size_t cache_size);
 
 /**
  * @brief Shutting down ArgoDSM runtime
