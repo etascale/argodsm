@@ -7,6 +7,8 @@
 #ifndef argo_argo_hpp
 #define argo_argo_hpp argo_argo_hpp
 
+#include <cstddef>
+
 #include "allocators/allocators.hpp"
 #include "backend/backend.hpp"
 #include "types/types.hpp"
@@ -40,9 +42,11 @@ namespace argo {
 
 	/**
 	 * @brief initialize ArgoDSM system
-	 * @param size the desired size of the global memory in bytes
+	 * @param size The desired size of the global memory in bytes, or 0.
+	 *             If the value is omitted (or specified as 0), then the value in
+	 *             environment variable @ref ARGO_MEMORY_SIZE is used instead.
 	 */
-	void init(size_t size);
+	void init(std::size_t size = 0);
 
 	/**
 	 * @brief shut down ArgoDSM system

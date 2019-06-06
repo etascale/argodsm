@@ -11,6 +11,11 @@ foreach(src ${allocator_sources})
 	list(APPEND argo_sources allocators/${src})
 endforeach(src)
 
+set(env_sources env.cpp)
+foreach(src ${env_sources})
+	list(APPEND argo_sources env/${src})
+endforeach(src)
+
 set(synchronization_sources
 	synchronization.cpp
 	cohort_lock.cpp

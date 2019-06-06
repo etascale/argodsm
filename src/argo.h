@@ -16,7 +16,7 @@
  * @brief initialize ArgoDSM system
  * @param size the desired size of the global memory in bytes
  */
-void argo_init(size_t size);
+void argo_init(size_t size = 0);
 
 /**
  * @brief shut down ArgoDSM system

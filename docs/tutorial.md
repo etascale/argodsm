@@ -51,8 +51,10 @@ The first step is adding the ArgoDSM initialization and finalization function.
 Specifically, `argo::init` needs to be run in `main` before any other functions
 are called, and `argo::finalize` should be the last ArgoDSM function called
 before exiting `main`. In the current version of ArgoDSM, `argo::init` has one
-required argument which indicates the total amount of memory ArgoDSM should
-allocate. This will be deprecated in future versions.
+optional argument which indicates the total amount of memory ArgoDSM should
+allocate. When the value is given to `argo::init`, it will be used. If it is
+omitted, the value (in bytes) in the environment variable `ARGO_MEMORY_SIZE`
+will be used to set the total amount of memory available to ArgoDSM.
 
 In addition to adding the ArgoDSM initialization and finalization functions,
 there are three main tasks that need to be done to convert a pthreads

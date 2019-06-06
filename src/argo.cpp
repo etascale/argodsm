@@ -8,7 +8,7 @@
 
 #include "allocators/collective_allocator.hpp"
 #include "allocators/dynamic_allocator.hpp"
-
+#include "env/env.hpp"
 #include "virtual_memory/virtual_memory.hpp"
 
 namespace vm = argo::virtual_memory;
@@ -23,8 +23,12 @@ mem::dynamic_memory_pool<alloc::global_allocator, mem::ALWAYS> dynamic_prepool(&
 
 namespace argo {
 	void init(std::size_t size) {
+		env::init();
 		vm::init();
 		std::size_t requested_size = size;
+		if(requested_size == 0) {
+			requested_size = env::memory_size();
+		}
 		using mp = mem::global_memory_pool<>;
 		requested_size += mp::reserved;
 		backend::init(requested_size);
