@@ -22,9 +22,13 @@ mem::dynamic_memory_pool<alloc::global_allocator, mem::NODE_ZERO_ONLY> collectiv
 mem::dynamic_memory_pool<alloc::global_allocator, mem::ALWAYS> dynamic_prepool(&alloc::default_global_allocator);
 
 namespace argo {
-	void init(size_t size) {
+	void init(std::size_t size) {
 		vm::init();
-		default_global_mempool = new mem::global_memory_pool<>(size);
+		std::size_t requested_size = size;
+		using mp = mem::global_memory_pool<>;
+		requested_size += mp::reserved;
+		backend::init(requested_size);
+		default_global_mempool = new mp();
 		argo_reset();
 	}
 

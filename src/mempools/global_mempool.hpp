@@ -46,11 +46,8 @@ namespace argo {
 				static const std::size_t reserved = 4096;
 				/**
 				 * @brief Default constructor: initializes memory on heap and sets offset to 0
-				 * @param size The amount of memory in the pool
 				 */
-				global_memory_pool(std::size_t size) {
-					size+=reserved;
-					backend::init(size);
+				global_memory_pool() {
 					auto nodes = backend::number_of_nodes();
 					memory = backend::global_base();
 					max_size = backend::global_size();
