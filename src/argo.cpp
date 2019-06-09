@@ -22,16 +22,17 @@ mem::dynamic_memory_pool<alloc::global_allocator, mem::NODE_ZERO_ONLY> collectiv
 mem::dynamic_memory_pool<alloc::global_allocator, mem::ALWAYS> dynamic_prepool(&alloc::default_global_allocator);
 
 namespace argo {
-	void init(std::size_t size) {
+	void init(std::size_t argo_size) {
 		env::init();
 		vm::init();
-		std::size_t requested_size = size;
-		if(requested_size == 0) {
-			requested_size = env::memory_size();
+
+		std::size_t requested_argo_size = argo_size;
+		if(requested_argo_size == 0) {
+			requested_argo_size = env::memory_size();
 		}
 		using mp = mem::global_memory_pool<>;
-		requested_size += mp::reserved;
-		backend::init(requested_size);
+		requested_argo_size += mp::reserved;
+		backend::init(requested_argo_size);
 		default_global_mempool = new mp();
 		argo_reset();
 	}
@@ -51,8 +52,8 @@ namespace argo {
 } // namespace argo
 
 extern "C" {
-	void argo_init(size_t size) {
-		argo::init(size);
+	void argo_init(size_t argo_size) {
+		argo::init(argo_size);
 	}
 
 	void argo_finalize() {

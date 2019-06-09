@@ -41,13 +41,13 @@ namespace argo {
 	namespace backend {
 		/**
 		 * @brief initialize backend
-		 * @param size the size of the global memory to initialize
+		 * @param argo_size the size of the global memory to initialize
 		 * @warning the signature of this function may change
 		 * @todo maybe this should be tied better to the concrete memory
 		 *       allocated rather than a generic "initialize this size"
 		 *       functionality.
 		 */
-		void init(std::size_t size);
+		void init(std::size_t argo_size);
 
 		/**
 		 * @brief get ArgoDSM node ID

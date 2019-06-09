@@ -138,9 +138,9 @@ void set_sighandler();
 /*ArgoDSM init and finish*/
 /**
  * @brief Initializes ArgoDSM runtime
- * @param size Size of wanted global address space
+ * @param argo_size Size of wanted global address space
  */
-void argo_initialize(unsigned long long size);
+void argo_initialize(unsigned long long argo_size);
 
 /**
  * @brief Shutting down ArgoDSM runtime

@@ -1010,15 +1010,15 @@ void * argo_gmalloc(unsigned long size){
 	return ptrtmp;
 }
 
-void argo_initialize(unsigned long long size){
+void argo_initialize(unsigned long long argo_size){
 	int i;
 	unsigned long j;
 	initmpi();
 	unsigned long alignment = pagesize*CACHELINE*numtasks;
-	if((size%alignment)>0){
-		size += alignment - 1;
-		size /= alignment;
-		size *= alignment;
+	if((argo_size%alignment)>0){
+		argo_size += alignment - 1;
+		argo_size /= alignment;
+		argo_size *= alignment;
 	}
 
 	startAddr = vm::start_address();
@@ -1031,7 +1031,7 @@ void argo_initialize(unsigned long long size){
 		pthread_barrier_init(&threadbarrier[i],NULL,i);
 	}
 
-	cachesize = size+pagesize*CACHELINE;
+	cachesize = argo_size+pagesize*CACHELINE;
 	cachesize /= pagesize;
 	cachesize /= CACHELINE;
 	cachesize *= CACHELINE;
@@ -1073,19 +1073,19 @@ void argo_initialize(unsigned long long size){
 	MPI_Comm_create(MPI_COMM_WORLD,workgroup,&workcomm);
 	MPI_Group_rank(workgroup,&workrank);
 
-	if(size < pagesize*numtasks){
-		size = pagesize*numtasks;
+	if(argo_size < pagesize*numtasks){
+		argo_size = pagesize*numtasks;
 	}
 
 	alignment = CACHELINE*pagesize;
-	if(size % (alignment*numtasks) != 0){
-		size = alignment*numtasks * (1+(size)/(alignment*numtasks));
+	if(argo_size % (alignment*numtasks) != 0){
+		argo_size = alignment*numtasks * (1+(argo_size)/(alignment*numtasks));
 	}
 
 	//Allocate local memory for each node,
-	size_of_all = size; //total distr. global memory
+	size_of_all = argo_size; //total distr. global memory
 	GLOBAL_NULL=size_of_all+1;
-	size_of_chunk = size/(numtasks); //part on each node
+	size_of_chunk = argo_size/(numtasks); //part on each node
 	sig::signal_handler<SIGSEGV>::install_argo_handler(&handler);
 
 	unsigned long cacheControlSize = sizeof(control_data)*cachesize;

@@ -73,12 +73,11 @@ void singlenode_handler(int sig, siginfo_t*, void*) {
 namespace argo {
 	namespace backend {
 
-		void init(std::size_t size) {
-			memory = static_cast<char*>(vm::allocate_mappable(4096, size));
-			memory_size = size;
+		void init(std::size_t argo_size) {
+			memory = static_cast<char*>(vm::allocate_mappable(4096, argo_size));
+			memory_size = argo_size;
 			using namespace data_distribution;
-			naive_data_distribution<0>::set_memory_space(nodes, memory, size);
-			sig::signal_handler<SIGSEGV>::install_argo_handler(&singlenode_handler);
+			naive_data_distribution<0>::set_memory_space(nodes, memory, argo_size);
 		}
 
 		node_id_t node_id() {

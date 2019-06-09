@@ -130,8 +130,8 @@ static MPI_Datatype fitting_mpi_float(std::size_t size) {
 
 namespace argo {
 	namespace backend {
-		void init(std::size_t size) {
-			argo_initialize(size);
+		void init(std::size_t argo_size) {
+			argo_initialize(argo_size);
 		}
 
 		node_id_t node_id() {

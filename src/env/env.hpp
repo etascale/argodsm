@@ -13,8 +13,9 @@
  * @page envvars Environment Variables
  *
  * @envvar{ARGO_MEMORY_SIZE} request a specific memory size in bytes
- * @details This environment variable is only used if argo::init() is called with no parameter (or value 0).
- *          It can be accessed through argo::env::memory_size() after argo::env::init() has been called.
+ * @details This environment variable is only used if argo::init() is called with no
+ *          argo_size parameter (or it has value 0). It can be accessed through
+ *          @ref argo::env::memory_size() after argo::env::init() has been called.
  */
 
 namespace argo {
