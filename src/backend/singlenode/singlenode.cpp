@@ -52,7 +52,7 @@ const std::size_t nodes = 1;
 char* memory;
 
 /**
- * @brief total memory size
+ * @brief total memory size in bytes
  * @deprecated this is to mimic the prototype and mpi backend
  */
 std::size_t memory_size;
@@ -73,7 +73,10 @@ void singlenode_handler(int sig, siginfo_t*, void*) {
 namespace argo {
 	namespace backend {
 
-		void init(std::size_t argo_size) {
+		void init(std::size_t argo_size, std::size_t cache_size){
+			/** @todo the cache_size parameter is not needed
+			 *        and should not be part of the backend interface */
+			(void)(cache_size);
 			memory = static_cast<char*>(vm::allocate_mappable(4096, argo_size));
 			memory_size = argo_size;
 			using namespace data_distribution;

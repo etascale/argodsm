@@ -41,13 +41,16 @@ namespace argo {
 	namespace backend {
 		/**
 		 * @brief initialize backend
-		 * @param argo_size the size of the global memory to initialize
+		 * @param argo_size the size (in bytes) of the global memory to initialize
+		 * @param cache_size the size (in bytes) of the cache used by ArgoDSM
 		 * @warning the signature of this function may change
 		 * @todo maybe this should be tied better to the concrete memory
 		 *       allocated rather than a generic "initialize this size"
 		 *       functionality.
+		 * @todo the cache_size parameter is currently needed because cache layout
+		 *       is defined by the backend, which is wrong design-wise.
 		 */
-		void init(std::size_t argo_size);
+		void init(std::size_t argo_size, std::size_t cache_size);
 
 		/**
 		 * @brief get ArgoDSM node ID

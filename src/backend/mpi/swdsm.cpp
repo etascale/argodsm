@@ -1010,7 +1010,7 @@ void * argo_gmalloc(unsigned long size){
 	return ptrtmp;
 }
 
-void argo_initialize(unsigned long long argo_size){
+void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	int i;
 	unsigned long j;
 	initmpi();
@@ -1031,7 +1031,7 @@ void argo_initialize(unsigned long long argo_size){
 		pthread_barrier_init(&threadbarrier[i],NULL,i);
 	}
 
-	cachesize = argo_size+pagesize*CACHELINE;
+	cachesize = cache_size+pagesize*CACHELINE;
 	cachesize /= pagesize;
 	cachesize /= CACHELINE;
 	cachesize *= CACHELINE;

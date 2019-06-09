@@ -45,8 +45,11 @@ namespace argo {
 	 * @param argo_size The desired size of the global memory in bytes, or 0. If the
 	 *                  value is omitted (or specified as 0), then the value in
 	 *                  environment variable @ref ARGO_MEMORY_SIZE is used instead.
+	 * @param cache_size The desired size of the local cache in bytes, or 0. If the
+	 *                   value is omitted (or specified as 0), then the value in
+	 *                   environment variable @ref ARGO_CACHE_SIZE is used instead.
 	 */
-	void init(std::size_t argo_size = 0);
+	void init(std::size_t argo_size = 0, std::size_t cache_size = 0);
 
 	/**
 	 * @brief shut down ArgoDSM system

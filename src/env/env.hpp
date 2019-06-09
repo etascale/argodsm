@@ -16,6 +16,11 @@
  * @details This environment variable is only used if argo::init() is called with no
  *          argo_size parameter (or it has value 0). It can be accessed through
  *          @ref argo::env::memory_size() after argo::env::init() has been called.
+ *
+ * @envvar{ARGO_CACHE_SIZE} request a specific cache size in bytes
+ * @details This environment variable is only used if argo::init() is called with no
+ *          cache_size parameter (or it has value 0). It can be accessed through
+ *          @ref argo::env::cache_size() after argo::env::init() has been called.
  */
 
 namespace argo {
@@ -39,6 +44,12 @@ namespace argo {
 		 */
 		std::size_t memory_size();
 
+		/**
+		 * @brief get the cache size requested by environment variable
+		 * @return the requested cache size in bytes
+		 * @see @ref ARGO_CACHE_SIZE
+		 */
+		std::size_t cache_size();
 	} // namespace env
 } // namespace argo
 

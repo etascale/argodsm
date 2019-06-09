@@ -15,8 +15,9 @@
 /**
  * @brief initialize ArgoDSM system
  * @param argo_size the desired size of the global memory in bytes
+ * @param cache_size the desired size of the local cache in bytes
  */
-void argo_init(size_t argo_size = 0);
+void argo_init(size_t argo_size = 0, size_t cache_size = 0);
 
 /**
  * @brief shut down ArgoDSM system

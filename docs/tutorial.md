@@ -50,11 +50,15 @@ is protected by locks.
 The first step is adding the ArgoDSM initialization and finalization function.
 Specifically, `argo::init` needs to be run in `main` before any other functions
 are called, and `argo::finalize` should be the last ArgoDSM function called
-before exiting `main`. In the current version of ArgoDSM, `argo::init` has one
-optional argument which indicates the total amount of memory ArgoDSM should
-allocate. When the value is given to `argo::init`, it will be used. If it is
-omitted, the value (in bytes) in the environment variable `ARGO_MEMORY_SIZE`
-will be used to set the total amount of memory available to ArgoDSM.
+before exiting `main`. In the current version of ArgoDSM, `argo::init` has two
+optional arguments which indicate the total amount of memory ArgoDSM should
+allocate and the desired local cache size, respectively. When the values are
+given to `argo::init`, they will be used. If one or both are omitted, then the
+value (in bytes) in the environment variable `ARGO_MEMORY_SIZE` (for the first
+total memory size) and `ARGO_CACHE_SIZE` (for the local cache size) will be used
+instead. If the environment variables are empty, some default numbers will be
+used. At the time of this writing they are 8GB and 1GB for total memory and
+local cache size, respectively.
 
 In addition to adding the ArgoDSM initialization and finalization functions,
 there are three main tasks that need to be done to convert a pthreads
