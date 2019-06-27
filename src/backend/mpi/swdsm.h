@@ -204,24 +204,6 @@ void addToWriteBuffer(unsigned long cacheIndex);
  */
 void storepageDIFF(unsigned long index, unsigned long addr);
 
-/**
- * @brief Loop-function for writing pages from writebuffer into remote global address space
- * @param x unused
- */
-void *writeloop(void * x);
-
-/**
- * @brief Loop-function for loading pages into global address space
- * @param x unused
- */
-void * loadcacheline(void * x);
-
-/**
- * @brief Loop-function for prefetching pages into global address space
- * @param x unused
- */
-void * prefetchcacheline(void * x);
-
 /*Statistics*/
 /**
  * @brief Clears out all statistics

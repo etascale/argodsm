@@ -56,10 +56,7 @@ unsigned long  *writebuffer;
 unsigned long  writebufferstart;
 /** @brief Least recent entry in the writebuffer*/
 unsigned long  writebufferend;
-/** @brief Writethread wait on this to start a write from the writebuffer */
-//sem_t writerwaitsem;
-/** @brief Writethread signals this when writing from writebuffer is done */
-//sem_t writerstartsem;
+/** @brief writeback from writebuffer helper function */
 void write_unloop();
 /** @brief Lock for the writebuffer*/
 pthread_mutex_t wbmutex = PTHREAD_MUTEX_INITIALIZER;
@@ -96,25 +93,19 @@ char * barwindowsused;
 sem_t ibsem;
 
 /*Loading and Prefetching*/
-/** @brief Tracking address of pages that should be loaded by loadthread1 */
-//unsigned long *loadline;
-/** @brief Tracking cacheindex of pages that should be loaded by loadthread1 */
-//unsigned long *loadtag;
-void loadcacheline_unloop(unsigned long, unsigned long);
+/**
+ * @brief load into cache helper function
+ * @param tag I don't know
+ * @param line I have no clue
+ */
+void loadcacheline_unloop(unsigned long tag, unsigned long line);
 
-/** @brief Tracking address of pages that should be loaded by loadthread2 */
-//unsigned long *prefetchline;
-/** @brief Tracking cacheindex of pages that should be loaded by loadthread2 */
-//unsigned long *prefetchtag;
-/** @brief loadthread1 waits on this to start loading remote pages */
-//sem_t loadstartsem;
-/** @brief signalhandler waits on this to complete a transfer */
-//sem_t loadwaitsem;
-/** @brief loadthread2 waits on this to start loading remote pages */
-//sem_t prefetchstartsem;
-/** @brief signalhandler waits on this to complete a transfer */
-//sem_t prefetchwaitsem;
-void prefetchcacheline_unloop(long unsigned int, long unsigned int);
+/**
+ * @brief another load into cache helper function, which duplicates a lot of code
+ * @param tag I don't know
+ * @param line I have no clue
+ */
+void prefetchcacheline_unloop(unsigned long tag, unsigned long line);
 
 /*Global lock*/
 /** @brief  Local flags we spin on for the global lock*/
@@ -213,8 +204,6 @@ void addToWriteBuffer(unsigned long cacheIndex){
 	if(wbendplusone == writebufferstart ){ // Buffer is full wait for slot to be empty
 		double t1 = MPI_Wtime();
 		write_unloop();
-		//sem_post(&writerstartsem);
-		//sem_wait(&writerwaitsem);
 		double t4 = MPI_Wtime();
 		stats.writebacks+=CACHELINE;
 		stats.writebacktime+=(t4-t1);
@@ -331,8 +320,6 @@ void handler(int sig, siginfo_t *si, void *unused){
 
 	unsigned long * localAlignedAddr = (unsigned long *)((char*)startAddr + lineAddr);
 	unsigned long startIndex = getCacheIndex(lineAddr);
-	//unsigned long cacheIndex = getCacheIndex(alignedDistrAddr);
-	//cacheIndex = startIndex;
 	alignedDistrAddr = lineAddr;
 
 	unsigned long homenode = getHomenode(lineAddr);
@@ -424,81 +411,15 @@ void handler(int sig, siginfo_t *si, void *unused){
 	tag = cacheControl[startIndex].tag;
 
 	if(state == INVALID || (tag != lineAddr && tag != GLOBAL_NULL)){
-		/*if(prefetchline[0] != GLOBAL_NULL){
-			if(prefetchline[0] <= startIndex && startIndex < prefetchline[0]+CACHELINE){
-				loadcacheline_unloop((lineAddr+pagesize*CACHELINE), ((startIndex+CACHELINE)%cachesize));
-			}
-			else{
-				loadcacheline_unloop(alignedDistrAddr, (cacheIndex%cachesize));
-			}
-
-			sem_wait(&prefetchwaitsem);
-			prefetchline[0] = GLOBAL_NULL;
-			//prefetchtag[0]= GLOBAL_NULL;
-			pthread_mutex_unlock(&cachemutex);
-			double t2 = MPI_Wtime();
-			stats.loadtime+=t2-t1;
-			return;
-		}*/
-		/*else if(prefetchline[0] == GLOBAL_NULL && loadline[0] != GLOBAL_NULL){
-			// no thread is prefetching yet, but some thread is loading. 
-			// calls the prefetcher and waits for the load to finish
-			if(loadline[0] <= startIndex && startIndex < loadline[0]+CACHELINE){
-				prefetchline[0]=(startIndex+CACHELINE)%cachesize;
-				prefetchtag[0]=lineAddr+pagesize*CACHELINE;
-			}
-			else{
-				prefetchline[0]=cacheIndex%cachesize;
-				prefetchtag[0]=alignedDistrAddr;
-			}
-			sem_post(&prefetchstartsem);
-			//sem_wait(&loadwaitsem);
-			//loadline[0] = GLOBAL_NULL;
-			//loadtag[0]=GLOBAL_NULL;
-			pthread_mutex_unlock(&cachemutex);
-			double t2 = MPI_Wtime();
-			stats.loadtime+=t2-t1;
-			return;
-		}*/
 		loadcacheline_unloop(alignedDistrAddr, (startIndex%cachesize));
 #ifdef DUAL_LOAD
 		prefetchcacheline_unloop((alignedDistrAddr+CACHELINE*pagesize), ((startIndex+CACHELINE)%cachesize));
-		//sem_wait(&loadwaitsem);
-		//loadline[0]=GLOBAL_NULL;
-		//loadtag[0]=GLOBAL_NULL;
-#else
-		//sem_wait(&loadwaitsem);
-		//loadline[0]=GLOBAL_NULL;
-		//loadtag[0]=GLOBAL_NULL;
-		//prefetchline[0]=GLOBAL_NULL;
-		//prefetchtag[0]=GLOBAL_NULL;
-
 #endif
 		pthread_mutex_unlock(&cachemutex);
 		double t2 = MPI_Wtime();
 		stats.loadtime+=t2-t1;
 		return;
 	}
-
-	/*if(prefetchline[0] != GLOBAL_NULL){
-		sem_wait(&prefetchwaitsem);
-		prefetchline[0] = GLOBAL_NULL;
-		//prefetchtag[0]=GLOBAL_NULL;
-		pthread_mutex_unlock(&cachemutex);
-		double t2 = MPI_Wtime();
-		stats.loadtime+=t2-t1;
-		return;
-
-	}*/
-	/*else if(loadline[0] != GLOBAL_NULL){
-		//sem_wait(&loadwaitsem);
-		//loadline[0]=GLOBAL_NULL;
-		//loadtag[0] =GLOBAL_NULL;
-		pthread_mutex_unlock(&cachemutex);
-		double t2 = MPI_Wtime();
-		stats.loadtime+=t2-t1;
-		return;
-	}*/
 
 	unsigned long line = startIndex / CACHELINE;
 	line *= CACHELINE;
@@ -617,43 +538,6 @@ void write_unloop() {
 	writebufferstart = (writebufferstart+1)%writebuffersize;
 	sem_post(&ibsem);
 }
-/*
-void *writeloop(void * x){
-	UNUSED_PARAM(x);
-	unsigned long i;
-	unsigned long oldstart;
-	unsigned long idx,tag;
-
-	while(1){
-
-		sem_wait(&writerstartsem);
-		sem_wait(&ibsem);
-
-		oldstart = writebufferstart;
-		i = oldstart;
-		idx = writebuffer[i];
-		tag = cacheControl[idx].tag;
-		writebuffer[i] = GLOBAL_NULL;
-		if(tag != GLOBAL_NULL && idx != GLOBAL_NULL && cacheControl[idx].dirty == DIRTY){
-			mprotect((char*)startAddr+tag,CACHELINE*pagesize,PROT_READ);
-			for(i = 0; i <CACHELINE; i++){
-				storepageDIFF(idx+i,tag+pagesize*i);
-				cacheControl[idx+i].dirty = CLEAN;
-			}
-		}
-		for(i = 0; i < (unsigned long)numtasks; i++){
-			if(barwindowsused[i] == 1){
-				MPI_Win_unlock(i, globalDataWindow[i]);
-				barwindowsused[i] = 0;
-			}
-		}
-		writebufferstart = (writebufferstart+1)%writebuffersize;
-		sem_post(&ibsem);
-		sem_post(&writerwaitsem);
-	}
-	return nullptr;
-}
-*/
 
 void loadcacheline_unloop(unsigned long loadtag, unsigned long loadline) {
 	int i;
@@ -799,161 +683,6 @@ void loadcacheline_unloop(unsigned long loadtag, unsigned long loadline) {
 	cacheControl[startidx].dirty=CLEAN;
 	sem_post(&ibsem);
 }
-/*
-void * loadcacheline(void * x){
-	UNUSED_PARAM(x);
-	int i;
-	unsigned long homenode;
-	unsigned long id = 1 << getID();
-	unsigned long invid = ~id;
-	while(1){
-		sem_wait(&loadstartsem);
-		if(loadtag[0]>=size_of_all){//Trying to access/prefetch out of memory
-			sem_post(&loadwaitsem);
-			continue;
-		}
-		homenode = getHomenode(loadtag[0]);
-		unsigned long cacheIndex = loadline[0];
-		if(cacheIndex >= cachesize){
-			printf("idx > size   cacheIndex:%ld cachesize:%ld\n",cacheIndex,cachesize);
-			sem_post(&loadwaitsem);
-			continue;
-		}
-		sem_wait(&ibsem);
-
-
-		unsigned long pageAddr = loadtag[0];
-		unsigned long blocksize = pagesize*CACHELINE;
-		unsigned long lineAddr = pageAddr/blocksize;
-		lineAddr *= blocksize;
-
-		unsigned long startidx = cacheIndex/CACHELINE;
-		startidx*=CACHELINE;
-		unsigned long end = startidx+CACHELINE;
-
-		if(end>=cachesize){
-			end = cachesize;
-		}
-
-		argo_byte tmpstate = cacheControl[startidx].state;
-		unsigned long tmptag = cacheControl[startidx].tag;
-
-		if(tmptag == lineAddr && tmpstate != INVALID){
-			sem_post(&ibsem);
-			sem_post(&loadwaitsem);
-			continue;
-		}
-
-
-		void * lineptr = (char*)startAddr + lineAddr;
-
-		if(cacheControl[startidx].tag  != lineAddr){
-			if(cacheControl[startidx].tag  != lineAddr){
-				if(pthread_mutex_trylock(&wbmutex) != 0){
-					sem_post(&ibsem);
-					pthread_mutex_lock(&wbmutex);
-					sem_wait(&ibsem);
-				}
-
-				void * tmpptr2 = (char*)startAddr + cacheControl[startidx].tag;
-				if(cacheControl[startidx].tag != GLOBAL_NULL && cacheControl[startidx].tag  != lineAddr){
-					argo_byte dirty = cacheControl[startidx].dirty;
-					if(dirty == DIRTY){
-						mprotect(tmpptr2,blocksize,PROT_READ);
-						int j;
-						for(j=0; j < CACHELINE; j++){
-							storepageDIFF(startidx+j,pagesize*j+(cacheControl[startidx].tag));
-						}
-					}
-
-					for(i = 0; i < numtasks; i++){
-						if(barwindowsused[i] == 1){
-							MPI_Win_unlock(i, globalDataWindow[i]);
-							barwindowsused[i] = 0;
-						}
-					}
-
-					cacheControl[startidx].state = INVALID;
-					cacheControl[startidx].tag = lineAddr;
-
-					cacheControl[startidx].dirty=CLEAN;
-					vm::map_memory(lineptr, blocksize, pagesize*startidx, PROT_NONE);
-					mprotect(tmpptr2,blocksize,PROT_NONE);
-				}
-				pthread_mutex_unlock(&wbmutex);
-			}
-		}
-
-
-
-		stats.loads++;
-		unsigned long classidx = get_classification_index(lineAddr);
-		unsigned long tempsharer = 0;
-		unsigned long tempwriter = 0;
-
-		MPI_Win_lock(MPI_LOCK_SHARED, workrank, 0, sharerWindow);
-		unsigned long prevsharer = (globalSharers[classidx])&id;
-		MPI_Win_unlock(workrank, sharerWindow);
-		int n;
-		homenode = getHomenode(lineAddr);
-
-		if(prevsharer==0 ){ //if there is strictly less than two 'stable' sharers
-			MPI_Win_lock(MPI_LOCK_SHARED, homenode, 0, sharerWindow);
-			MPI_Get_accumulate(&id, 1, MPI_LONG, &tempsharer, 1, MPI_LONG,
-				homenode, classidx, 1, MPI_LONG, MPI_BOR, sharerWindow);
-			MPI_Get(&tempwriter, 1,MPI_LONG,homenode,classidx+1,1,MPI_LONG,sharerWindow);
-			MPI_Win_unlock(homenode, sharerWindow);
-		}
-
-		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
-		globalSharers[classidx] |= tempsharer;
-		globalSharers[classidx+1] |= tempwriter;
-		MPI_Win_unlock(workrank, sharerWindow);
-
-		unsigned long offset = getOffset(lineAddr);
-		if(isPowerOf2((tempsharer)&invid) && tempsharer != id && prevsharer == 0){ //Other private. but may not have loaded page yet.
-			unsigned long ownid = tempsharer&invid; // remove own bit
-			unsigned long owner = invalid_node; // initialize to failsafe value
-			for(n=0; n<numtasks; n++) {
-				if(1ul<<n==ownid) {
-					owner = n; //just get rank...
-					break;
-				}
-			}
-			if(owner != invalid_node) {
-				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
-				MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx, 1, MPI_LONG, MPI_BOR, sharerWindow);
-				MPI_Win_unlock(owner, sharerWindow);
-			}
-
-		}
-
-		MPI_Win_lock(MPI_LOCK_SHARED, homenode , 0, globalDataWindow[homenode]);
-		MPI_Get(&cacheData[startidx*pagesize],
-						1,
-						cacheblock,
-						homenode,
-						offset, 1,cacheblock,globalDataWindow[homenode]);
-		MPI_Win_unlock(homenode, globalDataWindow[homenode]);
-
-		if(cacheControl[startidx].tag == GLOBAL_NULL){
-			vm::map_memory(lineptr, blocksize, pagesize*startidx, PROT_READ);
-			cacheControl[startidx].tag = lineAddr;
-		}
-		else{
-			mprotect(lineptr,pagesize*CACHELINE,PROT_READ);
-		}
-		touchedcache[startidx] = 1;
-		cacheControl[startidx].state = VALID;
-
-		cacheControl[startidx].dirty=CLEAN;
-		sem_post(&loadwaitsem);
-		sem_post(&ibsem);
-
-	}
-	return nullptr;
-}
-*/
 
 void prefetchcacheline_unloop(unsigned long prefetchtag, unsigned long prefetchline) {
 	int i;
@@ -1095,157 +824,6 @@ void prefetchcacheline_unloop(unsigned long prefetchtag, unsigned long prefetchl
 	cacheControl[startidx].dirty=CLEAN;
 	sem_post(&ibsem);
 }
-/*
-void * prefetchcacheline(void * x){
-	UNUSED_PARAM(x);
-	int i;
-	unsigned long homenode;
-	unsigned long id = 1 << getID();
-	unsigned long invid = ~id;
-	while(1){
-		sem_wait(&prefetchstartsem);
-		if(prefetchtag[0]>=size_of_all){//Trying to access/prefetch out of memory
-			sem_post(&prefetchwaitsem);
-			continue;
-		}
-
-
-		homenode = getHomenode(prefetchtag[0]);
-		unsigned long cacheIndex = prefetchline[0];
-		if(cacheIndex >= cachesize){
-			printf("idx > size   cacheIndex:%ld cachesize:%ld\n",cacheIndex,cachesize);
-			sem_post(&prefetchwaitsem);
-			continue;
-		}
-
-
-		sem_wait(&ibsem);
-		unsigned long pageAddr = prefetchtag[0];
-		unsigned long blocksize = pagesize*CACHELINE;
-		unsigned long lineAddr = pageAddr/blocksize;
-		lineAddr *= blocksize;
-		unsigned long startidx = cacheIndex/CACHELINE;
-		startidx*=CACHELINE;
-		unsigned long end = startidx+CACHELINE;
-
-		if(end>=cachesize){
-			end = cachesize;
-		}
-		argo_byte tmpstate = cacheControl[startidx].state;
-		unsigned long tmptag = cacheControl[startidx].tag;
-		if(tmptag == lineAddr && tmpstate != INVALID){ //trying to load already valid ..
-			sem_post(&ibsem);
-			sem_post(&prefetchwaitsem);
-			continue;
-		}
-
-
-		void * lineptr = (char*)startAddr + lineAddr;
-
-		if(cacheControl[startidx].tag  != lineAddr){
-			if(cacheControl[startidx].tag  != lineAddr){
-				if(pthread_mutex_trylock(&wbmutex) != 0){
-					sem_post(&ibsem);
-					pthread_mutex_lock(&wbmutex);
-					sem_wait(&ibsem);
-				}
-
-				void * tmpptr2 = (char*)startAddr + cacheControl[startidx].tag;
-				if(cacheControl[startidx].tag != GLOBAL_NULL && cacheControl[startidx].tag  != lineAddr){
-					argo_byte dirty = cacheControl[startidx].dirty;
-					if(dirty == DIRTY){
-						mprotect(tmpptr2,blocksize,PROT_READ);
-						int j;
-						for(j=0; j < CACHELINE; j++){
-							storepageDIFF(startidx+j,pagesize*j+(cacheControl[startidx].tag));
-						}
-					}
-
-					for(i = 0; i < numtasks; i++){
-						if(barwindowsused[i] == 1){
-							MPI_Win_unlock(i, globalDataWindow[i]);
-							barwindowsused[i] = 0;
-						}
-					}
-
-
-					cacheControl[startidx].state = INVALID;
-					cacheControl[startidx].tag = lineAddr;
-					cacheControl[startidx].dirty=CLEAN;
-
-					vm::map_memory(lineptr, blocksize, pagesize*startidx, PROT_NONE);
-					mprotect(tmpptr2,blocksize,PROT_NONE);
-
-				}
-				pthread_mutex_unlock(&wbmutex);
-
-			}
-		}
-
-		stats.loads++;
-		unsigned long classidx = get_classification_index(lineAddr);
-		unsigned long tempsharer = 0;
-		unsigned long tempwriter = 0;
-		MPI_Win_lock(MPI_LOCK_SHARED, workrank, 0, sharerWindow);
-		unsigned long prevsharer = (globalSharers[classidx])&id;
-		MPI_Win_unlock(workrank, sharerWindow);
-		int n;
-		homenode = getHomenode(lineAddr);
-
-		if(prevsharer==0 ){ //if there is strictly less than two 'stable' sharers
-			MPI_Win_lock(MPI_LOCK_SHARED, homenode, 0, sharerWindow);
-			MPI_Get_accumulate(&id, 1, MPI_LONG, &tempsharer, 1, MPI_LONG,
-				homenode, classidx, 1, MPI_LONG, MPI_BOR, sharerWindow);
-			MPI_Get(&tempwriter, 1,MPI_LONG,homenode,classidx+1,1,MPI_LONG,sharerWindow);
-			MPI_Win_unlock(homenode, sharerWindow);
-		}
-
-		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
-		globalSharers[classidx] |= tempsharer;
-		globalSharers[classidx+1] |= tempwriter;
-		MPI_Win_unlock(workrank, sharerWindow);
-
-		unsigned long offset = getOffset(lineAddr);
-		if(isPowerOf2((tempsharer)&invid) && prevsharer == 0){ //Other private. but may not have loaded page yet.
-			unsigned long ownid = tempsharer&invid; // remove own bit
-			unsigned long owner = invalid_node; // initialize to failsafe value
-			for(n=0; n<numtasks; n++) {
-				if(1ul<<n == ownid) {
-					owner = n; //just get rank...
-					break;
-				}
-			}
-			if(owner != invalid_node) {
-				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
-				MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx, 1, MPI_LONG, MPI_BOR, sharerWindow);
-				MPI_Win_unlock(owner, sharerWindow);
-			}
-
-		}
-
-		MPI_Win_lock(MPI_LOCK_SHARED, homenode , 0, globalDataWindow[homenode]);
-		MPI_Get(&cacheData[startidx*pagesize], 1, cacheblock, homenode,
-			offset, 1, cacheblock, globalDataWindow[homenode]);
-		MPI_Win_unlock(homenode, globalDataWindow[homenode]);
-
-
-		if(cacheControl[startidx].tag == GLOBAL_NULL){
-			vm::map_memory(lineptr, blocksize, pagesize*startidx, PROT_READ);
-			cacheControl[startidx].tag = lineAddr;
-		}
-		else{
-			mprotect(lineptr,pagesize*CACHELINE,PROT_READ);
-		}
-
-		touchedcache[startidx] = 1;
-		cacheControl[startidx].state = VALID;
-		cacheControl[startidx].dirty=CLEAN;
-		sem_post(&prefetchwaitsem);
-		sem_post(&ibsem);
-	}
-	return nullptr;
-}
-*/
 
 void initmpi(){
 	int ret,initialized,thread_status;
@@ -1369,18 +947,11 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		barwindowsused[i] = 0;
 	}
 
-	//prefetchline = (unsigned long *) malloc(sizeof(unsigned long)*numtasks);
-	//loadline = (unsigned long *) malloc(sizeof(unsigned long)*numtasks);
-	//prefetchtag = (unsigned long *) malloc(sizeof(unsigned long)*numtasks);
-	//loadtag = (unsigned long *) malloc(sizeof(unsigned long)*numtasks);
-
 	int *workranks = (int *) malloc(sizeof(int)*numtasks);
 	int *procranks = (int *) malloc(sizeof(int)*2);
 	int workindex = 0;
 
 	for(i = 0; i < numtasks; i++){
-		//prefetchline[i] = GLOBAL_NULL;
-		//loadline[i] = GLOBAL_NULL;
 		workranks[workindex++] = i;
 		procranks[0]=i;
 		procranks[1]=i+1;
@@ -1460,14 +1031,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	tmpcache=lockbuffer;
 	vm::map_memory(tmpcache, pagesize, current_offset, PROT_READ|PROT_WRITE);
 
-	//sem_init(&loadwaitsem,0,0);
-	//sem_init(&loadstartsem,0,0);
-	//sem_init(&prefetchstartsem,0,0);
-	//sem_init(&prefetchwaitsem,0,0);
-
-	//sem_init(&writerstartsem,0,0);
-	//sem_init(&writerwaitsem,0,0);
-
 	sem_init(&ibsem,0,1);
 	sem_init(&globallocksem,0,1);
 
@@ -1497,9 +1060,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		cacheControl[j].dirty = CLEAN;
 	}
 
-	//pthread_create(&loadthread1,NULL,&loadcacheline,NULL);
-	//pthread_create(&loadthread2,NULL,&prefetchcacheline,(void*)NULL);
-	//pthread_create(&writethread,NULL,&writeloop,(void*)NULL);
 	argo_reset_coherence(1);
 }
 
@@ -1512,9 +1072,6 @@ void argo_finalize(){
 	swdsm_argo_barrier(1);
 	mprotect(startAddr,size_of_all,PROT_WRITE|PROT_READ);
 	MPI_Barrier(MPI_COMM_WORLD);
-	//pthread_cancel(loadthread1);
-	//pthread_cancel(loadthread2);
-	//pthread_cancel(writethread);
 
 	for(i=0; i <numtasks;i++){
 		if(i==workrank){
@@ -1608,16 +1165,11 @@ void swdsm_argo_barrier(int n){ //BARRIER
 }
 
 void argo_reset_coherence(int n){
-	int i;
 	unsigned long j;
 	stats.writebacks = 0;
 	stats.stores = 0;
 	memset(touchedcache, 0, cachesize);
 
-	for(i=0;i<numtasks;i++){
-		//loadline[i] = GLOBAL_NULL;
-		//prefetchline[i] = GLOBAL_NULL;
-	}
 	sem_wait(&ibsem);
 	MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
 	for(j = 0; j < classificationSize; j++){
