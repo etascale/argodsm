@@ -97,17 +97,19 @@ sem_t ibsem;
 
 /*Loading and Prefetching*/
 /** @brief Tracking address of pages that should be loaded by loadthread1 */
-unsigned long *loadline;
+//unsigned long *loadline;
 /** @brief Tracking cacheindex of pages that should be loaded by loadthread1 */
-unsigned long *loadtag;
+//unsigned long *loadtag;
+void loadcacheline_unloop(unsigned long, unsigned long);
+
 /** @brief Tracking address of pages that should be loaded by loadthread2 */
 unsigned long *prefetchline;
 /** @brief Tracking cacheindex of pages that should be loaded by loadthread2 */
 unsigned long *prefetchtag;
 /** @brief loadthread1 waits on this to start loading remote pages */
-sem_t loadstartsem;
+//sem_t loadstartsem;
 /** @brief signalhandler waits on this to complete a transfer */
-sem_t loadwaitsem;
+//sem_t loadwaitsem;
 /** @brief loadthread2 waits on this to start loading remote pages */
 sem_t prefetchstartsem;
 /** @brief signalhandler waits on this to complete a transfer */
@@ -421,17 +423,14 @@ void handler(int sig, siginfo_t *si, void *unused){
 	tag = cacheControl[startIndex].tag;
 
 	if(state == INVALID || (tag != lineAddr && tag != GLOBAL_NULL)){
-		if(loadline[0] == GLOBAL_NULL && prefetchline[0] != GLOBAL_NULL){
+		if(prefetchline[0] != GLOBAL_NULL){
 			if(prefetchline[0] <= startIndex && startIndex < prefetchline[0]+CACHELINE){
-				loadline[0]= (startIndex+CACHELINE)%cachesize;
-				loadtag[0]=lineAddr+pagesize*CACHELINE;
+				loadcacheline_unloop((lineAddr+pagesize*CACHELINE), ((startIndex+CACHELINE)%cachesize));
 			}
 			else{
-				loadline[0]=cacheIndex%cachesize;
-				loadtag[0]=alignedDistrAddr;
+				loadcacheline_unloop(alignedDistrAddr, (cacheIndex%cachesize));
 			}
 
-			sem_post(&loadstartsem);
 			sem_wait(&prefetchwaitsem);
 			prefetchline[0] = GLOBAL_NULL;
 			prefetchtag[0]= GLOBAL_NULL;
@@ -440,7 +439,9 @@ void handler(int sig, siginfo_t *si, void *unused){
 			stats.loadtime+=t2-t1;
 			return;
 		}
-		else if(prefetchline[0] == GLOBAL_NULL && loadline[0] != GLOBAL_NULL){
+		/*else if(prefetchline[0] == GLOBAL_NULL && loadline[0] != GLOBAL_NULL){
+			// no thread is prefetching yet, but some thread is loading. 
+			// calls the prefetcher and waits for the load to finish
 			if(loadline[0] <= startIndex && startIndex < loadline[0]+CACHELINE){
 				prefetchline[0]=(startIndex+CACHELINE)%cachesize;
 				prefetchtag[0]=lineAddr+pagesize*CACHELINE;
@@ -449,32 +450,29 @@ void handler(int sig, siginfo_t *si, void *unused){
 				prefetchline[0]=cacheIndex%cachesize;
 				prefetchtag[0]=alignedDistrAddr;
 			}
-
 			sem_post(&prefetchstartsem);
-			sem_wait(&loadwaitsem);
-			loadline[0] = GLOBAL_NULL;
-			loadtag[0]=GLOBAL_NULL;
+			//sem_wait(&loadwaitsem);
+			//loadline[0] = GLOBAL_NULL;
+			//loadtag[0]=GLOBAL_NULL;
 			pthread_mutex_unlock(&cachemutex);
 			double t2 = MPI_Wtime();
 			stats.loadtime+=t2-t1;
 			return;
-		}
+		}*/
 		else{
-			loadline[0]=startIndex%cachesize;
-			loadtag[0]=alignedDistrAddr;
-			sem_post(&loadstartsem);
+			loadcacheline_unloop(alignedDistrAddr, (startIndex%cachesize));
 
 #ifdef DUAL_LOAD
 			prefetchline[0]=(startIndex+CACHELINE)%cachesize;
 			prefetchtag[0]=alignedDistrAddr+CACHELINE*pagesize;
 			sem_post(&prefetchstartsem);
-			sem_wait(&loadwaitsem);
-			loadline[0]=GLOBAL_NULL;
-			loadtag[0]=GLOBAL_NULL;
+			//sem_wait(&loadwaitsem);
+			//loadline[0]=GLOBAL_NULL;
+			//loadtag[0]=GLOBAL_NULL;
 #else
-			sem_wait(&loadwaitsem);
-			loadline[0]=GLOBAL_NULL;
-			loadtag[0]=GLOBAL_NULL;
+			//sem_wait(&loadwaitsem);
+			//loadline[0]=GLOBAL_NULL;
+			//loadtag[0]=GLOBAL_NULL;
 			prefetchline[0]=GLOBAL_NULL;
 			prefetchtag[0]=GLOBAL_NULL;
 
@@ -496,15 +494,15 @@ void handler(int sig, siginfo_t *si, void *unused){
 		return;
 
 	}
-	else if(loadline[0] != GLOBAL_NULL){
-		sem_wait(&loadwaitsem);
-		loadline[0]=GLOBAL_NULL;
-		loadtag[0] =GLOBAL_NULL;
+	/*else if(loadline[0] != GLOBAL_NULL){
+		//sem_wait(&loadwaitsem);
+		//loadline[0]=GLOBAL_NULL;
+		//loadtag[0] =GLOBAL_NULL;
 		pthread_mutex_unlock(&cachemutex);
 		double t2 = MPI_Wtime();
 		stats.loadtime+=t2-t1;
 		return;
-	}
+	}*/
 
 	unsigned long line = startIndex / CACHELINE;
 	line *= CACHELINE;
@@ -661,13 +659,17 @@ void *writeloop(void * x){
 }
 */
 
-void loadcacheline_unloop(unsigned long loadtag) {
+void loadcacheline_unloop(unsigned long loadtag, unsigned long loadline) {
+	int i;
+	unsigned long homenode;
+	unsigned long id = 1 << getID();
+	unsigned long invid = ~id;
 
 	if(loadtag>=size_of_all){//Trying to access/prefetch out of memory
 		return;
 	}
 	homenode = getHomenode(loadtag);
-	unsigned long cacheIndex = loadline[0];
+	unsigned long cacheIndex = loadline;
 	if(cacheIndex >= cachesize){
 		printf("idx > size   cacheIndex:%ld cachesize:%ld\n",cacheIndex,cachesize);
 		return;
@@ -801,6 +803,7 @@ void loadcacheline_unloop(unsigned long loadtag) {
 	cacheControl[startidx].dirty=CLEAN;
 	sem_post(&ibsem);
 }
+/*
 void * loadcacheline(void * x){
 	UNUSED_PARAM(x);
 	int i;
@@ -954,7 +957,7 @@ void * loadcacheline(void * x){
 	}
 	return nullptr;
 }
-
+*/
 void * prefetchcacheline(void * x){
 	UNUSED_PARAM(x);
 	int i;
@@ -1229,9 +1232,9 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	}
 
 	prefetchline = (unsigned long *) malloc(sizeof(unsigned long)*numtasks);
-	loadline = (unsigned long *) malloc(sizeof(unsigned long)*numtasks);
+	//loadline = (unsigned long *) malloc(sizeof(unsigned long)*numtasks);
 	prefetchtag = (unsigned long *) malloc(sizeof(unsigned long)*numtasks);
-	loadtag = (unsigned long *) malloc(sizeof(unsigned long)*numtasks);
+	//loadtag = (unsigned long *) malloc(sizeof(unsigned long)*numtasks);
 
 	int *workranks = (int *) malloc(sizeof(int)*numtasks);
 	int *procranks = (int *) malloc(sizeof(int)*2);
@@ -1239,7 +1242,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 
 	for(i = 0; i < numtasks; i++){
 		prefetchline[i] = GLOBAL_NULL;
-		loadline[i] = GLOBAL_NULL;
+		//loadline[i] = GLOBAL_NULL;
 		workranks[workindex++] = i;
 		procranks[0]=i;
 		procranks[1]=i+1;
@@ -1319,8 +1322,8 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	tmpcache=lockbuffer;
 	vm::map_memory(tmpcache, pagesize, current_offset, PROT_READ|PROT_WRITE);
 
-	sem_init(&loadwaitsem,0,0);
-	sem_init(&loadstartsem,0,0);
+	//sem_init(&loadwaitsem,0,0);
+	//sem_init(&loadstartsem,0,0);
 	sem_init(&prefetchstartsem,0,0);
 	sem_init(&prefetchwaitsem,0,0);
 
@@ -1356,7 +1359,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		cacheControl[j].dirty = CLEAN;
 	}
 
-	pthread_create(&loadthread1,NULL,&loadcacheline,NULL);
+	//pthread_create(&loadthread1,NULL,&loadcacheline,NULL);
 	pthread_create(&loadthread2,NULL,&prefetchcacheline,(void*)NULL);
 	//pthread_create(&writethread,NULL,&writeloop,(void*)NULL);
 	argo_reset_coherence(1);
@@ -1371,7 +1374,7 @@ void argo_finalize(){
 	swdsm_argo_barrier(1);
 	mprotect(startAddr,size_of_all,PROT_WRITE|PROT_READ);
 	MPI_Barrier(MPI_COMM_WORLD);
-	pthread_cancel(loadthread1);
+	//pthread_cancel(loadthread1);
 	pthread_cancel(loadthread2);
 	//pthread_cancel(writethread);
 
@@ -1474,7 +1477,7 @@ void argo_reset_coherence(int n){
 	memset(touchedcache, 0, cachesize);
 
 	for(i=0;i<numtasks;i++){
-		loadline[i] = GLOBAL_NULL;
+		//loadline[i] = GLOBAL_NULL;
 		prefetchline[i] = GLOBAL_NULL;
 	}
 	sem_wait(&ibsem);
