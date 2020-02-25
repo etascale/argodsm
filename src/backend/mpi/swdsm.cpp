@@ -3,6 +3,8 @@
  * @brief This file implements the MPI-backend of ArgoDSM
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
+#include<cstddef>
+
 #include "signal/signal.hpp"
 #include "virtual_memory/virtual_memory.hpp"
 #include "swdsm.h"
@@ -295,14 +297,14 @@ void init_mpi_cacheblock(void){
 	MPI_Type_commit(&cacheblock);
 }
 
-unsigned long alignAddr(unsigned long addr){
-	unsigned long mod = addr % pagesize;
-	if(addr % pagesize != 0){
-		addr = addr - mod;
-	}
-	addr /= pagesize;
-	addr *= pagesize;
-	return addr;
+/**
+ * @brief align an offset into a memory region to the beginning of its size block
+ * @param offset the pointer or offset
+ * @param size the size of each block
+ * @return the beginning of the block of size size where offset is located
+ */
+inline std::size_t align_backwards(std::size_t offset, std::size_t size) {
+	return (offset / size) * size;
 }
 
 void handler(int sig, siginfo_t *si, void *unused){
@@ -312,19 +314,18 @@ void handler(int sig, siginfo_t *si, void *unused){
 
 	unsigned long tag;
 	argo_byte owner,state;
-	unsigned long distrAddr =  (unsigned long)((unsigned long)(si->si_addr) - (unsigned long)(startAddr));
+	/* compute offset in distributed memory in bytes, always positive */
+	std::size_t access_offset = static_cast<char*>(si->si_addr) - static_cast<char*>(startAddr);
 
-	unsigned long alignedDistrAddr = alignAddr(distrAddr);
-	unsigned long remCACHELINE = alignedDistrAddr % (CACHELINE*pagesize);
-	unsigned long lineAddr = alignedDistrAddr - remCACHELINE;
-	unsigned long classidx = get_classification_index(lineAddr);
+	/* align access offset to cacheline */
+	std::size_t aligned_access_offset = align_backwards(access_offset, CACHELINE*pagesize);
+	unsigned long classidx = get_classification_index(aligned_access_offset);
 
-	unsigned long * localAlignedAddr = (unsigned long *)((char*)startAddr + lineAddr);
-	unsigned long startIndex = getCacheIndex(lineAddr);
-	alignedDistrAddr = lineAddr;
-
-	unsigned long homenode = getHomenode(lineAddr);
-	unsigned long offset = getOffset(lineAddr);
+	/* compute start pointer of cacheline. char* has byte-wise arithmetics */
+	char* aligned_access_ptr = reinterpret_cast<char*>(startAddr) + aligned_access_offset;
+	unsigned long startIndex = getCacheIndex(aligned_access_offset);
+	unsigned long homenode = getHomenode(aligned_access_offset);
+	unsigned long offset = getOffset(aligned_access_offset);
 	unsigned long id = 1 << getID();
 	unsigned long invid = ~id;
 
@@ -364,7 +365,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 			}
 			/* set page to permit reads and map it to the page cache */
 			/** @todo Set cache offset to a variable instead of calculating it here */
-			vm::map_memory(localAlignedAddr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ);
+			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ);
 
 		}
 		else{
@@ -400,7 +401,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 				}
 			}
 			/* set page to permit read/write and map it to the page cache */
-			vm::map_memory(localAlignedAddr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ|PROT_WRITE);
+			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ|PROT_WRITE);
 
 		}
 		sem_post(&ibsem);
@@ -411,10 +412,10 @@ void handler(int sig, siginfo_t *si, void *unused){
 	state  = cacheControl[startIndex].state;
 	tag = cacheControl[startIndex].tag;
 
-	if(state == INVALID || (tag != lineAddr && tag != GLOBAL_NULL)){
-		load_cache_entry(alignedDistrAddr, (startIndex%cachesize));
+	if(state == INVALID || (tag != aligned_access_offset && tag != GLOBAL_NULL)) {
+		load_cache_entry(aligned_access_offset, (startIndex%cachesize));
 #ifdef DUAL_LOAD
-		prefetch_cache_entry((alignedDistrAddr+CACHELINE*pagesize), ((startIndex+CACHELINE)%cachesize));
+		prefetch_cache_entry((aligned_access_offset+CACHELINE*pagesize), ((startIndex+CACHELINE)%cachesize));
 #endif
 		pthread_mutex_unlock(&cachemutex);
 		double t2 = MPI_Wtime();
@@ -483,11 +484,10 @@ void handler(int sig, siginfo_t *si, void *unused){
 		}
 	}
 	sem_post(&ibsem);
-	unsigned char * real = (unsigned char *)(localAlignedAddr);
 	unsigned char * copy = (unsigned char *)(pagecopy + line*pagesize);
-	memcpy(copy,real,CACHELINE*pagesize);
+	memcpy(copy,aligned_access_ptr,CACHELINE*pagesize);
 	addToWriteBuffer(startIndex);
-	mprotect(localAlignedAddr, pagesize*CACHELINE,PROT_WRITE|PROT_READ);
+	mprotect(aligned_access_ptr, pagesize*CACHELINE,PROT_WRITE|PROT_READ);
 	pthread_mutex_unlock(&cachemutex);
 	double t2 = MPI_Wtime();
 	stats.storetime += t2-t1;

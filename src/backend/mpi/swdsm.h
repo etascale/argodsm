@@ -319,12 +319,6 @@ unsigned long getCacheIndex(unsigned long addr);
  * @param addr Address in the global address space
  * @return addr rounded down to nearest multiple of pagesize
  */
-unsigned long alignAddr(unsigned long addr);
-/**
- * @brief Gives homenode for a given address
- * @param addr Address in the global address space
- * @return Process ID of the node backing the memory containing addr
- */
 unsigned long getHomenode(unsigned long addr);
 /**
  * @brief Gets the offset of an address on the local nodes part of the global memory
