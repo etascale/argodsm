@@ -34,6 +34,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 include_directories("${PROJECT_SOURCE_DIR}/src")
 add_subdirectory(src)
 
+set(ARGO_TESTS_NPROCS 2 CACHE STRING "Number of ArgoDSM nodes to execute with make test")
+if(NOT ARGO_TESTS_NPROCS MATCHES "^[1-8]$")
+	message(FATAL_ERROR "ARGO_TESTS_NPROCS must be a number from 1 to 8.")
+endif()
+
 option(ARGO_TESTS
 	"Build tests for ArgoDSM" ON)
 if(ARGO_TESTS)

@@ -14,8 +14,13 @@ function(forall_backends target)
 			OUTPUT_NAME "${target}"
 			RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/${BACKEND}"
 			)
+		if(${BACKEND} STREQUAL "mpi")
+			set(TEST_PARAMETERS mpirun -n ${ARGO_TESTS_NPROCS})
+		else()
+			set(TEST_PARAMETERS "")
+		endif()
 		add_test(${target}-${BACKEND}
-			${CMAKE_BINARY_DIR}/bin/${BACKEND}/${target})
+			${TEST_PARAMETERS} ${CMAKE_BINARY_DIR}/bin/${BACKEND}/${target})
 	endforeach(BACKEND)
 endfunction(forall_backends)
 
