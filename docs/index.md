@@ -119,10 +119,15 @@ library, as well as *exactly* one of the backend libraries.
 make test
 ```
 
-Keep in mind that currently even the MPI tests are run on a single node without
-invoking `mpirun`. After running the previous command, you should also run the
-tests with at least 4 nodes. To learn how to run the MPI tests on multiple
-nodes, proceed to the next section.
+This step executes the ArgoDSM tests. Tests for the MPI backend are run on two
+ArgoDSM software nodes by default. This number can be changed through setting
+the `ARGO_TESTS_NPROCS` CMake option to any number from 1 to 8. Keep in mind
+that some MPI distributions may not allow executing more processes than the
+number of physical cores in the system. Please note that some issues are only
+encountered when running with more than two ArgoDSM nodes or on multiple
+hardware nodes. For this reason it is highly recommended to run the MPI tests
+on at least four hardware nodes when possible. Refer to the next section to
+learn how to run applications on multiple hardware nodes.
 
 ``` bash
 make install
