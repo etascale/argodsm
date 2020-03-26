@@ -22,8 +22,11 @@
 #include <limits.h>
 #include "gtest/gtest.h"
 
-/** @brief Amount of memory initialized by ArgoDSM */
-size_t size = 1<<20;
+/** @brief ArgoDSM memory size */
+constexpr std::size_t size = 1<<20;
+/** @brief ArgoDSM cache size */
+constexpr std::size_t cache_size = size;
+
 /** @brief number of threads to spawn for some of the tests */
 constexpr int nThreads = 16;
 /** @brief number of itereations to run for some of the tests */
@@ -257,7 +260,7 @@ TEST_F(LockTest,StressCohortLock) {
  * @return 0 if success
  */
 int main(int argc, char **argv) {
-	argo::init(size);
+	argo::init(size, cache_size);
 	::testing::InitGoogleTest(&argc, argv);
 	auto res = RUN_ALL_TESTS();
 	argo::finalize();

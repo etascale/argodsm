@@ -21,7 +21,10 @@
 #define ITER 10
 
 /** @brief ArgoDSM memory size */
-std::size_t size = 1<<30;
+constexpr std::size_t size = 1<<30;
+/** @brief ArgoDSM cache size */
+constexpr std::size_t cache_size = size/8;
+
 namespace mem = argo::mempools;
 extern mem::global_memory_pool<>* default_global_mempool;
 
@@ -91,7 +94,7 @@ TEST_F(ompTest, WriteAndRead) {
  * @return 0 if success
  */
 int main(int argc, char **argv) {
-	argo::init(size);
+	argo::init(size, cache_size);
 	::testing::InitGoogleTest(&argc, argv);
 	auto res = RUN_ALL_TESTS();
 	argo::finalize();

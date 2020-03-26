@@ -9,7 +9,10 @@
 #include "gtest/gtest.h"
 
 /** @brief ArgoDSM memory size */
-std::size_t size = 1<<28;
+constexpr std::size_t size = 1<<20;
+/** @brief ArgoDSM cache size */
+constexpr std::size_t cache_size = size;
+
 namespace mem = argo::mempools;
 
 /**
@@ -27,7 +30,7 @@ TEST(trivialTest, alwaysPassl) {
  * @return 0 if success
  */
 int main(int argc, char **argv) {
-	argo::init(size);
+	argo::init(size, cache_size);
 	::testing::InitGoogleTest(&argc, argv);
 	auto res = RUN_ALL_TESTS();
 	argo::finalize();

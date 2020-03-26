@@ -24,6 +24,9 @@ using global_intptr = typename argo::data_distribution::global_ptr<int*>;
 
 /** @brief ArgoDSM memory size */
 constexpr std::size_t size = 1<<20; // 1MB
+/** @brief ArgoDSM cache size */
+constexpr std::size_t cache_size = size;
+
 /** @brief Time to wait before assuming a deadlock has occured */
 constexpr std::chrono::minutes deadlock_threshold{1}; // Choosen for no reason
 
@@ -386,7 +389,7 @@ TEST_F(backendTest, atomicFetchAddPointer) {
  * @return 0 if success
  */
 int main(int argc, char **argv) {
-	argo::init(size);
+	argo::init(size, cache_size);
 	::testing::InitGoogleTest(&argc, argv);
 	auto res = RUN_ALL_TESTS();
 	argo::finalize();

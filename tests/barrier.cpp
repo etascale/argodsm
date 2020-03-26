@@ -12,6 +12,9 @@
 
 /** @brief ArgoDSM memory size */
 constexpr std::size_t size = 1<<30;
+/** @brief ArgoDSM cache size */
+constexpr std::size_t cache_size = size/8;
+
 /** @brief Maximum number of threads to run in the stress tests */
 constexpr int max_threads = 128;
 
@@ -86,7 +89,7 @@ INSTANTIATE_TEST_CASE_P(threadCount, barrierTest, ::testing::Range(0, max_thread
  * @return 0 if success
  */
 int main(int argc, char **argv) {
-	argo::init(size);
+	argo::init(size, cache_size);
 	::testing::InitGoogleTest(&argc, argv);
 	auto res = RUN_ALL_TESTS();
 	argo::finalize();
