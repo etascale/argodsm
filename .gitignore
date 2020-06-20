@@ -1,1 +1,4 @@
+build/
 docs/_site/
+tests/googletest/
+tests/release-1.10.0.zip
