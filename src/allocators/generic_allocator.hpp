@@ -218,7 +218,7 @@ namespace argo {
 					T* allocation;
 					try {
 						allocation = static_cast<T*>(mempool->reserve(n*sizeof(T)));
-					} catch (typename MemoryPool::bad_alloc) {
+					} catch (const typename MemoryPool::bad_alloc&) {
 						auto avail = mempool->available();
 						if(avail > 0) {
 							allocation = static_cast<T*>(mempool->reserve(avail));
@@ -227,7 +227,7 @@ namespace argo {
 						}
 						try {
 							mempool->grow(n*sizeof(T));
-						}catch(std::bad_alloc){
+						}catch(const std::bad_alloc&){
 							lock->unlock();
 							throw;
 						}

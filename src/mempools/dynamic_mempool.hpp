@@ -155,7 +155,7 @@ namespace argo {
 						if(do_grow<growth_mode>()) {
 							memory = allocator->allocate(alloc_size);
 						}
-					}catch(std::bad_alloc){
+					}catch(const std::bad_alloc&){
 						memory = nullptr;
 					}
 					synchronize<growth_mode>(&memory);
