@@ -901,16 +901,25 @@ void * argo_gmalloc(unsigned long size){
 	return ptrtmp;
 }
 
+/**
+ * @brief aligns an offset (into a memory region) to the beginning of its
+ * subsequent size block if it is not already aligned to a size block.
+ * @param offset the unaligned offset
+ * @param size the size of each block
+ * @return the aligned offset
+ */
+std::size_t align_forwards(std::size_t offset, std::size_t size){
+	return (offset == 0) ? offset : (1 + ((offset-1) / size))*size;
+}
+
 void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	int i;
 	unsigned long j;
 	initmpi();
-	unsigned long alignment = pagesize*CACHELINE*numtasks;
-	if((argo_size%alignment)>0){
-		argo_size += alignment - 1;
-		argo_size /= alignment;
-		argo_size *= alignment;
-	}
+
+	/** Standardise the ArgoDSM memory space */
+	argo_size = std::max(argo_size, static_cast<std::size_t>(pagesize*numtasks));
+	argo_size = align_forwards(argo_size, pagesize*CACHELINE*numtasks);
 
 	startAddr = vm::start_address();
 #ifdef ARGO_PRINT_STATISTICS
@@ -922,16 +931,13 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		pthread_barrier_init(&threadbarrier[i],NULL,i);
 	}
 
-	cachesize = 0;
-	if(cache_size > argo_size) {
-		cachesize += argo_size;
-	} else {
-		cachesize += cache_size;
-	}
-	cachesize += pagesize*CACHELINE;
+	/** Limit cache_size to at most argo_size */
+	cachesize = std::min(argo_size, cache_size);
+	/** Round the number of cache pages upwards */
+	cachesize = align_forwards(cachesize, pagesize*CACHELINE);
+	/** At least two pages are required to prevent endless eviction loops */
+	cachesize = std::max(cachesize, static_cast<unsigned long>(pagesize*CACHELINE*2));
 	cachesize /= pagesize;
-	cachesize /= CACHELINE;
-	cachesize *= CACHELINE;
 
 	classificationSize = 2*cachesize; // Could be smaller ?
 	writebuffersize = WRITE_BUFFER_PAGES/CACHELINE;
@@ -963,14 +969,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	MPI_Comm_create(MPI_COMM_WORLD,workgroup,&workcomm);
 	MPI_Group_rank(workgroup,&workrank);
 
-	if(argo_size < pagesize*numtasks){
-		argo_size = pagesize*numtasks;
-	}
-
-	alignment = CACHELINE*pagesize;
-	if(argo_size % (alignment*numtasks) != 0){
-		argo_size = alignment*numtasks * (1+(argo_size)/(alignment*numtasks));
-	}
 
 	//Allocate local memory for each node,
 	size_of_all = argo_size; //total distr. global memory
@@ -980,15 +978,8 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 
 	unsigned long cacheControlSize = sizeof(control_data)*cachesize;
 	unsigned long gwritersize = classificationSize*sizeof(long);
-
-	cacheControlSize /= pagesize;
-	gwritersize /= pagesize;
-
-	cacheControlSize +=1;
-	gwritersize += 1;
-
-	cacheControlSize *= pagesize;
-	gwritersize *= pagesize;
+	cacheControlSize = align_forwards(cacheControlSize, pagesize);
+	gwritersize = align_forwards(gwritersize, pagesize);
 
 	cacheoffset = pagesize*cachesize+cacheControlSize;
 
