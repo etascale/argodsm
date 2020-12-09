@@ -11,6 +11,7 @@
 #include <cstddef>
 
 #include "../types/types.hpp"
+#include "../env/env.hpp"
 
 namespace argo {
 	namespace data_distribution {
@@ -37,12 +38,24 @@ namespace argo {
 				/**
 				 * @brief construct from virtual address pointer
 				 * @param ptr pointer to construct from
-				 * @todo implement
+				 * @param sel select to fetch homenode (0), offset (1) or both (2, default)
 				 */
-				global_ptr(T* ptr)
-					: homenode(Dist::homenode(reinterpret_cast<char*>(ptr))),
-					  local_offset(Dist::local_offset(reinterpret_cast<char*>(ptr)))
-					{}
+				global_ptr(T* ptr, char sel = 2) {
+					switch (sel) {
+						case 0:
+							homenode = Dist::homenode(reinterpret_cast<char*>(ptr));
+							local_offset = 0;
+							break;
+						case 1:
+							local_offset = Dist::local_offset(reinterpret_cast<char*>(ptr));
+							homenode = -1;
+							break;
+						default:
+							homenode = Dist::homenode(reinterpret_cast<char*>(ptr));
+							local_offset = Dist::local_offset(reinterpret_cast<char*>(ptr));
+							break;
+					}
+				}
 
 				/**
 				 * @brief Copy constructor between different pointer types
@@ -126,22 +139,25 @@ namespace argo {
 				}
 
 				/**
+				 * @brief gives ownership of a page to the process that first touched it
+				 * @param addr address in the global address 
+				 * @return the homenode of addr
+				 */
+				static std::size_t first_touch (const std::size_t& addr);
+
+				/**
 				 * @brief compute home node of an address
 				 * @param ptr address to find homenode of
 				 * @return the computed home node
 				 */
-				static node_id_t homenode (char* const ptr) {
-					return (ptr - start_address) / size_per_node;
-				}
+				static node_id_t homenode (char* const ptr);
 
 				/**
 				 * @brief compute offset into the home node's share of the memory
 				 * @param ptr address to find offset of
 				 * @return the computed offset
 				 */
-				static std::size_t local_offset (char* const ptr) {
-					return (ptr - start_address) - homenode(ptr)*size_per_node;
-				}
+				static std::size_t local_offset (char* const ptr);
 
 				/**
 				 * @brief compute a pointer value

@@ -32,6 +32,14 @@
  * @details This environment variable defaults to 32 cache blocks if not specified.
  *          It can be accessed through @ref argo::env::write_buffer_write_back_size()
  *          after argo::env::init() has been called.
+ * 
+ * @envvar{ARGO_ALLOCATION_POLICY} request a specific allocation policy with a number
+ * @details This environment variable can be accessed through
+ *          @ref argo::env::allocation_policy() after argo::env::init() has been called.
+ * 
+ * @envvar{ARGO_ALLOCATION_BLOCK_SIZE} request a specific allocation block size in number of pages
+ * @details This environment variable can be accessed through
+ *          @ref argo::env::allocation_block_size() after argo::env::init() has been called.
  */
 
 namespace argo {
@@ -75,6 +83,20 @@ namespace argo {
 		 * @see @ref ARGO_WRITE_BUFFER_WRITE_BACK_SIZE
 		 */
 		std::size_t write_buffer_write_back_size();
+		
+		/**
+		 * @brief get the allocation policy requested by environment variable
+		 * @return the requested allocation policy as a number
+		 * @see @ref ARGO_ALLOCATION_POLICY
+		 */
+		std::size_t allocation_policy();
+
+		/**
+		 * @brief get the allocation block size requested by environment variable
+		 * @return the requested allocation block size as a number of pages
+		 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
+		 */
+		std::size_t allocation_block_size();
 	} // namespace env
 } // namespace argo
 

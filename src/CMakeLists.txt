@@ -25,6 +25,11 @@ foreach(src ${synchronization_sources})
 	list(APPEND argo_sources synchronization/${src})
 endforeach(src)
 
+set(data_distribution_sources data_distribution.cpp)
+foreach(src ${data_distribution_sources})
+  list(APPEND argo_sources data_distribution/${src})
+endforeach(src)
+
 
 # exactly one of these must be enabled. below is some code to ensure this.
 option(ARGO_VM_SHM

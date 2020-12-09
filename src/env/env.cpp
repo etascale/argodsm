@@ -37,6 +37,18 @@ namespace {
 	 * @see @ref ARGO_WRITE_BUFFER_WRITE_BACK_SIZE
 	 */
 	const std::size_t default_write_buffer_write_back_size = 32; // default: 32 pages
+	
+	/**
+	 * @brief default requested allocation policy (if environment variable is unset)
+	 * @see @ref ARGO_ALLOCATION_POLICY
+	 */
+	const std::size_t default_allocation_policy = 0; // default: bind_all
+
+	/**
+	 * @brief default requested allocation block size (if environment variable is unset)
+	 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
+	 */
+	const std::size_t default_allocation_block_size = 1ul<<4; // default: 16
 
 	/**
 	 * @brief environment variable used for requesting memory size
@@ -61,6 +73,18 @@ namespace {
 	 * @see @ref ARGO_WRITE_BUFFER_WRITE_BACK_SIZE
 	 */
 	const std::string env_write_buffer_write_back_size = "ARGO_WRITE_BUFFER_WRITE_BACK_SIZE";
+	
+	/**
+	 * @brief environment variable used for requesting allocation policy
+	 * @see @ref ARGO_ALLOCATION_POLICY
+	 */
+	const std::string env_allocation_policy = "ARGO_ALLOCATION_POLICY";
+
+	/**
+	 * @brief environment variable used for requesting allocation block size
+	 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
+	 */
+	const std::string env_allocation_block_size = "ARGO_ALLOCATION_BLOCK_SIZE";
 
 	/** @brief error message string */
 	const std::string msg_uninitialized = "argo::env::init() must be called before accessing environment values";
@@ -89,6 +113,16 @@ namespace {
 	 * @brief write buffer write back size requested through the environment variable @ref ARGO_WRITE_BUFFER_WRITE_BACK_SIZE
 	 */
 	std::size_t value_write_buffer_write_back_size;
+	
+	/**
+	 * @brief allocation policy requested through the environment variable @ref ARGO_ALLOCATION_POLICY
+	 */
+	std::size_t value_allocation_policy;
+
+	/**
+	 * @brief allocation block size requested through the environment variable @ref ARGO_ALLOCATION_BLOCK_SIZE
+	 */
+	std::size_t value_allocation_block_size;
 
 	/** @brief flag to allow checking that environment variables have been read before accessing their values */
 	bool is_initialized = false;
@@ -145,6 +179,9 @@ namespace argo {
 				value_write_buffer_write_back_size = value_write_buffer_size;
 			}
 
+			value_allocation_policy = parse_env(env_allocation_policy, default_allocation_policy).second;
+			value_allocation_block_size = parse_env(env_allocation_block_size, default_allocation_block_size).second;
+
 			is_initialized = true;
 		}
 
@@ -166,6 +203,16 @@ namespace argo {
 		std::size_t write_buffer_write_back_size() {
 			assert_initialized();
 			return value_write_buffer_write_back_size;
+		}
+		
+		std::size_t allocation_policy() {
+			assert_initialized();
+			return value_allocation_policy;
+		}
+
+		std::size_t allocation_block_size() {
+			assert_initialized();
+			return value_allocation_block_size;
 		}
 
 	} // namespace env
