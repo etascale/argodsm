@@ -9,6 +9,7 @@
 
 #include <type_traits>
 #include <cstddef>
+#include <string>
 
 #include "../types/types.hpp"
 #include "../env/env.hpp"
@@ -38,22 +39,18 @@ namespace argo {
 				/**
 				 * @brief construct from virtual address pointer
 				 * @param ptr pointer to construct from
-				 * @param sel select to fetch homenode (0), offset (1) or both (2, default)
+				 * @param sel select to invoke the homenode, the local_offset or both
 				 */
-				global_ptr(T* ptr, char sel = 2) {
-					switch (sel) {
-						case 0:
-							homenode = Dist::homenode(reinterpret_cast<char*>(ptr));
-							local_offset = 0;
-							break;
-						case 1:
-							local_offset = Dist::local_offset(reinterpret_cast<char*>(ptr));
-							homenode = -1;
-							break;
-						default:
-							homenode = Dist::homenode(reinterpret_cast<char*>(ptr));
-							local_offset = Dist::local_offset(reinterpret_cast<char*>(ptr));
-							break;
+				global_ptr(T* ptr, const std::string& sel = "") {
+					if (!sel.compare("getHomenode")) {
+						homenode = Dist::homenode(reinterpret_cast<char*>(ptr));
+						local_offset = 0;
+					} else if (!sel.compare("getOffset")) {
+						local_offset = Dist::local_offset(reinterpret_cast<char*>(ptr));
+						homenode = -1;
+					} else {
+						homenode = Dist::homenode(reinterpret_cast<char*>(ptr));
+						local_offset = Dist::local_offset(reinterpret_cast<char*>(ptr));
 					}
 				}
 

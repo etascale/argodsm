@@ -441,12 +441,14 @@ unsigned long getHomenode(unsigned long addr, char cloc){
 	if (cloc == 7) {
 		pthread_mutex_lock(&spinmutex);
     	sem_wait(&ibsem);
-		dd::global_ptr<char> gptr(reinterpret_cast<char*>(addr + reinterpret_cast<unsigned long>(startAddr)), 0);
+		dd::global_ptr<char> gptr(reinterpret_cast<char*>(
+			addr + reinterpret_cast<unsigned long>(startAddr)), __func__);
 		addr = gptr.node();
 	    sem_post(&ibsem);
 		pthread_mutex_unlock(&spinmutex);
 	} else {
-		dd::global_ptr<char> gptr(reinterpret_cast<char*>(addr + reinterpret_cast<unsigned long>(startAddr)), 0);
+		dd::global_ptr<char> gptr(reinterpret_cast<char*>(
+			addr + reinterpret_cast<unsigned long>(startAddr)), __func__);
 		addr = gptr.node();
 	}
 	
@@ -457,12 +459,14 @@ unsigned long getOffset(unsigned long addr, char cloc){
 	if (cloc == 7) {
 		pthread_mutex_lock(&spinmutex);
     	sem_wait(&ibsem);
-		dd::global_ptr<char> gptr(reinterpret_cast<char*>(addr + reinterpret_cast<unsigned long>(startAddr)), 1);
+		dd::global_ptr<char> gptr(reinterpret_cast<char*>(
+			addr + reinterpret_cast<unsigned long>(startAddr)), __func__);
 		addr = gptr.offset();
 	    sem_post(&ibsem);
 		pthread_mutex_unlock(&spinmutex);
 	} else {
-		dd::global_ptr<char> gptr(reinterpret_cast<char*>(addr + reinterpret_cast<unsigned long>(startAddr)), 1);
+		dd::global_ptr<char> gptr(reinterpret_cast<char*>(
+			addr + reinterpret_cast<unsigned long>(startAddr)), __func__);
 		addr = gptr.offset();
 	}
 
