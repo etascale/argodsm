@@ -4,7 +4,7 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#include "data_distribution/data_distribution.hpp"
+#include "data_distribution/global_ptr.hpp"
 #include "signal/signal.hpp"
 #include "synchronization/global_tas_lock.hpp"
 #include "types/types.hpp"
@@ -80,7 +80,7 @@ namespace argo {
 			memory = static_cast<char*>(vm::allocate_mappable(4096, argo_size));
 			memory_size = argo_size;
 			using namespace data_distribution;
-			naive_data_distribution<0>::set_memory_space(nodes, memory, argo_size);
+			base_distribution<0>::set_memory_space(nodes, memory, argo_size);
 			sig::signal_handler<SIGSEGV>::install_argo_handler(&singlenode_handler);
 		}
 
@@ -90,6 +90,11 @@ namespace argo {
 
 		int number_of_nodes() {
 			return nodes;
+		}
+
+		std::size_t& backing_offset() {
+			// used as dummy...
+			return memory_size;
 		}
 
 		char* global_base() {
@@ -173,10 +178,32 @@ namespace argo {
 				memcpy(obj.get(), desired, size);
 			}
 
+			void _store_public_dir(const void* desired,
+					const std::size_t size, const std::size_t rank, const std::size_t disp) {
+				(void)desired;
+				(void)size;
+				(void)rank;
+				(void)disp;
+			}
+
+			void _store_local_dir(const std::size_t desired,
+					const std::size_t rank, const std::size_t disp) {
+				(void)desired;
+				(void)rank;
+				(void)disp;
+			}
+
 			void _load(
 					global_ptr<void> obj, std::size_t size, void* output_buffer) {
 				lock_guard lock(atomic_op_mutex);
 				memcpy(output_buffer, obj.get(), size);
+			}
+
+			void _load_local_dir(void* output_buffer,
+					const std::size_t rank, const std::size_t disp) {
+				(void)output_buffer;
+				(void)rank;
+				(void)disp;
 			}
 
 			void _compare_exchange(global_ptr<void> obj, void* desired,
@@ -186,6 +213,16 @@ namespace argo {
 				if (memcmp(obj.get(), expected, size) == 0) {
 					memcpy(obj.get(), desired, size);
 				}
+			}
+
+			void _compare_exchange_dir(const void* desired, const void* expected, void* output_buffer,
+					const std::size_t size, const std::size_t rank, const std::size_t disp) {
+				(void)desired;
+				(void)expected;
+				(void)output_buffer;
+				(void)size;
+				(void)rank;
+				(void)disp;
 			}
 
 			void _fetch_add_int(global_ptr<void> obj, void* value,

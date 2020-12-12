@@ -28,6 +28,19 @@ extern MPI_Comm workcomm;
 extern MPI_Win  *globalDataWindow;
 
 /**
+ * @brief MPI window for the first-touch data distribution
+ * @see swdsm.cpp
+ * @see first_touch_distribution.hpp
+ */
+extern MPI_Win owner_window;
+/**
+ * @brief MPI directory for the first-touch data distribution
+ * @see swdsm.cpp
+ * @see first_touch_distribution.hpp
+ */
+extern std::uintptr_t *global_owners;
+
+/**
  * @todo should be changed to qd-locking (but need to be replaced in the other files as well)
  *       or removed when infiniband/the mpi implementations allows for multithreaded accesses to the interconnect
  * @deprecated prototype implementation detail
@@ -142,6 +155,10 @@ namespace argo {
 			return argo_get_nodes();
 		}
 
+		std::size_t& backing_offset() {
+			return get_local_data_offset();
+		}
+
 		char* global_base() {
 			return static_cast<char*>(argo_get_global_base());
 		}
@@ -200,6 +217,23 @@ namespace argo {
 				sem_post(&ibsem);
 			}
 
+			void _store_public_dir(const void* desired,
+					const std::size_t size, const std::size_t rank, const std::size_t disp) {
+				MPI_Datatype t_type = fitting_mpi_int(size);
+				// Perform the store operation
+				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank, 0, owner_window);
+				MPI_Put(desired, 1, t_type, rank, disp, 1, t_type, owner_window);
+				MPI_Win_unlock(rank, owner_window);
+			}
+
+			void _store_local_dir(const std::size_t desired,
+					const std::size_t rank, const std::size_t disp) {
+				// Perform the store operation
+				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank, 0, owner_window);
+				global_owners[disp] = desired;
+				MPI_Win_unlock(rank, owner_window);
+			}
+
 			void _load(global_ptr<void> obj, std::size_t size,
 					void* output_buffer) {
 				sem_wait(&ibsem);
@@ -212,6 +246,14 @@ namespace argo {
 				sem_post(&ibsem);
 			}
 
+			void _load_local_dir(void* output_buffer,
+					const std::size_t rank, const std::size_t disp) {
+				// Perform the load operation
+				MPI_Win_lock(MPI_LOCK_SHARED, rank, 0, owner_window);
+				*(static_cast<std::size_t*>(output_buffer)) = global_owners[disp];
+				MPI_Win_unlock(rank, owner_window);
+			}
+
 			void _compare_exchange(global_ptr<void> obj, void* desired,
 					std::size_t size, void* expected, void* output_buffer) {
 				sem_wait(&ibsem);
@@ -222,6 +264,15 @@ namespace argo {
 				MPI_Win_unlock(obj.node(), globalDataWindow[0]);
 				// Cleanup
 				sem_post(&ibsem);
+			}
+
+			void _compare_exchange_dir(const void* desired, const void* expected, void* output_buffer,
+					const std::size_t size, const std::size_t rank, const std::size_t disp) {
+				MPI_Datatype t_type = fitting_mpi_int(size);
+				// Perform the compare-and-swap operation
+				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank, 0, owner_window);
+				MPI_Compare_and_swap(desired, expected, output_buffer, t_type, rank, disp, owner_window);
+				MPI_Win_unlock(rank, owner_window);
 			}
 
 			/**

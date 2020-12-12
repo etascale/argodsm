@@ -12,7 +12,7 @@ constexpr int PAGESIZE = 4096;
 
 #include "../backend/backend.hpp"
 #include "../synchronization/global_tas_lock.hpp"
-#include "../data_distribution/data_distribution.hpp"
+#include "../data_distribution/global_ptr.hpp"
 
 #include <sys/mman.h>
 #include <memory>
@@ -54,7 +54,7 @@ namespace argo {
 					offset = new (&memory[0]) ptrdiff_t;
 					/**@todo this initialization should move to tools::init() land */
 					using namespace data_distribution;
-					naive_data_distribution<0>::set_memory_space(nodes, memory, max_size);
+					base_distribution<0>::set_memory_space(nodes, memory, max_size);
 					using tas_lock = argo::globallock::global_tas_lock;
 					tas_lock::internal_field_type* field = new (&memory[sizeof(std::size_t)]) tas_lock::internal_field_type;
 					global_tas_lock = new tas_lock(field);

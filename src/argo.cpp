@@ -39,6 +39,18 @@ namespace argo {
 			requested_cache_size = env::cache_size();
 		}
 
+		std::size_t requested_argo_policy = env::allocation_policy();
+		if(!(requested_argo_policy <= 7ul)) {
+			throw std::invalid_argument(
+				"Invalid policy (must be a number between 0 and 7)");
+		}
+
+		std::size_t requested_argo_block_size = env::allocation_block_size();
+		if(requested_argo_block_size == 0) {
+			throw std::invalid_argument(
+				"Invalid page block size (must be a number bigger than 0)");
+		}
+
 		/* note: the backend must currently initialize before the mempool can be set */
 		backend::init(requested_argo_size, requested_cache_size);
 		default_global_mempool = new mp();

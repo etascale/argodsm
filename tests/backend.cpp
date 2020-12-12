@@ -8,7 +8,7 @@
 #include <random>
 
 #include "argo.hpp"
-#include "data_distribution/data_distribution.hpp"
+#include "data_distribution/global_ptr.hpp"
 
 #include "gtest/gtest.h"
 

@@ -17,7 +17,7 @@
 #include "synchronization/cohort_lock.hpp"
 #include "synchronization/intranode/mcs_lock.hpp"
 #include "synchronization/intranode/ticket_lock.hpp"
-#include "data_distribution/data_distribution.hpp"
+#include "data_distribution/global_ptr.hpp"
 
 #include <limits.h>
 #include "gtest/gtest.h"

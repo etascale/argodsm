@@ -8,7 +8,7 @@
 #define argo_global_tas_lock_hpp argo_global_lock_hpp
 
 #include "../backend/backend.hpp"
-#include "../data_distribution/data_distribution.hpp"
+#include "../data_distribution/global_ptr.hpp"
 #include <chrono>
 #include <thread>
 

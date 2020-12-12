@@ -13,7 +13,7 @@
 #include <cstdint>
 #include <stdexcept>
 
-#include "../data_distribution/data_distribution.hpp"
+#include "../data_distribution/global_ptr.hpp"
 #include "../types/types.hpp"
 
 namespace argo {
@@ -63,6 +63,13 @@ namespace argo {
 		 * @return total number of ArgoDSM nodes
 		 */
 		int number_of_nodes();
+
+		/**
+		 * @brief get backing memory offset of the ArgoDSM node
+		 * @return the reference to the current offset
+		 * @note implementation-specific function for the first-touch data distribution
+		 */
+		std::size_t& backing_offset();
 
 		/**
 		 * @brief get base address of global memory
@@ -212,6 +219,31 @@ namespace argo {
 
 			/**
 			 * @brief Backend internal type erased atomic store function
+			 * @param desired Pointer to the object that holds the desired value
+			 * @param size sizeof(*obj) == sizeof(*desired) == sizeof(output_buffer)
+			 * @param rank Rank of target window to which operation will be performed
+			 * @param disp Displacement from start of window to beginning of target buffer
+			 * @sa store to public window section
+			 * @note Implementation-specific function for the first-touch data distribution
+			 * @warning For internal use only - DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
+			 */
+			void _store_public_dir(const void* desired,
+				const std::size_t size, const std::size_t rank, const std::size_t disp);
+
+			/**
+			 * @brief Backend internal type erased atomic store function
+			 * @param desired The desired value to be stored
+			 * @param rank Rank of target window to which operation will be performed
+			 * @param disp Displacement from start of window to beginning of target buffer
+			 * @sa store to private window section
+			 * @note Implementation-specific function for the first-touch data distribution
+			 * @warning For internal use only - DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
+			 */
+			void _store_local_dir(const std::size_t desired,
+				const std::size_t rank, const std::size_t disp);
+
+			/**
+			 * @brief Backend internal type erased atomic store function
 			 * @param obj Pointer to the object whose value should be exchanged
 			 * @param size sizeof(*obj) == sizeof(output_buffer)
 			 * @param output_buffer Pointer to the memory location where the value of the object should be stored
@@ -220,6 +252,18 @@ namespace argo {
 			 */
 			void _load(
 				global_ptr<void> obj, std::size_t size, void* output_buffer);
+
+			/**
+			 * @brief Backend internal type erased atomic load function
+			 * @param output_buffer Pointer to the memory location where the value of the object should be stored
+			 * @param rank Rank of target window to which operation will be performed
+			 * @param disp Displacement from start of window to beginning of target buffer
+			 * @sa load from private window section
+			 * @note Implementation-specific function for the first-touch data distribution
+			 * @warning For internal use only - DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
+			 */
+			void _load_local_dir(void* output_buffer,
+				const std::size_t rank, const std::size_t disp);
 
 			/**
 			 * @brief Backend internal type erased atomic CAS function
@@ -233,6 +277,21 @@ namespace argo {
 			 */
 			void _compare_exchange(global_ptr<void> obj, void* desired,
 				std::size_t size, void* expected, void* output_buffer);
+
+			/**
+			 * @brief Backend internal type erased atomic CAS function
+			 * @param desired Pointer to the object that holds the desired value
+			 * @param expected Pointer to the object that holds the expected value
+			 * @param output_buffer Pointer to the memory location where the old value of the object should be stored
+			 * @param size sizeof(*obj) == sizeof(*desired) == sizeof(*expected) == sizeof(output_buffer)
+			 * @param rank Rank of target window to which operation will be performed
+			 * @param disp Displacement from start of window to beginning of target buffer
+			 * @sa compare_exchange
+			 * @note Implementation-specific function for the first-touch data distribution
+			 * @warning For internal use only - DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
+			 */
+			void _compare_exchange_dir(const void* desired, const void* expected, void* output_buffer,
+				const std::size_t size, const std::size_t rank, const std::size_t disp);
 
 			/**
 			 * @brief Backend internal type erased atomic (post)increment function for signed integers
