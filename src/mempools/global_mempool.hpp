@@ -55,8 +55,9 @@ namespace argo {
 					/**@todo this initialization should move to tools::init() land */
 					using namespace data_distribution;
 					naive_data_distribution<0>::set_memory_space(nodes, memory, max_size);
-					bool* flag = new (&memory[sizeof(std::size_t)]) bool;
-					global_tas_lock = new argo::globallock::global_tas_lock(flag);
+					using tas_lock = argo::globallock::global_tas_lock;
+					tas_lock::internal_field_type* field = new (&memory[sizeof(std::size_t)]) tas_lock::internal_field_type;
+					global_tas_lock = new tas_lock(field);
 
 					if(backend::node_id()==0){
 						/**@todo if needed - pad offset to be page or pagecache size and make sure offset and flag fits */

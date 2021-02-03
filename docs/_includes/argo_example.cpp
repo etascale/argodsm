@@ -15,7 +15,7 @@ struct thread_args {
 int *data;
 int *max;
 
-bool *lock_flag;
+argo::globallock::global_tas_lock::internal_field_type *lock_field;
 argo::globallock::global_tas_lock *lock;
 
 void* parmax(void* argptr) {
@@ -55,8 +55,8 @@ int main(int argc, char* argv[]) {
 	local_num_threads = num_threads / argo::number_of_nodes();
 
 	// Initialize the lock
-	lock_flag = argo::conew_<bool>(false);
-	lock = new argo::globallock::global_tas_lock(lock_flag);
+	lock_field = argo::conew_<argo::globallock::global_tas_lock::internal_field_type>();
+	lock = new argo::globallock::global_tas_lock(lock_field);
 	// Allocate the array
 	data = argo::conew_array<int>(data_length);
 	max = argo::conew_<int>(std::numeric_limits<int>::min());
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
 
 	argo::codelete_array(data);
         delete lock;
-	argo::codelete_(lock_flag);
+	argo::codelete_(lock_field);
 	// Print the result
 	if (argo::node_id() == 0)
 		std::cout << "Max found to be " << *max << std::endl;

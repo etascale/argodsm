@@ -44,23 +44,25 @@ protected:
 	argo::locallock::mcs_lock *mcs_lock;
 	/** @brief global cohort lock for testing */
 	argo::globallock::cohort_lock *cohort_lock;
+	/** @brief global tas lock type */
+	using tas_lock = argo::globallock::global_tas_lock;
 	/** @brief global tas lock for testing*/
-	argo::globallock::global_tas_lock *global_tas_lock;
-	/** @brief flag needed for the global tas lock*/
-	bool* flag;
+	tas_lock *global_tas_lock;
+	/** @brief field needed for the global tas lock*/
+	tas_lock::internal_field_type* field;
 	/** @brief global counter used in several tests */
 	int *counter;
 
 	LockTest() {
 		argo_reset();
 		argo::barrier();
-		flag = argo::conew_<bool>();
-		global_tas_lock = new argo::globallock::global_tas_lock(flag);
+		field = argo::conew_<tas_lock::internal_field_type>();
+		global_tas_lock = new tas_lock(field);
 		argo::barrier();
 	}
 
 	~LockTest() {
-		argo::codelete_(flag);
+		argo::codelete_(field);
 		delete global_tas_lock;
 		argo::barrier();
 	}

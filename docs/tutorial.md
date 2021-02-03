@@ -126,8 +126,8 @@ instead. The `global_tas_lock` requires as an argument a boolean variable to
 spin on, which of course has to be allocated on the global memory.
 
 ``` cpp
-lock_flag = argo::conew_<bool>(false);
-lock = new argo::globallock::global_tas_lock(lock_flag);
+lock_field = argo::conew_<argo::globallock::global_tas_lock::internal_field_type>();
+lock = new argo::globallock::global_tas_lock(lock_field);
 ```
 
 Finally, we need to take into consideration the fact that ArgoDSM runs multiple

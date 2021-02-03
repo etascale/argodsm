@@ -72,6 +72,13 @@ namespace argo {
 					while(!try_lock())
 						std::this_thread::yield();
 				}
+
+				/**
+				 * @brief internally used type for lock field
+				 * @note this type may change without warning,
+				 *       user code must use this type alias
+				 */
+				using internal_field_type = bool;
 		};
 	} // namespace globallock
 } // namespace argo
