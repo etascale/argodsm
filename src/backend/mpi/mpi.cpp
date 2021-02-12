@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief MPI backend implemenation
+ * @brief MPI backend implementation
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
@@ -9,7 +9,6 @@
 #include <atomic>
 #include <type_traits>
 
-#include "mpi.h"
 #include "swdsm.h"
 
 /**
