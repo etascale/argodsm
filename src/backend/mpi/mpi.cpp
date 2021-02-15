@@ -8,6 +8,7 @@
 
 #include <atomic>
 #include <type_traits>
+#include <mpi.h>
 
 #include "swdsm.h"
 
