@@ -125,18 +125,24 @@ class write_buffer
 		}
 
 		/**
-		 * @brief	Sorts all elements in ascending order
+		 * @brief	Sorts all elements by home node id in ascending order
 		 */
 		void sort() {
-			std::sort(_buffer.begin(), _buffer.end());
+			std::sort(_buffer.begin(), _buffer.end(),
+					[](const T& l, const T& r) {
+				return getHomenode(cacheControl[l].tag) < getHomenode(cacheControl[r].tag);
+			});
 		}
 
 		/**
-		 * @brief	Sorts the first _write_back_size elements in ascending order
+		 * @brief	Sorts the first _write_back_size elements by home node id in ascending order
 		 */
 		void sort_first() {
 			assert(_buffer.size() >= _write_back_size);
-			std::sort(_buffer.begin(), _buffer.begin()+_write_back_size);
+			std::sort(_buffer.begin(), _buffer.begin()+_write_back_size,
+					[](const T& l, const T& r) {
+				return getHomenode(cacheControl[l].tag) < getHomenode(cacheControl[r].tag);
+			});
 		}
 
 		/**
