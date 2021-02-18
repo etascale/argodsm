@@ -15,6 +15,81 @@
 
 namespace argo {
 	namespace data_distribution {
+		/**
+		 * @brief Enumeration for the available distributions
+		 */
+		enum memory_policy {
+			/**
+			 * @brief the naive distribution scheme
+			 * @note distributes data at the default
+			 *       page granularity level (4KB).
+			 * @see naive_distribution.hpp
+			 * @see @ref ARGO_ALLOCATION_POLICY
+			 */
+			naive,
+			/**
+			 * @brief the cyclic policy
+			 * @note distributes data at the default
+			 *       page granularity level (4KB).
+			 * @see cyclic_distribution.hpp
+			 * @see @ref ARGO_ALLOCATION_POLICY
+			 */
+			cyclic,
+			/**
+			 * @brief the cyclic-block policy
+			 * @note distributes data at a multiple
+			 *       of the default page granularity
+			 *       level (4KB).
+			 * @see cyclic_distribution.hpp
+			 * @see @ref ARGO_ALLOCATION_POLICY
+			 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
+			 */
+			cyclic_block,
+			/**
+			 * @brief the skew-mapp policy
+			 * @note distributes data at the default
+			 *       page granularity level (4KB).
+			 * @see skew_mapp_distribution.hpp
+			 * @see @ref ARGO_ALLOCATION_POLICY
+			 */
+			skew_mapp,
+			/**
+			 * @brief the skew-mapp-block policy
+			 * @note distributes data at a multiple
+			 *       of the default page granularity
+			 *       level (4KB).
+			 * @see skew_mapp_distribution.hpp
+			 * @see @ref ARGO_ALLOCATION_POLICY
+			 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
+			 */
+			skew_mapp_block,
+			/**
+			 * @brief the prime-mapp policy
+			 * @note distributes data at the default
+			 *       page granularity level (4KB).
+			 * @see prime_mapp_distribution.hpp
+			 * @see @ref ARGO_ALLOCATION_POLICY
+			 */
+			prime_mapp,
+			/**
+			 * @brief the prime-mapp-block policy
+			 * @note distributes data at a multiple
+			 *       of the default page granularity
+			 *       level (4KB).
+			 * @see prime_mapp_distribution.hpp
+			 * @see @ref ARGO_ALLOCATION_POLICY
+			 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
+			 */
+			prime_mapp_block,
+			/**
+			 * @brief the first-touch policy
+			 * @note distributes data at the default
+			 *       page granularity level (4KB).
+			 * @see first_touch_distribution.hpp
+			 * @see @ref ARGO_ALLOCATION_POLICY
+			 */
+			first_touch
+		};
 #if 0
 		/** @brief a test-and-test-and-set lock */
 		class data_distribution {

@@ -917,7 +917,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	pagecopy = static_cast<char*>(vm::allocate_mappable(pagesize, cachesize*pagesize));
 	globalSharers = static_cast<unsigned long*>(vm::allocate_mappable(pagesize, gwritersize));
 
-	if (env::allocation_policy() == 7) {
+	if (env::allocation_policy() == dd::memory_policy::first_touch) {
 		global_owners = static_cast<std::uintptr_t*>(vm::allocate_mappable(pagesize, owner_size_bytes));
 	}
 
@@ -947,7 +947,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	tmpcache=lockbuffer;
 	vm::map_memory(tmpcache, pagesize, current_offset, PROT_READ|PROT_WRITE);
 
-	if (env::allocation_policy() == 7) {
+	if (env::allocation_policy() == dd::memory_policy::first_touch) {
 		current_offset += pagesize;
 		tmpcache=global_owners;
 		vm::map_memory(tmpcache, owner_size_bytes, current_offset, PROT_READ|PROT_WRITE);
@@ -968,7 +968,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 								 MPI_INFO_NULL, MPI_COMM_WORLD, &sharerWindow);
 	MPI_Win_create(lockbuffer, pagesize, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &lockWindow);
 
-	if (env::allocation_policy() == 7) {
+	if (env::allocation_policy() == dd::memory_policy::first_touch) {
 		MPI_Win_create(global_owners, owner_size_bytes, sizeof(std::uintptr_t),
 									 MPI_INFO_NULL, MPI_COMM_WORLD, &owner_window);
 	}
@@ -981,7 +981,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	memset(globalSharers, 0, gwritersize);
 	memset(cacheControl, 0, cachesize*sizeof(control_data));
 
-	if (env::allocation_policy() == 7) {
+	if (env::allocation_policy() == dd::memory_policy::first_touch) {
 		memset(global_owners, 0, owner_size_bytes);
 	}
 
@@ -1016,7 +1016,7 @@ void argo_finalize(){
 	}
 	MPI_Win_free(&sharerWindow);
 	MPI_Win_free(&lockWindow);
-	if (env::allocation_policy() == 7) {
+	if (env::allocation_policy() == dd::memory_policy::first_touch) {
 		MPI_Win_free(&owner_window);
 	}
 	MPI_Comm_free(&workcomm);
@@ -1113,7 +1113,7 @@ void argo_reset_coherence(int n){
 	}
 	MPI_Win_unlock(workrank, sharerWindow);
 	
-	if (env::allocation_policy() == 7) {
+	if (env::allocation_policy() == dd::memory_policy::first_touch) {
 		/** 
 		 * @note first page of the global address space is always
 		 *       assigned node_0 to be its homenode, since execu-
