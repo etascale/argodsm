@@ -1,10 +1,7 @@
 # Copyright (C) Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
 
-cmake_minimum_required(VERSION 2.8)
-project(ArgoDSM)
-# The version number.
-set(ARGO_VERSION_MAJOR 0)
-set(ARGO_VERSION_MINOR 1)
+cmake_minimum_required(VERSION 3.0)
+project(ArgoDSM VERSION 0.1)
 
 set(DEFAULT_C_FLAGS "-std=c11 -pthread")
 set(DEFAULT_CXX_FLAGS "-std=c++11 -pthread -DOMPI_SKIP_MPICXX=1")
