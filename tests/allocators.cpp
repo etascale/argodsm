@@ -364,14 +364,16 @@ TEST_F(AllocatorTest, PerfectForwardingCollectiveNew) {
 	int c = 3;
 
 	using tt = std::tuple<int&, int&&, int>;
+	using global_tt = typename argo::data_distribution::global_ptr<tt>;
 
 	tt *t = argo::conew_<tt>(a, std::move(b), c);
+	global_tt global_t(t);
 
-	// XXX This only works if node 0 is the one calling the constructor
-	if (argo::node_id() == 0) {
-		std::get<0>(*t) = 2;
-		std::get<1>(*t) = 3;
-		std::get<2>(*t) = 4;
+	// XXX This only works if the home node of `t` is the one calling the constructor
+	if (argo::node_id() == global_t.node()) {
+		std::get<0>(*global_t) = 2;
+		std::get<1>(*global_t) = 3;
+		std::get<2>(*global_t) = 4;
 
 		ASSERT_EQ(2, a);
 		ASSERT_EQ(3, b);

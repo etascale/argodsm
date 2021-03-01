@@ -12,6 +12,16 @@
 
 #include "gtest/gtest.h"
 
+/**
+ * @brief Team process initialize the array worked in tests:
+ *        - selectiveArray
+ *        - selectiveUnaligned
+ *        - writeBufferLoad
+ * @param 1 To enable team process initialization
+ * @param 0 To disable team process initialization
+ */
+#define TEAM_INIT 1
+
 /** @brief Global pointer to char */
 using global_char = typename argo::data_distribution::global_ptr<char>;
 /** @brief Global pointer to double */
@@ -24,7 +34,7 @@ using global_uint = typename argo::data_distribution::global_ptr<unsigned>;
 using global_intptr = typename argo::data_distribution::global_ptr<int*>;
 
 /** @brief ArgoDSM memory size */
-constexpr std::size_t size = 1<<24; // 16MB
+constexpr std::size_t size = 1<<25; // 32MB
 /** @brief ArgoDSM cache size */
 constexpr std::size_t cache_size = size;
 
@@ -54,6 +64,32 @@ class backendTest : public testing::Test, public ::testing::WithParamInterface<i
 			argo::barrier();
 		}
 };
+
+/**
+ * @brief Function to distribute the workload among nodes
+ * @param beg Points to the beginning of the chunk to be worked on
+ * @param end Points to the end of the chunk to be worked on
+ * @param loop_size Workload to distribute
+ * @param beg_offset Offset at which the distribution loop begins
+ * @param less_equal Set to `0` if the loop condition uses `<`
+ *                   Set to `1` if the loop condition uses `<=`
+ */
+static inline void distribute
+	(
+		std::size_t& beg,
+		std::size_t& end,
+		const std::size_t& loop_size,
+		const std::size_t& beg_offset,
+    		const std::size_t& less_equal
+	) {
+	std::size_t chunk = loop_size / argo::number_of_nodes();
+	beg = argo::node_id() * chunk + ((argo::node_id() == 0)
+		? beg_offset 
+		: less_equal);
+	end = (argo::node_id() != argo::number_of_nodes() - 1)
+		? argo::node_id() * chunk + chunk
+		: loop_size;
+}
 
 /**
  * @brief Test if atomic exchange writes the correct values
@@ -413,11 +449,28 @@ TEST_F(backendTest, selectiveArray) {
 		std::chrono::system_clock::now() + deadlock_threshold;
 
 	// Initialize
+	/**
+	 * @note Team process initialize for the pages
+	 *       to be distributed among nodes.
+	 * @warning If only one process handles initia-
+	 *          lization, under the first-touch me-
+	 *          mory policy, it is possible that
+	 *          this test fails since the backing
+	 *          store of that node is exceeded.
+	 */
+#if TEAM_INIT == 1
+	std::size_t beg, end;
+	distribute(beg, end, array_size, 0, 0);
+	for(std::size_t i=beg; i<end; i++){
+		array[i] = 0;
+	}
+#else
 	if(argo::node_id() == 0){
 		for(std::size_t i=0; i<array_size; i++){
 			array[i] = 0;
 		}
 	}
+#endif
 	argo::barrier();
 
 	// Set each array element on node 0, then set flag
@@ -470,11 +523,28 @@ TEST_F(backendTest, selectiveUnaligned) {
 		std::chrono::system_clock::now() + deadlock_threshold;
 
 	// Initialize
+	/**
+	 * @note Team process initialize for the pages
+	 *       to be distributed among nodes.
+	 * @warning If only one process handles initia-
+	 *          lization, under the first-touch me-
+	 *          mory policy, it is possible that
+	 *          this test fails since the backing
+	 *          store of that node is exceeded.
+	 */
+#if TEAM_INIT == 1
+	std::size_t beg, end;
+	distribute(beg, end, array_size, 0, 0);
+	for(std::size_t i=beg; i<end; i++){
+		array[i] = 0;
+	}
+#else
 	if(argo::node_id() == 0){
 		for(std::size_t i=0; i<array_size; i++){
 			array[i] = 0;
 		}
 	}
+#endif
 	argo::barrier();
 
 	// Set array elements on node 0, then set flag
@@ -535,11 +605,28 @@ TEST_F(backendTest, writeBufferLoad) {
 	std::uniform_int_distribution<int> dist(0,array_size-1);
 
 	// Initialize write buffer
+	/**
+	 * @note Team process initialize for the pages
+	 *       to be distributed among nodes.
+	 * @warning If only one process handles initia-
+	 *          lization, under the first-touch me-
+	 *          mory policy, it is possible that
+	 *          this test fails since the backing
+	 *          store of that node is exceeded.
+	 */
+#if TEAM_INIT == 1
+	std::size_t beg, end;
+	distribute(beg, end, array_size, 0, 0);
+	for(std::size_t i=beg; i<end; i++){
+		array[i] = 0;
+	}
+#else
 	if(argo::node_id() == 0){
 		for(std::size_t i=0; i<array_size; i++){
 			array[i] = 0;
 		}
 	}
+#endif
 	argo::barrier();
 
 	// One node at a time, increment random elements num_writes times

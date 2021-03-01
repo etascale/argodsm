@@ -105,7 +105,10 @@ namespace argo {
 		}
 
 		void* ptr = collective_alloc(sizeof(T));
-		if (initialize && argo::backend::node_id() == 0) {
+		using namespace data_distribution;
+		global_ptr<void> gptr(ptr);
+		// The home node of ptr handles initialization
+		if (initialize && argo::backend::node_id() == gptr.node()) {
 			new (ptr) T(std::forward<Ps>(ps)...);
 		}
 		// Do not return uninitialized memory to the nodes.
@@ -160,7 +163,10 @@ namespace argo {
 			synchronize = false;
 		}
 
-		if (deinitialize && argo::backend::node_id() == 0) {
+		using namespace data_distribution;
+		global_ptr<T> gptr(ptr);
+		// The home node of ptr handles deinitialization
+		if (deinitialize && argo::backend::node_id() == gptr.node()) {
 			ptr->~T();
 		}
 		// This barrier might be unnecessary, depending on how free is
@@ -210,7 +216,10 @@ namespace argo {
 		}
 
 		void* ptr = collective_alloc(sizeof(T) * size);
-		if (initialize && argo::backend::node_id() == 0) {
+		using namespace data_distribution;
+		global_ptr<void> gptr(ptr);
+		// The home node of ptr handles initialization
+		if (initialize && argo::backend::node_id() == gptr.node()) {
 			new (ptr) T[size]();
 		}
 		if (synchronize) {
@@ -258,7 +267,10 @@ namespace argo {
 			synchronize = false;
 		}
 
-		if (deinitialize && argo::backend::node_id() == 0) {
+		using namespace data_distribution;
+		global_ptr<T> gptr(ptr);
+		// The home node of ptr handles deinitialization
+		if (deinitialize && argo::backend::node_id() == gptr.node()) {
 			auto elements =
 				argo::allocators::default_collective_allocator.allocated_space(
 					reinterpret_cast<char *>(ptr)) /
