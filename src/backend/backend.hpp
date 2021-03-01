@@ -62,7 +62,7 @@ namespace argo {
 		 * @brief get total number of ArgoDSM nodes
 		 * @return total number of ArgoDSM nodes
 		 */
-		int number_of_nodes();
+		node_id_t number_of_nodes();
 
 		/**
 		 * @brief get backing memory offset of the ArgoDSM node

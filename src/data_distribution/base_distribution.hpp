@@ -23,22 +23,22 @@ namespace argo {
 		 *          local_offset functions.
 		 * @tparam instance used to statically allow for multiple instances
 		 * @note all functions are defined on char* only, as this guarantees a
-		 *       fixed memory base unit of size 1
+		 *       fixed memory base unit of size 1.
 		 */
 		template<int instance>
 		class base_distribution {
 			protected:
 				/** @brief number of ArgoDSM nodes */
-				static int nodes;
+				static node_id_t nodes;
 
 				/** @brief starting address of the memory space */
 				static char* start_address;
 
 				/** @brief size of the memory space */
-				static long total_size;
+				static std::size_t total_size;
 
 				/** @brief one node's share of the memory space */
-				static long size_per_node;
+				static std::size_t size_per_node;
 
 			public:
 				/**
@@ -47,7 +47,7 @@ namespace argo {
 				 * @param start pointer to the memory space
 				 * @param size size of the memory space
 				 */
-				static void set_memory_space(const int n, char* const start, const long size) {
+				static void set_memory_space(const node_id_t n, char* const start, const std::size_t size) {
 					nodes = n;
 					start_address = start;
 					total_size = size;
@@ -84,10 +84,10 @@ namespace argo {
 					return start_address + homenode*size_per_node + offset;
 				}
 		};
-		template<int i> int base_distribution<i>::nodes;
+		template<int i> node_id_t base_distribution<i>::nodes;
 		template<int i> char* base_distribution<i>::start_address;
-		template<int i> long base_distribution<i>::total_size;
-		template<int i> long base_distribution<i>::size_per_node;
+		template<int i> std::size_t base_distribution<i>::total_size;
+		template<int i> std::size_t base_distribution<i>::size_per_node;
 	} // namespace data_distribution
 } // namespace argo
 

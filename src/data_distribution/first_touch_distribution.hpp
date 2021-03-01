@@ -39,7 +39,7 @@ namespace argo {
 	namespace data_distribution {
 		/**
 		 * @brief the first-touch data distribution
-		 * @details gives ownership of a page to the node that first touched it
+		 * @details gives ownership of a page to the node that first touched it.
 		 */
 		template<int instance>
 		class first_touch_distribution : public base_distribution<instance> {
@@ -56,7 +56,7 @@ namespace argo {
 			public:
 				virtual node_id_t homenode (char* const ptr) {
 					std::size_t homenode_bit_id;
-					const std::size_t addr = ptr - base_distribution<instance>::start_address;
+					const std::size_t addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
 					const std::size_t owner_window_index = 2 * (addr / granularity);
 
 					std::unique_lock<std::mutex> def_lock(owner_mutex, std::defer_lock);
@@ -80,8 +80,8 @@ namespace argo {
 
 				virtual std::size_t local_offset (char* const ptr) {
 					std::size_t offset;
-					const std::size_t addr = ptr - base_distribution<instance>::start_address;
-					const std::size_t drift = addr % granularity;
+					const std::size_t drift = (ptr - base_distribution<instance>::start_address) % granularity;
+					const std::size_t addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
 					const std::size_t owner_window_index = 2 * (addr / granularity);
 
 					std::unique_lock<std::mutex> def_lock(owner_mutex, std::defer_lock);
@@ -102,7 +102,7 @@ namespace argo {
 			/* variables for CAS */
 			std::size_t homenode_bit_id, result;
 			constexpr std::size_t compare = 0;
-			const std::size_t id = 1 << argo::backend::node_id();
+			const std::size_t id = 1UL << argo::backend::node_id();
 			const std::size_t owner_window_index = 2 * (addr / granularity);
 	    
 			/* check/try to acquire ownership of the page with CAS to process' 0 index */

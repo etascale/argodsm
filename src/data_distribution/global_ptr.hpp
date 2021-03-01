@@ -27,6 +27,9 @@ namespace argo {
 				/** @brief local offset in the ArgoDSM node's local share of the global memory */
 				std::size_t local_offset;
 
+				/** @brief pointer to the object in global memory this smart pointer is pointing to */
+				T* access_ptr;
+
 				/** @brief array holding an instance of each available policy */
 				static Dist* policies[8];
 
@@ -39,13 +42,12 @@ namespace argo {
 				 * @param ptr pointer to construct from
 				 * @param sel select to invoke the homenode, the local_offset or both
 				 */
-				global_ptr(T* ptr, const std::string& sel = "") {
+				global_ptr(T* ptr, const std::string& sel = "")
+						: homenode(-1), local_offset(0), access_ptr(ptr) {
 					if (!sel.compare("getHomenode")) {
 						homenode = policy()->homenode(reinterpret_cast<char*>(ptr));
-						local_offset = 0;
 					} else if (!sel.compare("getOffset")) {
 						local_offset = policy()->local_offset(reinterpret_cast<char*>(ptr));
-						homenode = -1;
 					} else {
 						homenode = policy()->homenode(reinterpret_cast<char*>(ptr));
 						local_offset = policy()->local_offset(reinterpret_cast<char*>(ptr));
@@ -58,7 +60,7 @@ namespace argo {
 				 */
 				template<typename U>
 				explicit global_ptr(global_ptr<U> other)
-					: homenode(other.node()), local_offset(other.offset()) {}
+					: homenode(other.node()), local_offset(other.offset()), access_ptr(other.get()) {}
 
 				/**
 				 * @brief get standard pointer
@@ -66,7 +68,8 @@ namespace argo {
 				 * @todo implement
 				 */
 				T* get() const {
-					return reinterpret_cast<T*>(Dist::get_ptr(homenode, local_offset));
+					// return reinterpret_cast<T*>(get_ptr(homenode, local_offset));
+					return access_ptr;
 				}
 
 				/**
