@@ -42,7 +42,7 @@ namespace {
 	 * @brief default requested allocation policy (if environment variable is unset)
 	 * @see @ref ARGO_ALLOCATION_POLICY
 	 */
-	const std::size_t default_allocation_policy = 0; // default: bind_all
+	const std::size_t default_allocation_policy = 0; // default: naive
 
 	/**
 	 * @brief default requested allocation block size (if environment variable is unset)

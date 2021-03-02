@@ -31,7 +31,7 @@ namespace argo {
 				T* access_ptr;
 
 				/** @brief array holding an instance of each available policy */
-				static Dist* policies[8];
+				static Dist* policies[5];
 
 			public:
 				/** @brief construct nullptr */
@@ -68,6 +68,10 @@ namespace argo {
 				 * @todo implement
 				 */
 				T* get() const {
+					/**
+					 * @note the get_ptr invocation is kept here to re-
+					 *       member where and for what it was used for.
+					 */
 					// return reinterpret_cast<T*>(get_ptr(homenode, local_offset));
 					return access_ptr;
 				}
@@ -108,11 +112,8 @@ namespace argo {
 		Dist* global_ptr<T, Dist>::policies[] = {
 			new naive_distribution<0>,
 			new cyclic_distribution<0>,
-			new cyclic_block_distribution<0>,
 			new skew_mapp_distribution<0>,
-			new skew_mapp_block_distribution<0>,
 			new prime_mapp_distribution<0>,
-			new prime_mapp_block_distribution<0>,
 			new first_touch_distribution<0>
 		};
 	} // namespace data_distribution

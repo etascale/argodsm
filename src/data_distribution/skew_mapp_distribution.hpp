@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief This file implements the skew-mapp and skew-mapp-block data distributions
+ * @brief This file implements the skew-mapp data distribution
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
@@ -13,43 +13,11 @@ namespace argo {
 	namespace data_distribution {
 		/**
 		 * @brief the skew-mapp data distribution
-		 * @details cyclically distributes a page per round but skips a node
-		 *          for every N (number of nodes used) pages allocated.
-		 */
-		template<int instance>
-		class skew_mapp_distribution : public base_distribution<instance> {
-			public:
-				virtual node_id_t homenode (char* const ptr) {
-					const std::size_t addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
-					const std::size_t pagenum = addr / granularity;
-					const node_id_t homenode = (pagenum + pagenum / base_distribution<instance>::nodes + 1) % base_distribution<instance>::nodes;
-
-					if(homenode >= base_distribution<instance>::nodes) {
-						exit(EXIT_FAILURE);
-					}
-					return homenode;
-				}
-
-				virtual std::size_t local_offset (char* const ptr) {
-					const std::size_t drift = (ptr - base_distribution<instance>::start_address) % granularity;
-					const std::size_t addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
-					const std::size_t pagenum = addr / granularity;
-					const std::size_t offset = pagenum / base_distribution<instance>::nodes * granularity + drift;
-
-					if(offset >= static_cast<std::size_t>(base_distribution<instance>::size_per_node)) {
-						exit(EXIT_FAILURE);
-					}
-					return offset;
-				}
-		};
-
-		/**
-		 * @brief the skew-mapp-block data distribution
 		 * @details cyclically distributes a block of pages per round but skips
 		 *          a node for every N (number of nodes used) pages allocated.
 		 */
 		template<int instance>
-		class skew_mapp_block_distribution : public base_distribution<instance> {
+		class skew_mapp_distribution : public base_distribution<instance> {
 			public:
 				virtual node_id_t homenode (char* const ptr) {
 					static const std::size_t pageblock = env::allocation_block_size() * granularity;

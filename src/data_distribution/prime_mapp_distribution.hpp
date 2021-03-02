@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief This file implements the prime-mapp and prime-mapp-block data distributions
+ * @brief This file implements the prime-mapp data distribution
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
@@ -13,62 +13,10 @@ namespace argo {
 	namespace data_distribution {
 		/**
 		 * @brief the prime-mapp data distribution
-		 * @details distributes pages using a two-phase round-robin strategy.
-		 */
-		template<int instance>
-		class prime_mapp_distribution : public base_distribution<instance> {
-			public:
-				virtual node_id_t homenode (char* const ptr) {
-					static const std::size_t prime = (3 * base_distribution<instance>::nodes) / 2;
-					const std::size_t addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
-					const std::size_t pagenum = addr / granularity;
-					const node_id_t homenode = ((pagenum % prime) >= static_cast<std::size_t>(base_distribution<instance>::nodes))
-					? ((pagenum / prime) * (prime - base_distribution<instance>::nodes) + ((pagenum % prime) - base_distribution<instance>::nodes)) % base_distribution<instance>::nodes
-					: pagenum % prime;
-
-					if(homenode >= base_distribution<instance>::nodes) {
-						exit(EXIT_FAILURE);
-					}
-					return homenode;
-				}
-
-				virtual std::size_t local_offset (char* const ptr) {
-					static const std::size_t prime = (3 * base_distribution<instance>::nodes) / 2;
-					const std::size_t drift = (ptr - base_distribution<instance>::start_address) % granularity;
-					std::size_t offset, addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
-					std::size_t pagenum = addr / granularity;
-					if ((addr <= (base_distribution<instance>::nodes * granularity)) || ((pagenum % prime) >= static_cast<std::size_t>(base_distribution<instance>::nodes))) {
-						offset = (pagenum / base_distribution<instance>::nodes) * granularity + drift;
-					} else {
-						node_id_t currhome;
-						std::size_t homecounter = 0;
-						const node_id_t realhome = homenode(ptr);
-						for (addr -= granularity; ; addr -= granularity) {
-							pagenum = addr / granularity;
-							currhome = homenode(static_cast<char*>(base_distribution<instance>::start_address) + addr);
-							homecounter += (currhome == realhome) ? 1 : 0;
-							if (((addr <= (base_distribution<instance>::nodes * granularity)) && (currhome == realhome)) ||
-									(((pagenum % prime) >= static_cast<std::size_t>(base_distribution<instance>::nodes) && (currhome == realhome)))) {
-								offset = (pagenum / base_distribution<instance>::nodes) * granularity;
-								offset += homecounter * granularity + drift;
-								break;
-							}
-						}
-					}
-
-					if(offset >= static_cast<std::size_t>(base_distribution<instance>::size_per_node)) {
-						exit(EXIT_FAILURE);
-					}
-					return offset;
-				}
-		};
-
-		/**
-		 * @brief the prime-mapp-block data distribution
 		 * @details distributes blocks of pages using a two-phase round-robin strategy.
 		 */
 		template<int instance>
-		class prime_mapp_block_distribution : public base_distribution<instance> {
+		class prime_mapp_distribution : public base_distribution<instance> {
 			public:
 				virtual node_id_t homenode (char* const ptr) {
 					static const std::size_t pageblock = env::allocation_block_size() * granularity;

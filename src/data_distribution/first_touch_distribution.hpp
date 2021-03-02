@@ -8,6 +8,7 @@
 #define argo_first_touch_distribution_hpp argo_first_touch_distribution_hpp
 
 #include <mutex>
+#include <iostream>
 
 #include "base_distribution.hpp"
 
@@ -91,6 +92,11 @@ namespace argo {
 					offset += drift;
 
 					if(offset >= static_cast<std::size_t>(base_distribution<instance>::size_per_node)) {
+						std::cerr << "Maximum backing store size exceeded on node "
+								<< argo::backend::node_id() << "\n"
+								<< "\t- allocate more distributed memory or\n"
+								<< "\t- ensure better distribution of data"
+								<< std::endl;
 						exit(EXIT_FAILURE);
 					}
 					return offset;

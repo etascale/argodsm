@@ -41,58 +41,31 @@ namespace argo {
 			naive,
 			/**
 			 * @brief the cyclic policy
-			 * @note distributes data at the default
-			 *       page granularity level (4KB).
+			 * @note distributes data at a configu-
+			 *       rable page granularity level.
 			 * @see cyclic_distribution.hpp
 			 * @see @ref ARGO_ALLOCATION_POLICY
+			 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
 			 */
 			cyclic,
 			/**
-			 * @brief the cyclic-block policy
-			 * @note distributes data at a multiple
-			 *       of the default page granularity
-			 *       level (4KB).
-			 * @see cyclic_distribution.hpp
-			 * @see @ref ARGO_ALLOCATION_POLICY
-			 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
-			 */
-			cyclic_block,
-			/**
 			 * @brief the skew-mapp policy
-			 * @note distributes data at the default
-			 *       page granularity level (4KB).
+			 * @note distributes data at a configu-
+			 *       rable page granularity level.
 			 * @see skew_mapp_distribution.hpp
 			 * @see @ref ARGO_ALLOCATION_POLICY
+			 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
 			 */
 			skew_mapp,
 			/**
-			 * @brief the skew-mapp-block policy
-			 * @note distributes data at a multiple
-			 *       of the default page granularity
-			 *       level (4KB).
-			 * @see skew_mapp_distribution.hpp
-			 * @see @ref ARGO_ALLOCATION_POLICY
-			 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
-			 */
-			skew_mapp_block,
-			/**
 			 * @brief the prime-mapp policy
-			 * @note distributes data at the default
-			 *       page granularity level (4KB).
+			 * @note distributes data at a configu-
+			 *       rable page granularity level.
 			 * @see prime_mapp_distribution.hpp
 			 * @see @ref ARGO_ALLOCATION_POLICY
+			 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
 			 */
 			prime_mapp,
-			/**
-			 * @brief the prime-mapp-block policy
-			 * @note distributes data at a multiple
-			 *       of the default page granularity
-			 *       level (4KB).
-			 * @see prime_mapp_distribution.hpp
-			 * @see @ref ARGO_ALLOCATION_POLICY
-			 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
-			 */
-			prime_mapp_block,
 			/**
 			 * @brief the first-touch policy
 			 * @note distributes data at the default
@@ -104,39 +77,35 @@ namespace argo {
 		};
 
 		/**
-		 * @brief identifies if we distribute data using a
-		 *        block memory policy
-		 * @return true if we utilize a block policy
-		 *         false if we don't utilize a block policy
+		 * @brief identifies if we distribute data using
+		 *        a cyclic memory policy
+		 * @return true if we utilize a cyclic policy
+		 *         false if we don't utilize a cyclic policy
 		 */
-		static inline bool is_block_policy() {
+		static inline bool is_cyclic_policy() {
 			std::size_t policy = env::allocation_policy();
 			switch (policy) {
-				case cyclic_block	: return true;
-				case skew_mapp_block	: return true;
-				case prime_mapp_block	: return true;
-				default			: return false;
+				case cyclic	: return true;
+				case skew_mapp	: return true;
+				case prime_mapp	: return true;
+				default		: return false;
 			}
 		}
 
 		/**
-		 * @brief identifies if we distribute data using the
-		 *        prime-mapp(-block) memory policy
-		 * @return true if we utilize the prime-mapp(-block) policy
-		 *         false if we don't utilize prime-mapp(-block) policy
+		 * @brief identifies if we distribute data using
+		 *        the prime-mapp memory policy
+		 * @return true if we utilize the prime-mapp policy
+		 *         false if we don't utilize prime-mapp policy
 		 */
 		static inline bool is_prime_policy() {
 			std::size_t policy = env::allocation_policy();
-			switch (policy) {
-				case prime_mapp		: return true;
-				case prime_mapp_block	: return true;
-				default			: return false;
-			}
+			return (policy == prime_mapp) ? true : false;
 		}
 
 		/**
-		 * @brief identifies if we distribute data using the
-		 *        first-touch memory policy
+		 * @brief identifies if we distribute data using
+		 *        the first-touch memory policy
 		 * @return true if we utilize the first-touch policy
 		 *         false if we don't utilize first-touch policy
 		 */
@@ -152,7 +121,7 @@ namespace argo {
 		 * @return the padding size based on the chosen policy
 		 */
 		static inline std::size_t policy_padding() {
-			std::size_t padding = (is_block_policy()) ? env::allocation_block_size() : 1;
+			std::size_t padding = (is_cyclic_policy()) ? env::allocation_block_size() : 1;
 			padding *= (is_prime_policy()) ? ((3 * argo::backend::number_of_nodes()) / 2) : 1;
 			return padding;
 		}

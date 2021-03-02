@@ -96,6 +96,7 @@ TEST_F(UninitializedAccessTest, ReadUninitializedSinglenode) {
 		}
 	}
 #endif
+	argo::barrier();
 }
 
 /**

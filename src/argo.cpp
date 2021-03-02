@@ -40,9 +40,9 @@ namespace argo {
 		}
 
 		std::size_t requested_argo_policy = env::allocation_policy();
-		if(!(requested_argo_policy <= 7ul)) {
+		if(!(requested_argo_policy <= 4ul)) {
 			throw std::invalid_argument(
-				"Invalid policy (must be a number between 0 and 7)");
+				"Invalid policy (must be a number between 0 and 4)");
 		}
 
 		std::size_t requested_argo_block_size = env::allocation_block_size();
