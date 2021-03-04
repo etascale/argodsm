@@ -79,8 +79,8 @@ static inline void distribute
 		std::size_t& beg,
 		std::size_t& end,
 		const std::size_t& loop_size,
-		const std::size_t& beg_offset,
-    		const std::size_t& less_equal
+		const std::size_t& beg_offset = 0,
+    		const std::size_t& less_equal = 0
 	) {
 	std::size_t chunk = loop_size / argo::number_of_nodes();
 	beg = argo::node_id() * chunk + ((argo::node_id() == 0)
@@ -457,10 +457,15 @@ TEST_F(backendTest, selectiveArray) {
 	 *          mory policy, it is possible that
 	 *          this test fails since the backing
 	 *          store of that node is exceeded.
+	 * @todo This should not be the case in an
+	 *       improved version of first-touch or
+	 *       when the system is patched to be able
+	 *       to increase the size_per_node limit
+	 *       when that is not sufficient enough.
 	 */
 #if TEAM_INIT == 1
 	std::size_t beg, end;
-	distribute(beg, end, array_size, 0, 0);
+	distribute(beg, end, array_size);
 	for(std::size_t i=beg; i<end; i++){
 		array[i] = 0;
 	}
@@ -531,10 +536,15 @@ TEST_F(backendTest, selectiveUnaligned) {
 	 *          mory policy, it is possible that
 	 *          this test fails since the backing
 	 *          store of that node is exceeded.
+	 * @todo This should not be the case in an
+	 *       improved version of first-touch or
+	 *       when the system is patched to be able
+	 *       to increase the size_per_node limit
+	 *       when that is not sufficient enough.
 	 */
 #if TEAM_INIT == 1
 	std::size_t beg, end;
-	distribute(beg, end, array_size, 0, 0);
+	distribute(beg, end, array_size);
 	for(std::size_t i=beg; i<end; i++){
 		array[i] = 0;
 	}
@@ -613,10 +623,15 @@ TEST_F(backendTest, writeBufferLoad) {
 	 *          mory policy, it is possible that
 	 *          this test fails since the backing
 	 *          store of that node is exceeded.
+	 * @todo This should not be the case in an
+	 *       improved version of first-touch or
+	 *       when the system is patched to be able
+	 *       to increase the size_per_node limit
+	 *       when that is not sufficient enough.
 	 */
 #if TEAM_INIT == 1
 	std::size_t beg, end;
-	distribute(beg, end, array_size, 0, 0);
+	distribute(beg, end, array_size);
 	for(std::size_t i=beg; i<end; i++){
 		array[i] = 0;
 	}
