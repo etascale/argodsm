@@ -1120,9 +1120,17 @@ void argo_reset_coherence(int n){
 	MPI_Win_unlock(workrank, sharerWindow);
 	
 	if (dd::is_first_touch_policy()) {
+		/**
+		 * @note initialize homenode and offset for each page
+		 *       in the first-touch directory to magic values.
+		 *       0 - this page doesn't have a home node
+		 *       GLOBAL_NULL - backing store offset is invalid
+		 */
 		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, owner_window);
-		for(j = 0; j < owner_size; j++)
+		for(j = 0; j < owner_size; j += 2) {
 			global_owners[j] = 0;
+			global_owners[j+1] = GLOBAL_NULL;
+		}
 		MPI_Win_unlock(workrank, owner_window);
 	}
 	sem_post(&ibsem);

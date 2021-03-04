@@ -200,3 +200,76 @@ mpirun --map-by ppr:1:node                                               \
 	--mca mpi_leave_pinned 1 --mca btl openib,self,sm -n ${SLURM_NNODES} \
 	./argo_example
 ```
+
+### Optimizing data placement for performance
+
+ArgoDSM has a variety of page placement policies to choose from, in order to
+distribute the globally allocated data across the different nodes of a cluster
+machine. Currently, the total number of memory policies is five, namely `naive`,
+`cyclic`, `skew-mapp`, `prime-mapp`, and `first-touch`. The default memory
+management scheme is `naive`. The `naive` policy will use all available memory
+(physical) contributed to the global address space from the first node, before
+using the next node's memory. Running a memory intensive program under this
+memory policy, it is a good practice for the Argo global memory size to match
+the size of the globally allocated data, in order for pages to be equally
+distributed across nodes and avoid bottlenecks.
+
+The cyclic group of memory policies which consists of `cyclic`, `skew-mapp`, and
+`prime-mapp`, spreads memory pages over the memory modules of a cluster machine
+following a type of round-robin distribution, thus balancing memory modules'
+usage, improving network bandwidth, and easing programmability, since whatever
+size is provided to the initializer call `argo::init` does not affect the
+placement of data. The `cyclic` policy distributes data in a linear way, meaning
+that it uses a block of pages per round and places it in the memory module
+`b mod N`, where `N` is the number of nodes used to run the application. Since
+this linear distribution can still lead to contention problems in some scientific
+applications, the `skew-mapp` and `prime-mapp` policies are introduced. These two
+allocation schemes perform a non-linear page placement over the machines memory
+modules, in order to reduce concurrent accesses directed to the same memory
+modules. The `skew-mapp` policy is a modification of the `cyclic` policy that has
+a liner page skew. It is able to skip a page for every `N` (number of nodes)
+pages allocated, resulting in a non-uniform distribution of pages across the
+memory modules of the distributed system. The `prime-mapp` memory policy uses a
+two-phase round-robin strategy to better distribute pages over a cluster machine.
+In the first phase, the policy places data using the `cyclic` policy in `P` nodes,
+where `P` is a number greater than or equal to `N` (number of nodes), and is equal
+to `3N/2`. In the second phase, the memory pages previously placed in the virtual
+nodes are re-placed into the memory modules of the real nodes also using the
+`cyclic` policy. In this way, the memory modules of the real nodes are not used in
+a uniform way to place memory pages.
+
+The `first-touch` policy places data in the memory module of the node that first
+accesses it. Due to this characteristic, data initialization must be done with care
+so that data is first accessed by the process that is later on going to use it.
+That said, to achieve optimal performance running the `argo_example` under the
+`first-touch` memory policy, team process initialization instead of master process
+initialization should be used, as being seen below. The `beg` and `end` variables
+are calculated based on the `id` of each process and define the chunk in `data`
+that each process will initialize.
+
+``` cpp
+int chunk = data_length / argo::number_of_nodes();
+int beg = argo::node_id() * chunk;
+int end = beg + chunk;
+for (int i = beg; i < end; ++i)
+	data[i] = i * 11 + 3;
+argo::barrier();
+```
+
+The memory allocation policy can be selected through the environment variable
+`ARGO_ALLOCATION_POLICY`, which should be given a number from `0` to `4`,
+starting from the default `naive` distribution and continuing with the `cyclic`,
+`skew-mapp`, `prime-mapp`, and `first-touch` policies, as shown in the table
+below. The page block size when utilizing one of the cyclic policies can be
+adjusted by setting `ARGO_ALLOCATION_BLOCK_SIZE`. In case the former environment
+variable is not specified, the `naive` distribution will be used and, in the
+case of the latter, a size of `16` will be selected, resulting in a granularity
+of 16*4KB=64KB.
+
+| Memory Policy | ARGO_ALLOCATION_POLICY | ARGO_ALLOCATION_BLOCK_SIZE |
+|:-------------:|:----------------------:|:--------------------------:|
+| naive         |       0 (default)      |              -             |
+| cyclic        |            1           |        16 (default)        |
+| skew-mapp     |            2           |        16 (default)        |
+| prime-mapp    |            3           |        16 (default)        |
+| first-touch   |            4           |              -             |

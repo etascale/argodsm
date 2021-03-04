@@ -81,13 +81,17 @@ namespace argo {
 
 				virtual std::size_t local_offset (char* const ptr) {
 					std::size_t offset;
+					static const std::size_t global_null = base_distribution<instance>::total_size + 1;
 					const std::size_t drift = (ptr - base_distribution<instance>::start_address) % granularity;
 					const std::size_t addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
 					const std::size_t owner_window_index = 2 * (addr / granularity);
 
 					std::unique_lock<std::mutex> def_lock(owner_mutex, std::defer_lock);
 					def_lock.lock();
-					argo::backend::atomic::_load_local_dir(&offset, argo::backend::node_id(), owner_window_index+1);
+					/* spin till an update from a remote node has been reflected in the local window */
+					do {
+						argo::backend::atomic::_load_local_dir(&offset, argo::backend::node_id(), owner_window_index+1);
+					} while(offset == global_null);
 					def_lock.unlock();
 					offset += drift;
 
