@@ -1,5 +1,7 @@
 # ArgoDSM
 
+[![Build Status](https://travis-ci.org/etascale/argodsm.svg?branch=master)](https://travis-ci.org/etascale/argodsm)
+
 [ArgoDSM](https://www.it.uu.se/research/project/argo) is a software distributed
 shared memory system which aims to provide great performance with a simplified
 programming model. It is currently being developed in Uppsala University.
