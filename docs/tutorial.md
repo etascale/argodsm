@@ -266,6 +266,11 @@ variable is not specified, the `naive` distribution will be used and, in the
 case of the latter, a size of `16` will be selected, resulting in a granularity
 of 16*4KB=64KB.
 
+When running under `first-touch` or under any of the `cyclic` policies with a
+small granularity, you may need to increase `vm.max_map_count` significantly
+above the default (65536). If you don't know how to do this, contact your system
+administrator.
+
 | Memory Policy | ARGO_ALLOCATION_POLICY | ARGO_ALLOCATION_BLOCK_SIZE |
 |:-------------:|:----------------------:|:--------------------------:|
 | naive         |       0 (default)      |              -             |
