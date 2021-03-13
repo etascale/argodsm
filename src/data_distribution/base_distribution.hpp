@@ -8,6 +8,8 @@
 #define argo_base_distribution_hpp argo_base_distribution_hpp
 
 #include <cstdlib>
+#include <iostream>
+#include <system_error>
 
 #include "../types/types.hpp"
 
@@ -15,6 +17,11 @@ namespace argo {
 	namespace data_distribution {
 		/** @brief page size for the implementations */
 		static constexpr std::size_t granularity = 0x1000UL;
+
+		/** @brief error message string for the implementations */
+		static const std::string msg_fetch_homenode_fail = "ArgoDSM failed to fetch a valid backing node. Please report a bug.";
+		/** @brief error message string for the implementations */
+		static const std::string msg_fetch_offset_fail = "ArgoDSM failed to fetch a valid backing offset. Please report a bug.";
 		
 		/**
 		 * @brief the base data distribution class

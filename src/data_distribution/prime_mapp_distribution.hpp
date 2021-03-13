@@ -28,6 +28,8 @@ namespace argo {
 					: pagenum % prime;
 
 					if(homenode >= base_distribution<instance>::nodes) {
+						std::cerr << msg_fetch_homenode_fail << std::endl;
+						throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_fetch_homenode_fail);
 						exit(EXIT_FAILURE);
 					}
 					return homenode;
@@ -59,6 +61,8 @@ namespace argo {
 					}
 
 					if(offset >= static_cast<std::size_t>(base_distribution<instance>::size_per_node)) {
+						std::cerr << msg_fetch_offset_fail << std::endl;
+						throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_fetch_offset_fail);
 						exit(EXIT_FAILURE);
 					}
 					return offset;

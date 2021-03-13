@@ -7,6 +7,7 @@
 #include "../backend.hpp"
 
 #include <atomic>
+#include <algorithm>
 #include <type_traits>
 #include <mpi.h>
 
@@ -32,13 +33,25 @@ extern MPI_Win  *globalDataWindow;
  * @see swdsm.cpp
  * @see first_touch_distribution.hpp
  */
-extern MPI_Win owner_window;
+extern MPI_Win owners_dir_window;
+/**
+ * @brief MPI window for the first-touch data distribution
+ * @see swdsm.cpp
+ * @see first_touch_distribution.hpp
+ */
+extern MPI_Win offsets_tbl_window;
 /**
  * @brief MPI directory for the first-touch data distribution
  * @see swdsm.cpp
  * @see first_touch_distribution.hpp
  */
-extern std::uintptr_t *global_owners;
+extern std::uintptr_t *global_owners_dir;
+/**
+ * @brief MPI table for the first-touch data distribution
+ * @see swdsm.cpp
+ * @see first_touch_distribution.hpp
+ */
+extern std::uintptr_t *global_offsets_tbl;
 
 /**
  * @todo should be changed to qd-locking (but need to be replaced in the other files as well)
@@ -151,12 +164,8 @@ namespace argo {
 			return argo_get_nid();
 		}
 
-		int number_of_nodes() {
+		node_id_t number_of_nodes() {
 			return argo_get_nodes();
-		}
-
-		std::size_t& backing_offset() {
-			return get_local_data_offset();
 		}
 
 		char* global_base() {
@@ -217,21 +226,29 @@ namespace argo {
 				sem_post(&ibsem);
 			}
 
-			void _store_public_dir(const void* desired,
+			void _store_public_owners_dir(const void* desired,
 					const std::size_t size, const std::size_t rank, const std::size_t disp) {
 				MPI_Datatype t_type = fitting_mpi_int(size);
 				// Perform the store operation
-				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank, 0, owner_window);
-				MPI_Put(desired, 1, t_type, rank, disp, 1, t_type, owner_window);
-				MPI_Win_unlock(rank, owner_window);
+				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank, 0, owners_dir_window);
+				MPI_Put(desired, 3, t_type, rank, disp, 3, t_type, owners_dir_window);
+				MPI_Win_unlock(rank, owners_dir_window);
 			}
 
-			void _store_local_dir(const std::size_t desired,
+			void _store_local_owners_dir(const std::size_t* desired,
 					const std::size_t rank, const std::size_t disp) {
 				// Perform the store operation
-				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank, 0, owner_window);
-				global_owners[disp] = desired;
-				MPI_Win_unlock(rank, owner_window);
+				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank, 0, owners_dir_window);
+				std::copy(desired, desired + 3, &global_owners_dir[disp]);
+				MPI_Win_unlock(rank, owners_dir_window);
+			}
+
+			void _store_local_offsets_tbl(const std::size_t desired,
+					const std::size_t rank, const std::size_t disp) {
+				// Perform the store operation
+				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank, 0, offsets_tbl_window);
+				global_offsets_tbl[disp] = desired;
+				MPI_Win_unlock(rank, offsets_tbl_window);
 			}
 
 			void _load(global_ptr<void> obj, std::size_t size,
@@ -246,12 +263,29 @@ namespace argo {
 				sem_post(&ibsem);
 			}
 
-			void _load_local_dir(void* output_buffer,
+			void _load_public_owners_dir(void* output_buffer,
+					const std::size_t size, const std::size_t rank, const std::size_t disp) {
+				MPI_Datatype t_type = fitting_mpi_int(size);
+				// Perform the load operation
+				MPI_Win_lock(MPI_LOCK_SHARED, rank, 0, owners_dir_window);
+				MPI_Get(output_buffer, 3, t_type, rank, disp, 3, t_type, owners_dir_window);
+				MPI_Win_unlock(rank, owners_dir_window);
+			}
+
+			void _load_local_owners_dir(void* output_buffer,
 					const std::size_t rank, const std::size_t disp) {
 				// Perform the load operation
-				MPI_Win_lock(MPI_LOCK_SHARED, rank, 0, owner_window);
-				*(static_cast<std::size_t*>(output_buffer)) = global_owners[disp];
-				MPI_Win_unlock(rank, owner_window);
+				MPI_Win_lock(MPI_LOCK_SHARED, rank, 0, owners_dir_window);
+				*(static_cast<std::size_t*>(output_buffer)) = global_owners_dir[disp];
+				MPI_Win_unlock(rank, owners_dir_window);
+			}
+
+			void _load_local_offsets_tbl(void* output_buffer,
+					const std::size_t rank, const std::size_t disp) {
+				// Perform the load operation
+				MPI_Win_lock(MPI_LOCK_SHARED, rank, 0, offsets_tbl_window);
+				*(static_cast<std::size_t*>(output_buffer)) = global_offsets_tbl[disp];
+				MPI_Win_unlock(rank, offsets_tbl_window);
 			}
 
 			void _compare_exchange(global_ptr<void> obj, void* desired,
@@ -266,13 +300,22 @@ namespace argo {
 				sem_post(&ibsem);
 			}
 
-			void _compare_exchange_dir(const void* desired, const void* expected, void* output_buffer,
+			void _compare_exchange_owners_dir(const void* desired, const void* expected, void* output_buffer,
 					const std::size_t size, const std::size_t rank, const std::size_t disp) {
 				MPI_Datatype t_type = fitting_mpi_int(size);
 				// Perform the compare-and-swap operation
-				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank, 0, owner_window);
-				MPI_Compare_and_swap(desired, expected, output_buffer, t_type, rank, disp, owner_window);
-				MPI_Win_unlock(rank, owner_window);
+				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank, 0, owners_dir_window);
+				MPI_Compare_and_swap(desired, expected, output_buffer, t_type, rank, disp, owners_dir_window);
+				MPI_Win_unlock(rank, owners_dir_window);
+			}
+
+			void _compare_exchange_offsets_tbl(const void* desired, const void* expected, void* output_buffer,
+					const std::size_t size, const std::size_t rank, const std::size_t disp) {
+				MPI_Datatype t_type = fitting_mpi_int(size);
+				// Perform the compare-and-swap operation
+				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, rank, 0, offsets_tbl_window);
+				MPI_Compare_and_swap(desired, expected, output_buffer, t_type, rank, disp, offsets_tbl_window);
+				MPI_Win_unlock(rank, offsets_tbl_window);
 			}
 
 			/**

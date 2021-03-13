@@ -250,13 +250,6 @@ unsigned int argo_get_nodes();
 unsigned int getThreadCount();
 
 /**
- * @brief Gives the backing memory offset of the ArgoDSM node for the local process
- * @return Returns the reference to the current offset for the local process
- * @note Implementation-specific function for the first-touch data distribution
- */
-std::size_t& get_local_data_offset();
-
-/**
  * @brief Gives a pointer to the global address space
  * @return Start address of the global address space
  */

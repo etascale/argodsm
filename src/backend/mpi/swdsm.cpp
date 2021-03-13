@@ -136,14 +136,16 @@ unsigned long GLOBAL_NULL;
 argo_statistics stats;
 
 /*First-Touch policy*/
-/** @brief  Holds the owner of a page */
-std::uintptr_t *global_owners;
-/** @brief  Size of the owner directory */
-std::size_t owner_size;
-/** @brief  Allocator offset for the node */
-std::size_t owner_offset;
-/** @brief  MPI window for communicating owner directory */
-MPI_Win owner_window;
+/** @brief  Holds the owner and backing offset of a page */
+std::uintptr_t *global_owners_dir;
+/** @brief  Holds the backing offsets of the nodes */
+std::uintptr_t *global_offsets_tbl;
+/** @brief  Size of the owners directory */
+std::size_t owners_dir_size;
+/** @brief  MPI window for communicating owners directory */
+MPI_Win owners_dir_window;
+/** @brief  MPI window for communicating offsets table */
+MPI_Win offsets_tbl_window;
 /** @brief  Spinlock to avoid "spinning" on the semaphore */
 std::mutex spin_mutex;
 
@@ -354,13 +356,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 	if(state == INVALID || (tag != aligned_access_offset && tag != GLOBAL_NULL)) {
 		load_cache_entry(aligned_access_offset, (startIndex%cachesize));
 #if DUAL_LOAD == 1
-		/** 
-		 * @note temporary solution for nodes to avoid claiming ownership of pages that
-		 *       they are not able to host in their backing store under first-touch.
-		 */
-		if (!dd::is_first_touch_policy()) {
-			prefetch_cache_entry((aligned_access_offset+CACHELINE*pagesize), ((startIndex+CACHELINE)%cachesize));
-		}
+		prefetch_cache_entry((aligned_access_offset+CACHELINE*pagesize), ((startIndex+CACHELINE)%cachesize));
 #endif
 		pthread_mutex_unlock(&cachemutex);
 		double t2 = MPI_Wtime();
@@ -787,10 +783,6 @@ unsigned int getThreadCount(){
 	return NUM_THREADS;
 }
 
-std::size_t& get_local_data_offset(){
-	return owner_offset;
-}
-
 //My sort of allocatefunction now since parmacs macros had this design
 void * argo_gmalloc(unsigned long size){
 	if(argo_get_nodes()==1){return malloc(size);}
@@ -869,8 +861,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	classificationSize = 2*cachesize; // Could be smaller ?
 	argo_write_buffer = new write_buffer<std::size_t>();
 
-	owner_offset = 0;
-
 	barwindowsused = (char *)malloc(numtasks*sizeof(char));
 	for(i = 0; i < numtasks; i++){
 		barwindowsused[i] = 0;
@@ -903,9 +893,13 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	cacheControlSize = align_forwards(cacheControlSize, pagesize);
 	gwritersize = align_forwards(gwritersize, pagesize);
 
-	owner_size = 2*(argo_size/pagesize);
-	std::size_t owner_size_bytes = owner_size*sizeof(std::size_t);
-	owner_size_bytes = align_forwards(owner_size_bytes, pagesize);
+	owners_dir_size = 3*(argo_size/pagesize);
+	std::size_t owners_dir_size_bytes = owners_dir_size*sizeof(std::size_t);
+	owners_dir_size_bytes = align_forwards(owners_dir_size_bytes, pagesize);
+
+	std::size_t offsets_tbl_size = numtasks;
+	std::size_t offsets_tbl_size_bytes = offsets_tbl_size*sizeof(std::size_t);
+	offsets_tbl_size_bytes = align_forwards(offsets_tbl_size_bytes, pagesize);
 
 	cacheoffset = pagesize*cachesize+cacheControlSize;
 
@@ -924,7 +918,8 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	globalSharers = static_cast<unsigned long*>(vm::allocate_mappable(pagesize, gwritersize));
 
 	if (dd::is_first_touch_policy()) {
-		global_owners = static_cast<std::uintptr_t*>(vm::allocate_mappable(pagesize, owner_size_bytes));
+		global_owners_dir = static_cast<std::uintptr_t*>(vm::allocate_mappable(pagesize, owners_dir_size_bytes));
+		global_offsets_tbl = static_cast<std::uintptr_t*>(vm::allocate_mappable(pagesize, offsets_tbl_size_bytes));
 	}
 
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
@@ -955,8 +950,11 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 
 	if (dd::is_first_touch_policy()) {
 		current_offset += pagesize;
-		tmpcache=global_owners;
-		vm::map_memory(tmpcache, owner_size_bytes, current_offset, PROT_READ|PROT_WRITE);
+		tmpcache=global_owners_dir;
+		vm::map_memory(tmpcache, owners_dir_size_bytes, current_offset, PROT_READ|PROT_WRITE);
+		current_offset += owners_dir_size_bytes;
+		tmpcache=global_offsets_tbl;
+		vm::map_memory(tmpcache, offsets_tbl_size_bytes, current_offset, PROT_READ|PROT_WRITE);
 	}
 
 	sem_init(&ibsem,0,1);
@@ -975,8 +973,10 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	MPI_Win_create(lockbuffer, pagesize, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &lockWindow);
 
 	if (dd::is_first_touch_policy()) {
-		MPI_Win_create(global_owners, owner_size_bytes, sizeof(std::uintptr_t),
-									 MPI_INFO_NULL, MPI_COMM_WORLD, &owner_window);
+		MPI_Win_create(global_owners_dir, owners_dir_size_bytes, sizeof(std::uintptr_t),
+									 MPI_INFO_NULL, MPI_COMM_WORLD, &owners_dir_window);
+		MPI_Win_create(global_offsets_tbl, offsets_tbl_size_bytes, sizeof(std::uintptr_t),
+									 MPI_INFO_NULL, MPI_COMM_WORLD, &offsets_tbl_window);
 	}
 
 	memset(pagecopy, 0, cachesize*pagesize);
@@ -988,7 +988,8 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	memset(cacheControl, 0, cachesize*sizeof(control_data));
 
 	if (dd::is_first_touch_policy()) {
-		memset(global_owners, 0, owner_size_bytes);
+		memset(global_owners_dir, 0, owners_dir_size_bytes);
+		memset(global_offsets_tbl, 0, offsets_tbl_size_bytes);
 	}
 
 	for(j=0; j<cachesize; j++){
@@ -1023,7 +1024,8 @@ void argo_finalize(){
 	MPI_Win_free(&sharerWindow);
 	MPI_Win_free(&lockWindow);
 	if (dd::is_first_touch_policy()) {
-		MPI_Win_free(&owner_window);
+		MPI_Win_free(&owners_dir_window);
+		MPI_Win_free(&offsets_tbl_window);
 	}
 	MPI_Comm_free(&workcomm);
 	MPI_Finalize();
@@ -1121,17 +1123,20 @@ void argo_reset_coherence(int n){
 	
 	if (dd::is_first_touch_policy()) {
 		/**
-		 * @note initialize homenode and offset for each page
-		 *       in the first-touch directory to magic values.
-		 *       0 - this page doesn't have a home node
-		 *       GLOBAL_NULL - backing store offset is invalid
+		 * @note initialize the first-touch directory with a magic value,
+		 *       in order to identify if the indices are touched or not.
 		 */
-		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, owner_window);
-		for(j = 0; j < owner_size; j += 2) {
-			global_owners[j] = 0;
-			global_owners[j+1] = GLOBAL_NULL;
+		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, owners_dir_window);
+		for(j = 0; j < owners_dir_size; j++) {
+			global_owners_dir[j] = GLOBAL_NULL;
 		}
-		MPI_Win_unlock(workrank, owner_window);
+		MPI_Win_unlock(workrank, owners_dir_window);
+
+		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, offsets_tbl_window);
+		for(j = 0; j < static_cast<std::size_t>(numtasks); j++) {
+			global_offsets_tbl[j] = 0;
+		}
+		MPI_Win_unlock(workrank, offsets_tbl_window);
 	}
 	sem_post(&ibsem);
 	swdsm_argo_barrier(n);

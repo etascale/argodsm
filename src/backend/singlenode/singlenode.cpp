@@ -58,10 +58,8 @@ char* memory;
 std::size_t memory_size;
 
 /*First-Touch policy*/
-/** @brief holds the owner of a page */
-std::uintptr_t *global_owners;
-/** @brief allocator offset for the node */
-std::size_t owner_offset;
+/** @brief holds the owner and backing offset of a page */
+std::uintptr_t *global_owners_dir;
 
 /**
  * @brief a dummy signal handler function
@@ -92,16 +90,16 @@ namespace argo {
 			 *        the homenode and offset for an address */
 			if (is_first_touch_policy()) {
 				/* calculate the directory size and allocate memory */
-				owner_offset = 0;
-				std::size_t owner_size = 2*(argo_size/4096UL);
-				std::size_t owner_size_bytes = owner_size*sizeof(std::size_t);
-				owner_size_bytes = (1 + ((owner_size_bytes-1) / 4096UL))*4096UL;
-				global_owners = static_cast<std::uintptr_t*>(vm::allocate_mappable(4096UL, owner_size_bytes));
+				std::size_t owners_dir_size = 3*(argo_size/4096UL);
+				std::size_t owners_dir_size_bytes = owners_dir_size*sizeof(std::size_t);
+				owners_dir_size_bytes = (1 + ((owners_dir_size_bytes-1) / 4096UL))*4096UL;
+				global_owners_dir = static_cast<std::uintptr_t*>(vm::allocate_mappable(4096UL, owners_dir_size_bytes));
 				/* hardcode first-touch directory values so
 				   that we perform only load operations */
-				for(std::size_t j = 0; j < owner_size; j += 2) {
-					global_owners[j] = 0x1UL;
-					global_owners[j+1] = j/2 * 4096UL;
+				for(std::size_t j = 0; j < owners_dir_size; j += 3) {
+					global_owners_dir[j] = 0;
+					global_owners_dir[j+1] = j/3 * 4096UL;
+					global_owners_dir[j+2] = 0;
 				}
 			}
 		}
@@ -110,12 +108,8 @@ namespace argo {
 			return my_node_id;
 		}
 
-		int number_of_nodes() {
+		node_id_t number_of_nodes() {
 			return nodes;
-		}
-
-		std::size_t& backing_offset() {
-			return owner_offset;
 		}
 
 		char* global_base() {
@@ -199,7 +193,7 @@ namespace argo {
 				memcpy(obj.get(), desired, size);
 			}
 
-			void _store_public_dir(const void* desired,
+			void _store_public_owners_dir(const void* desired,
 					const std::size_t size, const std::size_t rank, const std::size_t disp) {
 				(void)desired;
 				(void)size;
@@ -207,7 +201,14 @@ namespace argo {
 				(void)disp;
 			}
 
-			void _store_local_dir(const std::size_t desired,
+			void _store_local_owners_dir(const std::size_t* desired,
+					const std::size_t rank, const std::size_t disp) {
+				(void)desired;
+				(void)rank;
+				(void)disp;
+			}
+
+			void _store_local_offsets_tbl(const std::size_t desired,
 					const std::size_t rank, const std::size_t disp) {
 				(void)desired;
 				(void)rank;
@@ -220,14 +221,29 @@ namespace argo {
 				memcpy(output_buffer, obj.get(), size);
 			}
 
+			void _load_public_owners_dir(void* output_buffer,
+					const std::size_t size, const std::size_t rank, const std::size_t disp) {
+				(void)output_buffer;
+				(void)size;
+				(void)rank;
+				(void)disp;
+			}
+
 			/**
 			 * @note only load operations are performed on the first-touch
 			 *       directory, since the values are hardcoded in the init call
 			 */
-			void _load_local_dir(void* output_buffer,
+			void _load_local_owners_dir(void* output_buffer,
 					const std::size_t rank, const std::size_t disp) {
 				(void)rank;
-				*(static_cast<std::size_t*>(output_buffer)) = global_owners[disp];
+				*(static_cast<std::size_t*>(output_buffer)) = global_owners_dir[disp];
+			}
+
+			void _load_local_offsets_tbl(void* output_buffer,
+					const std::size_t rank, const std::size_t disp) {
+				(void)output_buffer;
+				(void)rank;
+				(void)disp;
 			}
 
 			void _compare_exchange(global_ptr<void> obj, void* desired,
@@ -239,7 +255,17 @@ namespace argo {
 				}
 			}
 
-			void _compare_exchange_dir(const void* desired, const void* expected, void* output_buffer,
+			void _compare_exchange_owners_dir(const void* desired, const void* expected, void* output_buffer,
+					const std::size_t size, const std::size_t rank, const std::size_t disp) {
+				(void)desired;
+				(void)expected;
+				(void)output_buffer;
+				(void)size;
+				(void)rank;
+				(void)disp;
+			}
+
+			void _compare_exchange_offsets_tbl(const void* desired, const void* expected, void* output_buffer,
 					const std::size_t size, const std::size_t rank, const std::size_t disp) {
 				(void)desired;
 				(void)expected;

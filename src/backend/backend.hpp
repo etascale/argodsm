@@ -65,13 +65,6 @@ namespace argo {
 		node_id_t number_of_nodes();
 
 		/**
-		 * @brief get backing memory offset of the ArgoDSM node
-		 * @return the reference to the current offset
-		 * @note implementation-specific function for the first-touch data distribution
-		 */
-		std::size_t& backing_offset();
-
-		/**
 		 * @brief get base address of global memory
 		 * @return the pointer to the start of the global memory
 		 * @deprecated this is an implementation detail of the prototype
@@ -220,14 +213,15 @@ namespace argo {
 			/**
 			 * @brief Backend internal type erased atomic store function
 			 * @param desired Pointer to the object that holds the desired value
-			 * @param size sizeof(*obj) == sizeof(*desired) == sizeof(output_buffer)
+			 * @param size == sizeof(*desired)
 			 * @param rank Rank of target window to which operation will be performed
 			 * @param disp Displacement from start of window to beginning of target buffer
 			 * @sa store to public window section
-			 * @note Implementation-specific function for the first-touch data distribution
+			 * @note Implementation-specific function for the first-touch data distribution.
+			 *       It is used to perform stores on the owners_dir_window window.
 			 * @warning For internal use only - DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
 			 */
-			void _store_public_dir(const void* desired,
+			void _store_public_owners_dir(const void* desired,
 				const std::size_t size, const std::size_t rank, const std::size_t disp);
 
 			/**
@@ -236,10 +230,24 @@ namespace argo {
 			 * @param rank Rank of target window to which operation will be performed
 			 * @param disp Displacement from start of window to beginning of target buffer
 			 * @sa store to private window section
-			 * @note Implementation-specific function for the first-touch data distribution
+			 * @note Implementation-specific function for the first-touch data distribution.
+			 *       It is used to perform stores on the owners_dir_window window.
 			 * @warning For internal use only - DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
 			 */
-			void _store_local_dir(const std::size_t desired,
+			void _store_local_owners_dir(const std::size_t* desired,
+				const std::size_t rank, const std::size_t disp);
+
+			/**
+			 * @brief Backend internal type erased atomic store function
+			 * @param desired The desired value to be stored
+			 * @param rank Rank of target window to which operation will be performed
+			 * @param disp Displacement from start of window to beginning of target buffer
+			 * @sa store to private window section
+			 * @note Implementation-specific function for the first-touch data distribution.
+			 *       It is used to perform stores on the offsets_tbl_window window.
+			 * @warning For internal use only - DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
+			 */
+			void _store_local_offsets_tbl(const std::size_t desired,
 				const std::size_t rank, const std::size_t disp);
 
 			/**
@@ -256,13 +264,41 @@ namespace argo {
 			/**
 			 * @brief Backend internal type erased atomic load function
 			 * @param output_buffer Pointer to the memory location where the value of the object should be stored
+			 * @param size == sizeof(*output_buffer)
+			 * @param rank Rank of target window to which operation will be performed
+			 * @param disp Displacement from start of window to beginning of target buffer
+			 * @sa load from public window section
+			 * @note Implementation-specific function for the first-touch data distribution.
+			 *       It is used to perform loads on the owners_dir_window window.
+			 * @warning For internal use only - DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
+			 */
+			void _load_public_owners_dir(void* output_buffer,
+				const std::size_t size, const std::size_t rank, const std::size_t disp);
+
+			/**
+			 * @brief Backend internal type erased atomic load function
+			 * @param output_buffer Pointer to the memory location where the value of the object should be stored
 			 * @param rank Rank of target window to which operation will be performed
 			 * @param disp Displacement from start of window to beginning of target buffer
 			 * @sa load from private window section
-			 * @note Implementation-specific function for the first-touch data distribution
+			 * @note Implementation-specific function for the first-touch data distribution.
+			 *       It is used to perform loads on the owners_dir_window window.
 			 * @warning For internal use only - DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
 			 */
-			void _load_local_dir(void* output_buffer,
+			void _load_local_owners_dir(void* output_buffer,
+				const std::size_t rank, const std::size_t disp);
+				
+			/**
+			 * @brief Backend internal type erased atomic load function
+			 * @param output_buffer Pointer to the memory location where the value of the object should be stored
+			 * @param rank Rank of target window to which operation will be performed
+			 * @param disp Displacement from start of window to beginning of target buffer
+			 * @sa load from private window section
+			 * @note Implementation-specific function for the first-touch data distribution.
+			 *       It is used to perform loads on the offsets_tbl_window window.
+			 * @warning For internal use only - DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
+			 */
+			void _load_local_offsets_tbl(void* output_buffer,
 				const std::size_t rank, const std::size_t disp);
 
 			/**
@@ -283,14 +319,31 @@ namespace argo {
 			 * @param desired Pointer to the object that holds the desired value
 			 * @param expected Pointer to the object that holds the expected value
 			 * @param output_buffer Pointer to the memory location where the old value of the object should be stored
-			 * @param size sizeof(*obj) == sizeof(*desired) == sizeof(*expected) == sizeof(output_buffer)
+			 * @param size == sizeof(*desired) == sizeof(*expected) == sizeof(*output_buffer)
 			 * @param rank Rank of target window to which operation will be performed
 			 * @param disp Displacement from start of window to beginning of target buffer
 			 * @sa compare_exchange
-			 * @note Implementation-specific function for the first-touch data distribution
+			 * @note Implementation-specific function for the first-touch data distribution.
+			 *       It is used to perform CAS on the owners_dir_window window.
 			 * @warning For internal use only - DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
 			 */
-			void _compare_exchange_dir(const void* desired, const void* expected, void* output_buffer,
+			void _compare_exchange_owners_dir(const void* desired, const void* expected, void* output_buffer,
+				const std::size_t size, const std::size_t rank, const std::size_t disp);
+
+			/**
+			 * @brief Backend internal type erased atomic CAS function
+			 * @param desired Pointer to the object that holds the desired value
+			 * @param expected Pointer to the object that holds the expected value
+			 * @param output_buffer Pointer to the memory location where the old value of the object should be stored
+			 * @param size == sizeof(*desired) == sizeof(*expected) == sizeof(*output_buffer)
+			 * @param rank Rank of target window to which operation will be performed
+			 * @param disp Displacement from start of window to beginning of target buffer
+			 * @sa compare_exchange
+			 * @note Implementation-specific function for the first-touch data distribution.
+			 *       It is used to perform CAS on the offsets_tbl_window window.
+			 * @warning For internal use only - DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
+			 */
+			void _compare_exchange_offsets_tbl(const void* desired, const void* expected, void* output_buffer,
 				const std::size_t size, const std::size_t rank, const std::size_t disp);
 
 			/**
