@@ -14,7 +14,6 @@ constexpr std::size_t size = 1<<28;
 constexpr std::size_t cache_size = size/2;
 
 namespace mem = argo::mempools;
-namespace dd = argo::data_distribution;
 extern mem::global_memory_pool<>* default_global_mempool;
 
 /**
@@ -40,19 +39,6 @@ class UninitializedAccessTest : public testing::Test {
 TEST_F(UninitializedAccessTest, ReadUninitializedSinglenode) {
 	std::size_t allocsize = default_global_mempool->available();
 	char *tmp = static_cast<char*>(collective_alloc(allocsize));
-
-	/**
-	 * @note When running under first-touch, narrow down the size
-	 *       for the pages fit in the backing store of node_0.
-	 * @todo This should be removed in an improved version of
-	 *       first-touch or when the system is patched to be able
-	 *       to increase the size_per_node limit when that is not
-	 *       sufficient enough.
-	 */
-	if(dd::is_first_touch_policy()) {
-		allocsize = (allocsize / argo::number_of_nodes()) / 4096UL * 4096UL;
-	}
-
 	if(argo::node_id() == 0) {
 		for(std::size_t i = 0; i < allocsize; i++) {
 			ASSERT_NO_THROW(asm volatile ("" : "=m" (tmp[i]) : "r" (tmp[i])));
