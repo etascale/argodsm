@@ -106,7 +106,7 @@ namespace argo {
 
 		void* ptr = collective_alloc(sizeof(T));
 		using namespace data_distribution;
-		global_ptr<void> gptr(ptr);
+		global_ptr<void> gptr(ptr, false, false);
 		// The home node of ptr handles initialization
 		if (initialize && argo::backend::node_id() == gptr.node()) {
 			new (ptr) T(std::forward<Ps>(ps)...);
@@ -164,7 +164,7 @@ namespace argo {
 		}
 
 		using namespace data_distribution;
-		global_ptr<T> gptr(ptr);
+		global_ptr<T> gptr(ptr, false, false);
 		// The home node of ptr handles deinitialization
 		if (deinitialize && argo::backend::node_id() == gptr.node()) {
 			ptr->~T();
@@ -217,7 +217,7 @@ namespace argo {
 
 		void* ptr = collective_alloc(sizeof(T) * size);
 		using namespace data_distribution;
-		global_ptr<void> gptr(ptr);
+		global_ptr<void> gptr(ptr, false, false);
 		// The home node of ptr handles initialization
 		if (initialize && argo::backend::node_id() == gptr.node()) {
 			new (ptr) T[size]();
@@ -268,7 +268,7 @@ namespace argo {
 		}
 
 		using namespace data_distribution;
-		global_ptr<T> gptr(ptr);
+		global_ptr<T> gptr(ptr, false, false);
 		// The home node of ptr handles deinitialization
 		if (deinitialize && argo::backend::node_id() == gptr.node()) {
 			auto elements =
