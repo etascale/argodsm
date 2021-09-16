@@ -31,6 +31,8 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <mutex>
+//#include <shared_mutex>
 
 #include "argo.h"
 #include "backend/backend.hpp"
@@ -102,6 +104,57 @@ typedef struct argo_statisticsStruct
 		/** @brief Time spent performing selective release */
 		double ssdtime;
 } argo_statistics;
+
+/**
+ * @brief Simple lock struct
+ * @todo  This should be done in a separate cache class
+ */
+class alignas(64) cache_lock {
+	private:
+		/** 
+		 * @brief Mutex protecting one cache block 
+		 * @todo This should be used through std::scoped_lock
+		 * in the future, but sufficient for this dirty fix.
+		 */
+		std::mutex c_mutex;
+
+		/** @brief Time spent waiting for lock */
+		double wait_time;
+
+	public:
+		/** @brief Constructor */
+		cache_lock()
+			: wait_time(0)
+		{ };
+
+		cache_lock( const cache_lock& _other )
+			: wait_time(_other.wait_time)
+		{ };
+
+		cache_lock( const cache_lock&& _other )
+			: wait_time(std::move(_other.wait_time))
+		{ };
+
+		/** Destructor */
+		~cache_lock() { };
+
+		/** @brief Acquire a cache lock */
+		void lock(){
+			double start = MPI_Wtime();
+			c_mutex.lock();
+			double end = MPI_Wtime();
+			wait_time += end-start;
+		}
+
+		bool try_lock(){
+			return c_mutex.try_lock();
+		}
+
+		/** @brief Release a cache lock */
+		void unlock(){
+			c_mutex.unlock();
+		}
+};
 
 /*constants for control values*/
 /** @brief Constant for invalid states */

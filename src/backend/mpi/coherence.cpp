@@ -8,6 +8,7 @@
 #include "swdsm.h"
 #include "write_buffer.hpp"
 #include "virtual_memory/virtual_memory.hpp"
+#include <vector>
 
 // EXTERNAL VARIABLES FROM BACKEND
 /**
@@ -20,16 +21,21 @@ extern control_data *cacheControl;
  * @deprecated Should eventually be handled by a cache module
  */
 extern std::uint64_t *globalSharers;
+///**
+// * @brief A cache mutex protects all operations on cacheControl
+// * @deprecated Should eventually be handled by a cache module
+// */
+//extern pthread_mutex_t cachemutex;
 /**
- * @brief A cache mutex protects all operations on cacheControl
+ * @brief A vector containing cache locks
  * @deprecated Should eventually be handled by a cache module
  */
-extern pthread_mutex_t cachemutex;
+extern std::vector<cache_lock> cache_locks;
 /**
- * @brief ibsem is used to serialize all Infiniband (MPI) operations
- * @deprecated Should not be needed once the cache module is implemented
+ * @brief A sync lock that acquires shared read or exclusive
+ * write access to the whole cache.
  */
-extern sem_t ibsem;
+extern pthread_rwlock_t sync_lock;
 /**
  * @brief sharerWindow protects the pyxis directory
  * @deprecated Should not be needed once the pyxis directory is
@@ -71,11 +77,13 @@ namespace argo {
 				((reinterpret_cast<std::size_t>(addr)-start_address)/block_size)*block_size;
 			const node_id_t node_id = argo::backend::node_id();
 			const std::size_t node_id_bit = static_cast<std::size_t>(1) << node_id;
+			const std::size_t cache_index = getCacheIndex(argo_address);
 
 			// Lock relevant mutexes. Start statistics timekeeping
 			double t1 = MPI_Wtime();
-			pthread_mutex_lock(&cachemutex);
-			sem_wait(&ibsem);
+			//pthread_mutex_lock(&cachemutex);
+			pthread_rwlock_rdlock(&sync_lock);
+			cache_locks[cache_index].lock();
 
 			// Iterate over all pages to selectively invalidate
 			for(std::size_t page_address = argo_address;
@@ -136,8 +144,9 @@ namespace argo {
 			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
 
 			// Release relevant mutexes
-			sem_post(&ibsem);
-			pthread_mutex_unlock(&cachemutex);
+			//pthread_mutex_unlock(&cachemutex);
+			cache_locks[cache_index].unlock();
+			pthread_rwlock_unlock(&sync_lock);
 		}
 
 		void _selective_release(void *addr, std::size_t size){
@@ -152,11 +161,13 @@ namespace argo {
 			std::size_t argo_address =
 				((reinterpret_cast<std::size_t>(addr)-start_address)/block_size)*block_size;
 			const node_id_t node_id = argo::backend::node_id();
+			const std::size_t cache_index = getCacheIndex(argo_address);
 
 			// Lock relevant mutexes. Start statistics timekeeping
 			double t1 = MPI_Wtime();
-			pthread_mutex_lock(&cachemutex);
-			sem_wait(&ibsem);
+			//pthread_mutex_lock(&cachemutex);
+			pthread_rwlock_rdlock(&sync_lock);
+			cache_locks[cache_index].lock();
 
 			// Iterate over all pages to selectively downgrade
 			for(std::size_t page_address = argo_address;
@@ -192,8 +203,9 @@ namespace argo {
 			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
 
 			// Release relevant mutexes
-			sem_post(&ibsem);
-			pthread_mutex_unlock(&cachemutex);
+			//pthread_mutex_unlock(&cachemutex);
+			cache_locks[cache_index].unlock();
+			pthread_rwlock_unlock(&sync_lock);
 		}
 	} //namespace backend
 } //namespace argo
