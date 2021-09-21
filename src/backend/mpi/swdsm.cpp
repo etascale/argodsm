@@ -49,6 +49,8 @@ argo_byte * touchedcache;
 char* cacheData;
 /** @brief Copy of the local cache to keep twinpages for later being able to DIFF stores */
 char * pagecopy;
+/** @brief The number of pages protected by an MPI Window */
+std::size_t win_granularity;
 /** @brief Pointer to locks protecting the page cache */
 std::vector<cache_lock> cache_locks;
 /** @brief Mutex ensuring that only one thread can perform sync */
@@ -790,9 +792,10 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	/** At least two pages are required to prevent endless eviction loops */
 	cachesize = std::max(cachesize, static_cast<std::size_t>(pagesize*CACHELINE*2));
 	cachesize /= pagesize;
-
-	/* Create the cache locks */
 	cache_locks.resize(cachesize);
+
+	win_granularity = env::mpi_win_granularity;
+
 
 	classificationSize = 2*(argo_size/pagesize);
 	argo_write_buffer = new write_buffer<std::size_t>();

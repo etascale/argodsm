@@ -45,6 +45,11 @@
  * @details This environment variable determines the maximum amount of DSM pages that
  * 			are fetched on each remote load operation. It can be accessed through
  *          @ref argo::env::load_size() after argo::env::init() has been called.
+ *
+ * @envvar{ARGO_MPI_WIN_GRANULARITY} request a specific number of pages per MPI Window
+ * @details This environment variable determines the amount of DSM pages that are
+ * 			are protected by a single MPI Window. It can be accessed through
+ *          @ref argo::env::mpi_win_granularity() after argo::env::init() has been called.
  */
 
 namespace argo {
@@ -110,6 +115,13 @@ namespace argo {
 		 * @see @ref ARGO_LOAD_SIZE
 		 */
 		std::size_t load_size();
+
+		/**
+		 * @brief get the number of pages protected by an MPI Window
+		 * @return the number of pages
+		 * @see @ref ARGO_MPI_WIN_GRANULARITY
+		 */
+		std::size_t mpi_win_granularity();
 	} // namespace env
 } // namespace argo
 

@@ -58,6 +58,12 @@ namespace {
 	const std::size_t default_load_size = 8;
 
 	/**
+	 * @brief default requested cache lock granularity (if environment variable is unset)
+	 * @see @ref ARGO_MPI_WIN_GRANULARITY
+	 */
+	const std::size_t default_mpi_win_granularity = 16;
+
+	/**
 	 * @brief environment variable used for requesting memory size
 	 * @see @ref ARGO_MEMORY_SIZE
 	 */
@@ -98,6 +104,12 @@ namespace {
 	 * @see @ref ARGO_LOAD_SIZE
 	 */
 	const std::string env_load_size = "ARGO_LOAD_SIZE";
+
+	/**
+	 * @brief environment variable used for requesting cache lock granularity
+	 * @see @ref ARGO_MPI_WIN_GRANULARITY
+	 */
+	const std::string env_mpi_win_granularity = "ARGO_MPI_WIN_GRANULARITY";
 
 	/** @brief error message string */
 	const std::string msg_uninitialized = "argo::env::init() must be called before accessing environment values";
@@ -141,6 +153,10 @@ namespace {
 	 * @brief load size requested through the environment variable @ref ARGO_LOAD_SIZE
 	 */
 	std::size_t value_load_size;
+
+	/**
+	 * @brief cache lock granularity requested through the environment variable @ref ARGO_MPI_WIN_GRANULARITY */
+	std::size_t value_mpi_win_granularity;
 
 	/** @brief flag to allow checking that environment variables have been read before accessing their values */
 	bool is_initialized = false;
@@ -206,6 +222,8 @@ namespace argo {
 			value_allocation_policy = parse_env<std::size_t>(env_allocation_policy, default_allocation_policy).second;
 			value_allocation_block_size = parse_env<std::size_t>(env_allocation_block_size, default_allocation_block_size).second;
 			value_load_size = parse_env<std::size_t>(env_load_size, default_load_size).second;
+			value_mpi_win_granularity = parse_env<std::size_t>(env_mpi_win_granularity,
+					default_mpi_win_granularity).second;
 
 			is_initialized = true;
 		}
@@ -243,6 +261,11 @@ namespace argo {
 		std::size_t load_size() {
 			assert_initialized();
 			return value_load_size;
+		}
+
+		std::size_t mpi_win_granularity() {
+			assert_initialized();
+			return value_mpi_win_granularity;
 		}
 	} // namespace env
 } // namespace argo

@@ -54,6 +54,18 @@ namespace argo {
 				"Invalid page block size (must be a number bigger than 0)");
 		}
 
+		std::size_t requested_argo_load_size = env::load_size();
+		if(requested_argo_block_size == 0) {
+			throw std::invalid_argument(
+				"Invalid load size (must be a number bigger than 0)");
+		}
+
+		std::size_t requested_argo_mpi_win_granularity = env::mpi_win_granularity();
+		if(requested_argo_mpi_win_granularity == 0) {
+			throw std::invalid_argument(
+				"Invalid cache block size (must be a number bigger than 0)");
+		}
+
 		/* note: the backend must currently initialize before the mempool can be set */
 		backend::init(requested_argo_size, requested_cache_size);
 		default_global_mempool = new mp();
