@@ -41,7 +41,7 @@ extern pthread_rwlock_t sync_lock;
  * @deprecated Should not be needed once the pyxis directory is
  * managed from elsewhere through a cache module.
  */
-extern MPI_Win sharerWindow;
+extern std::vector<MPI_Win> sharer_windows;
 /**
  * @brief Needed to update argo statistics
  * @deprecated Should be replaced by API calls to a stats module
@@ -83,7 +83,6 @@ namespace argo {
 			double t1 = MPI_Wtime();
 			//pthread_mutex_lock(&cachemutex);
 			pthread_rwlock_rdlock(&sync_lock);
-			cache_locks[cache_index].lock();
 
 			// Iterate over all pages to selectively invalidate
 			for(std::size_t page_address = argo_address;
@@ -101,6 +100,7 @@ namespace argo {
 
 				const std::size_t cache_index = getCacheIndex(page_address);
 				const std::size_t classification_index = get_classification_index(page_address);
+				cache_locks[cache_index].lock();
 
 				// If the page is dirty, downgrade it
 				if(cacheControl[cache_index].dirty == DIRTY){
@@ -112,9 +112,10 @@ namespace argo {
 					cacheControl[cache_index].dirty = CLEAN;
 				}
 
+				std::size_t win_index = get_window_index(classification_index);
 				// Optimization to keep pages in cache if they do not
 				// need to be invalidated.
-				MPI_Win_lock(MPI_LOCK_SHARED, node_id, 0, sharerWindow);
+				MPI_Win_lock(MPI_LOCK_SHARED, node_id, 0, sharer_windows[win_index]);
 				if(
 						// node is single writer
 						(globalSharers[classification_index+1] == node_id_bit)
@@ -123,17 +124,18 @@ namespace argo {
 						((globalSharers[classification_index+1] == 0) &&
 						 ((globalSharers[classification_index] & node_id_bit) == node_id_bit))
 				  ){
-					MPI_Win_unlock(node_id, sharerWindow);
+					MPI_Win_unlock(node_id, sharer_windows[win_index]);
 					touchedcache[cache_index] = 1;
 					//nothing - we keep the pages, SD is done in flushWB
 				}
 				else{ //multiple writer or SO, invalidate the page
-					MPI_Win_unlock(node_id, sharerWindow);
+					MPI_Win_unlock(node_id, sharer_windows[win_index]);
 					cacheControl[cache_index].dirty = CLEAN;
 					cacheControl[cache_index].state = INVALID;
 					touchedcache[cache_index] = 0;
 					mprotect((char*)start_address + page_address, block_size, PROT_NONE);
 				}
+				cache_locks[cache_index].unlock();
 			}
 
 			double t2 = MPI_Wtime();
@@ -144,8 +146,6 @@ namespace argo {
 			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
 
 			// Release relevant mutexes
-			//pthread_mutex_unlock(&cachemutex);
-			cache_locks[cache_index].unlock();
 			pthread_rwlock_unlock(&sync_lock);
 		}
 
@@ -165,9 +165,7 @@ namespace argo {
 
 			// Lock relevant mutexes. Start statistics timekeeping
 			double t1 = MPI_Wtime();
-			//pthread_mutex_lock(&cachemutex);
 			pthread_rwlock_rdlock(&sync_lock);
-			cache_locks[cache_index].lock();
 
 			// Iterate over all pages to selectively downgrade
 			for(std::size_t page_address = argo_address;
@@ -183,6 +181,7 @@ namespace argo {
 					continue;
 				}
 				const std::size_t cache_index = getCacheIndex(page_address);
+				cache_locks[cache_index].lock();
 
 				// If the page is dirty, downgrade it
 				if(cacheControl[cache_index].dirty == DIRTY){
@@ -193,6 +192,8 @@ namespace argo {
 					argo_write_buffer->erase(cache_index);
 					cacheControl[cache_index].dirty = CLEAN;
 				}
+				cache_locks[cache_index].unlock();
+				//TODO: Does this have to be outside?
 			}
 
 			double t2 = MPI_Wtime();
@@ -203,8 +204,6 @@ namespace argo {
 			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
 
 			// Release relevant mutexes
-			//pthread_mutex_unlock(&cachemutex);
-			cache_locks[cache_index].unlock();
 			pthread_rwlock_unlock(&sync_lock);
 		}
 	} //namespace backend

@@ -368,7 +368,6 @@ class write_buffer
 
 		/**
 		 * @brief	Flushes the ArgoDSM write buffer to memory
-		 * @pre		Require ibsem to be taken until parallel MPI
 		 */
 		void flush() {
 			// Use an atomic flag to detect when flush is done
@@ -393,7 +392,6 @@ class write_buffer
 		/**
 		 * @brief	Adds a new element to the write buffer
 		 * @param	val The value of type T to add to the buffer
-		 * @pre		Require ibsem to be taken until parallel MPI
 		 */
 		void add(T val) {
 			double t_start = MPI_Wtime();
