@@ -55,7 +55,7 @@ namespace argo {
 		}
 
 		std::size_t requested_argo_load_size = env::load_size();
-		if(requested_argo_block_size == 0) {
+		if(requested_argo_load_size == 0) {
 			throw std::invalid_argument(
 				"Invalid load size (must be a number bigger than 0)");
 		}

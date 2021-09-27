@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <mutex>
 #include <functional>
+#include <cmath>
 //#include <shared_mutex>
 
 #include "argo.h"
@@ -408,6 +409,8 @@ void sharer_op(int lock_type, int rank, int offset,
 /**
  * @brief TODO
  */
-std::size_t get_window_index(int offset);
-std::size_t get_window_offset(int classification_index);
+std::size_t get_sharer_win_index(int classification_index);
+std::size_t get_sharer_win_offset(int classification_index);
+std::size_t get_data_win_index(int offset);
+std::size_t get_data_win_offset(int offset);
 #endif /* argo_swdsm_h */
