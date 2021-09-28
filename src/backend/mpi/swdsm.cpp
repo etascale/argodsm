@@ -728,7 +728,8 @@ void handler(int sig, siginfo_t *si, void *context){
 					sharer_win_offset+1,1,MPI_LONG,MPI_BOR,sharer_windows[win_index]);
 				MPI_Get(&sharers,1, MPI_LONG, homenode, sharer_win_offset, 1,MPI_LONG,sharer_windows[win_index]);
 			};
-			sharer_op(MPI_LOCK_SHARED, homenode, classidx+1, op);
+			sharer_op(MPI_LOCK_EXCLUSIVE, homenode, classidx+1, op);
+			//TODO: Test if this can still be SHARED
 		}
 				
 		/* We get result of accumulation before operation so we need to account for that */
@@ -766,10 +767,11 @@ void handler(int sig, siginfo_t *si, void *context){
 	}
 	unsigned char* copy = reinterpret_cast<unsigned char*>(pagecopy + line*pagesize);
 	memcpy(copy, aligned_access_ptr, CACHELINE*pagesize);
-	argo_write_buffer->add(startIndex);
 	mprotect(aligned_access_ptr, pagesize*CACHELINE, PROT_WRITE|PROT_READ);
 	cache_locks[startIndex].unlock();
 	pthread_rwlock_unlock(&sync_lock);
+	// TODO: Check if this actually needs to be outside
+	argo_write_buffer->add(startIndex);
 	double t2 = MPI_Wtime();
 	stats.storetime += t2-t1;
 	return;
@@ -945,7 +947,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 
 	int num_data_windows = std::ceil(size_of_chunk/static_cast<double>(pagesize*CACHELINE*win_granularity));
 	// Create one data_window per page chunk
-	// TODO: Need to avoid windows spanning two nodes probably
+	// TODO: Do we need the double dimensions or can each window be reused for another node?
 	data_windows.resize(num_data_windows, std::vector<MPI_Win>(numtasks));
 	for(i = 0; i < num_data_windows; i++){
 		std::size_t data_offset = i*pagesize*win_granularity;
@@ -955,7 +957,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		}
 	}
 	// Locks to protect the globalData windows from concurrent local access
-	// TODO: One window should correspond to one node, do we actually need multiple tiers?
 	mpi_lock_data = new mpi_lock*[num_data_windows];
 	for(i = 0; i < num_data_windows; i++){
 		mpi_lock_data[i] = new mpi_lock[numtasks];
@@ -1047,7 +1048,6 @@ void self_invalidation(){
 				flushed = 1;
 			}
 			std::size_t win_index = get_sharer_win_index(classidx);
-			//MPI_Win_lock(MPI_LOCK_SHARED, workrank, 0, sharer_windows[win_index]);
 			mpi_lock_sharer[win_index][workrank].lock(MPI_LOCK_SHARED, workrank, sharer_windows[win_index]);
 			if(
 				 // node is single writer
@@ -1057,13 +1057,11 @@ void self_invalidation(){
 				 ((globalSharers[classidx+1] == 0) && ((globalSharers[classidx]&id) == id))
 				 ){
 				mpi_lock_sharer[win_index][workrank].unlock(workrank, sharer_windows[win_index]);
-				//MPI_Win_unlock(workrank, sharer_windows[win_index]);
 				touchedcache[i] = 1;
 				/*nothing - we keep the pages, SD is done in flushWB*/
 			}
 			else{ //multiple writer or SO
 				mpi_lock_sharer[win_index][workrank].unlock(workrank, sharer_windows[win_index]);
-				//MPI_Win_unlock(workrank, sharer_windows[win_index]);
 				cacheControl[i].dirty = CLEAN;
 				cacheControl[i].state = INVALID;
 				touchedcache[i] = 0;
@@ -1319,11 +1317,9 @@ bool _is_cached(std::uintptr_t addr) {
 void sharer_op(int lock_type, int rank, int offset,
 		std::function<void(const std::size_t window_index)> op) {
 	std::size_t win_index = get_sharer_win_index(offset);
-	//MPI_Win_lock(lock_type, rank, 0, sharer_windows[win_index]);
 	mpi_lock_sharer[win_index][rank].lock(lock_type, rank, sharer_windows[win_index]);
 	op(win_index);
 	mpi_lock_sharer[win_index][rank].unlock(rank, sharer_windows[win_index]);
-	//MPI_Win_unlock(rank, sharer_windows[win_index]);
 }
 
 std::size_t get_sharer_win_index(int classification_index){

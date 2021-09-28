@@ -13,6 +13,7 @@
 #include <mutex>
 #include <atomic>
 #include <mpi.h>
+#include <vector>
 
 #include "backend/backend.hpp"
 #include "env/env.hpp"
@@ -34,6 +35,9 @@ extern control_data* cacheControl;
 
 /** @brief Block size based on backend definition */
 const std::size_t block_size = page_size*CACHELINE;
+
+//TODO: Document
+extern std::vector<cache_lock> cache_locks;
 
 /**
  * @brief	A write buffer in FIFO style with the capability to erase any
@@ -137,6 +141,7 @@ class write_buffer
 		 * @pre		Require ibsem and cachemutex to be taken
 		 */
 		void write_back_index(std::size_t cache_index) {
+			cache_locks[cache_index].lock();
 			assert(cacheControl[cache_index].dirty == DIRTY);
 			std::uintptr_t page_address = cacheControl[cache_index].tag;
 			void* page_ptr = static_cast<char*>(
@@ -148,6 +153,7 @@ class write_buffer
 			for(std::size_t i = 0; i < CACHELINE; i++){
 				storepageDIFF(cache_index+i, page_size*i+page_address);
 			}
+			cache_locks[cache_index].unlock();
 		}
 
 		/**
