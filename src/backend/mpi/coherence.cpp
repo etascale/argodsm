@@ -42,7 +42,7 @@ extern pthread_rwlock_t sync_lock;
  * @deprecated Should not be needed once the pyxis directory is
  * managed from elsewhere through a cache module.
  */
-extern std::vector<MPI_Win> sharer_windows;
+extern std::vector<std::vector<MPI_Win>> sharer_windows;
 /**
  * @brief sharer locks that protect concurrent access from the same node
  * @deprecated Should be done in a cache module
@@ -120,8 +120,7 @@ namespace argo {
 				std::size_t win_index = get_sharer_win_index(classification_index);
 				// Optimization to keep pages in cache if they do not
 				// need to be invalidated.
-				//MPI_Win_lock(MPI_LOCK_SHARED, node_id, 0, sharer_windows[win_index]);
-				mpi_lock_sharer[win_index][node_id].lock(MPI_LOCK_SHARED, node_id, sharer_windows[win_index]);
+				mpi_lock_sharer[win_index][node_id].lock(MPI_LOCK_SHARED, node_id, sharer_windows[win_index][node_id]);
 				if(
 						// node is single writer
 						(globalSharers[classification_index+1] == node_id_bit)
@@ -130,14 +129,12 @@ namespace argo {
 						((globalSharers[classification_index+1] == 0) &&
 						 ((globalSharers[classification_index] & node_id_bit) == node_id_bit))
 				  ){
-					//MPI_Win_unlock(node_id, sharer_windows[win_index]);
-					mpi_lock_sharer[win_index][node_id].unlock(node_id, sharer_windows[win_index]);
+					mpi_lock_sharer[win_index][node_id].unlock(node_id, sharer_windows[win_index][node_id]);
 					touchedcache[cache_index] = 1;
 					//nothing - we keep the pages, SD is done in flushWB
 				}
 				else{ //multiple writer or SO, invalidate the page
-					//MPI_Win_unlock(node_id, sharer_windows[win_index]);
-					mpi_lock_sharer[win_index][node_id].unlock(node_id, sharer_windows[win_index]);
+					mpi_lock_sharer[win_index][node_id].unlock(node_id, sharer_windows[win_index][node_id]);
 					cacheControl[cache_index].dirty = CLEAN;
 					cacheControl[cache_index].state = INVALID;
 					touchedcache[cache_index] = 0;
