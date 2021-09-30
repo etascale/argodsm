@@ -730,6 +730,7 @@ void handler(int sig, siginfo_t *si, void *context){
 			};
 			sharer_op(MPI_LOCK_SHARED, homenode, classidx+1, op);
 			//TODO: Test if this can still be SHARED
+			//TODO: We can remove one MPI operation here by using a bitmask and storing both
 		}
 				
 		/* We get result of accumulation before operation so we need to account for that */
@@ -1228,8 +1229,6 @@ void clearStatistics() {
 	stats.selfinvtime = 0;
 	stats.loadtime = 0;
 	stats.storetime = 0;
-	stats.flushtime = 0;
-	stats.writebacktime = 0;
 	stats.locktime = 0;
 	stats.barriertime = 0;
 	stats.stores = 0;
@@ -1290,9 +1289,10 @@ void printStatistics(){
 	printf("# PROCESS ID %d \n", workrank);
 	printf("cachesize:%ld,CACHELINE:%ld wbsize:%ld\n", cachesize, CACHELINE,
 			env::write_buffer_size()/CACHELINE);
-	printf("     writebacktime+=(t2-t1): %lf\n", stats.writebacktime);
+	printf("     writebacktime+=(t2-t1): %lf\n", argo_write_buffer->get_write_back_time());
 	printf("# Storetime : %lf , loadtime :%lf flushtime:%lf, writebacktime: %lf\n",
-		stats.storetime, stats.loadtime, stats.flushtime, stats.writebacktime);
+		stats.storetime, stats.loadtime, argo_write_buffer->get_flush_time(),
+		argo_write_buffer->get_write_back_time());
 	printf("# SSDtime:%lf, SSItime:%lf\n", stats.ssdtime, stats.ssitime);
 	printf("# Barriertime : %lf, selfinvtime %lf\n", stats.barriertime, stats.selfinvtime);
 	printf("stores:%lu, loads:%lu, barriers:%lu\n", stats.stores, stats.loads, stats.barriers);

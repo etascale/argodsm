@@ -85,10 +85,6 @@ typedef struct argo_statisticsStruct
 		double loadtime;
 		/** @brief Time spent storing pages */
 		double storetime;
-		/** @brief Time spent writing back from the writebuffer */
-		double writebacktime;
-		/** @brief Time spent flushing the writebuffer */
-		double flushtime;
 		/** @brief Time spent in global barrier */
 		double barriertime;
 		/** @brief Number of stores */
