@@ -41,23 +41,24 @@ void mpi_lock::lock(int lock_type, int target, MPI_Win window){
 
 	lock_start = MPI_Wtime();
 
-	// Take global spinlock
+	// Take global spinlock and stat lock
 	pthread_spin_lock(&spin_lock);
+
 	// Lock MPI
 	mpi_start = MPI_Wtime();
 	acquiretime = mpi_start;
 	MPI_Win_lock(lock_type, target, 0, window);
 	mpi_end = MPI_Wtime();
-	mpilocktime += (mpi_end-mpi_start);
-	numlocksremote++;
-
 	lock_end = MPI_Wtime();
-	/* Update max time spent in lock (NOT THREAD SAFE)*/
+
+	numlocksremote++;
+	/* Update max lock time */
 	if((lock_end-lock_start) > maxlocktime){
 		maxlocktime = lock_end-lock_start;
 	}
-	/* Update time spent in lock atomically */
-	for (double g = locktime.load(std::memory_order_acquire); !locktime.compare_exchange_strong(g, (g+lock_end-lock_start)););
+	/* Update time spent in lock */
+	mpilocktime += mpi_end-mpi_start;
+	locktime += lock_end-lock_start;
 }
 
 /** 
@@ -70,24 +71,28 @@ void mpi_lock::unlock(int target, MPI_Win window){
 
 	unlock_start = MPI_Wtime();
 
+	/* Unlock MPI */
 	mpi_start = MPI_Wtime();
 	MPI_Win_unlock(target, window);
 	mpi_end = MPI_Wtime();
-	mpiunlocktime += mpi_end-mpi_start;
 	releasetime = mpi_end;
-	holdtime += (releasetime-acquiretime);
-	if((releasetime-acquiretime) > maxholdtime){
-		maxholdtime = releasetime-acquiretime;
-	}
-	pthread_spin_unlock(&spin_lock);
 
 	unlock_end = MPI_Wtime();
-	/* Update max time spent in unlock (NOT THREAD SAFE)*/
+	/* Update max time spent in unlock */
 	if((unlock_end-unlock_start) > maxunlocktime){
 		maxunlocktime = unlock_end-unlock_start;
 	}
-	/* Update time spent in lock atomically */
-	for (g = unlocktime.load(std::memory_order_acquire); !unlocktime.compare_exchange_strong(g, (g+unlock_end-unlock_start)););
+	/* Update max time held if this is a new record */
+	if((releasetime-acquiretime) > maxholdtime){
+		maxholdtime = releasetime-acquiretime;
+	}
+	/* Update time spent in lock */
+	holdtime += (releasetime-acquiretime);
+	mpiunlocktime += mpi_end-mpi_start;
+	unlocktime += unlock_end-unlock_start;
+
+	/* Release the spinlock */
+	pthread_spin_unlock(&spin_lock);
 }
 
 
@@ -120,7 +125,7 @@ bool mpi_lock::trylock(int lock_type, int target, MPI_Win window){
  * @return the total time spent for all threads in the mpi_lock
  */
 double mpi_lock::get_locktime(){
-	return locktime.load();
+	return locktime;
 }
 
 /** 
@@ -130,7 +135,7 @@ double mpi_lock::get_locktime(){
 double mpi_lock::get_avglocktime(){
 	double numlocks = static_cast<double>(numlocksremote);
 	if(numlocks>0){
-		return locktime.load()/numlocks;
+		return locktime/numlocks;
 	}else{
 		return 0.0;
 	}
@@ -169,7 +174,7 @@ int mpi_lock::get_numlocks(){
  * @return the total time spent for all threads in the mpi_unlock
  */
 double mpi_lock::get_unlocktime(){
-	return unlocktime.load();
+	return unlocktime;
 }
 
 /** 
@@ -179,7 +184,7 @@ double mpi_lock::get_unlocktime(){
 double mpi_lock::get_avgunlocktime(){
 	double numlocks = static_cast<double>(numlocksremote);
 	if(numlocks>0){
-		return unlocktime.load()/numlocks;
+		return unlocktime/numlocks;
 	}else{
 		return 0.0;
 	}
@@ -218,10 +223,11 @@ double mpi_lock::get_holdtime(){
  * @return the average time spent holding an mpi_lock
  */
 double mpi_lock::get_avgholdtime(){
-	if(numlocksremote>0){
-		return holdtime/(double)numlocksremote;
+	double numlocks = static_cast<double>(numlocksremote);
+	if(numlocks>0){
+		return holdtime/numlocks;
 	}else{
-		return 0;
+		return 0.0;
 	}
 }
 
@@ -238,12 +244,12 @@ double mpi_lock::get_maxholdtime(){
  */
 void mpi_lock::reset_stats(){
 	/* Lock stuff */
-	locktime.store(0);
+	locktime = 0;
 	maxlocktime = 0;
 	mpilocktime = 0;
 	numlocksremote = 0;
 	/* Unlock stuff */
-	unlocktime.store(0);
+	unlocktime = 0;
 	maxunlocktime = 0;
 	mpiunlocktime = 0;
 	/* Other stuff */

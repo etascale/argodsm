@@ -7,24 +7,21 @@
 #ifndef mpi_lock_h
 #define mpi_lock_h mpi_lock_h
 
-#include <atomic>
 #include <pthread.h>
 #include <mpi.h>
 
 /** @brief Provides MPI RMA epoch locking */
 class mpi_lock {
 	private:
-		/* @brief atomic spinlock */
+		/* @brief spinlock protecting the MPI lock */
 		pthread_spinlock_t spin_lock;
 
 		/** @brief Timekeeping for lock */
-		std::atomic<double> locktime;
-		double maxlocktime, mpilocktime;
+		double locktime, maxlocktime, mpilocktime;
 		int numlocksremote;
 
 		/** @brief Timekeeping for unlock */
-		std::atomic<double> unlocktime;
-		double maxunlocktime, mpiunlocktime;
+		double unlocktime, maxunlocktime, mpiunlocktime;
 
 		/** @brief General statistics */
 		double holdtime, maxholdtime, flagtime, acquiretime, releasetime;

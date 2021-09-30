@@ -73,8 +73,12 @@ MPI_Group workgroup;
 MPI_Comm workcomm;
 /** @brief MPI window for communicating pyxis directory*/
 std::vector<std::vector<MPI_Win>> sharer_windows;
+/** @brief The number of sharer windows (first dimension) */
+std::size_t num_sharer_windows;
 /** @brief MPI windows for reading and writing data in global address space */
 std::vector<std::vector<MPI_Win>> data_windows;
+/** @brief The number of data windows (first dimension) */
+std::size_t num_data_windows;
 /**
  * @brief Mutex to protect concurrent access to same window from within node
  * @note  First index corresponds to window, second to remote node
@@ -771,10 +775,10 @@ void handler(int sig, siginfo_t *si, void *context){
 	mprotect(aligned_access_ptr, pagesize*CACHELINE, PROT_WRITE|PROT_READ);
 	cache_locks[startIndex].unlock();
 	pthread_rwlock_unlock(&sync_lock);
-	// TODO: Check if this actually needs to be outside
-	argo_write_buffer->add(startIndex);
 	double t2 = MPI_Wtime();
 	stats.storetime += t2-t1;
+	// TODO: Check if this actually needs to be outside
+	argo_write_buffer->add(startIndex);
 	return;
 }
 
@@ -946,7 +950,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		vm::map_memory(tmpcache, offsets_tbl_size_bytes, current_offset, PROT_READ|PROT_WRITE);
 	}
 
-	int num_data_windows = std::ceil(size_of_chunk/static_cast<double>(pagesize*CACHELINE*win_granularity));
+	num_data_windows = std::ceil(size_of_chunk/static_cast<double>(pagesize*CACHELINE*win_granularity));
 	// Create one data_window per page chunk
 	// TODO: Do we need the double dimensions or can each window be reused for another node?
 	data_windows.resize(num_data_windows, std::vector<MPI_Win>(numtasks));
@@ -964,7 +968,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	}
 
 	// Create one sharer_window per page chunk
-	int num_sharer_windows = std::ceil((classificationSize/2)/static_cast<double>(win_granularity));
+	num_sharer_windows = std::ceil((classificationSize/2)/static_cast<double>(win_granularity));
 	sharer_windows.resize(num_sharer_windows, std::vector<MPI_Win>(numtasks));
 	for(i = 0; i < num_sharer_windows; i++){
 		std::size_t sharer_offset = i*2*win_granularity;
@@ -1008,11 +1012,7 @@ void argo_finalize(){
 	mprotect(startAddr, size_of_all, PROT_WRITE|PROT_READ);
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	for(i = 0; i < numtasks; i++){
-		if(i == workrank){
-			printStatistics();
-		}
-	}
+	print_statistics();
 
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -1282,23 +1282,171 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr){
 	stats.stores++;
 }
 
-void printStatistics(){
-	stats.flushtime = argo_write_buffer->get_flush_time();
-	stats.writebacktime = argo_write_buffer->get_write_back_time();
-	printf("#####################STATISTICS#########################\n");
-	printf("# PROCESS ID %d \n", workrank);
-	printf("cachesize:%ld,CACHELINE:%ld wbsize:%ld\n", cachesize, CACHELINE,
-			env::write_buffer_size()/CACHELINE);
-	printf("     writebacktime+=(t2-t1): %lf\n", argo_write_buffer->get_write_back_time());
-	printf("# Storetime : %lf , loadtime :%lf flushtime:%lf, writebacktime: %lf\n",
-		stats.storetime, stats.loadtime, argo_write_buffer->get_flush_time(),
-		argo_write_buffer->get_write_back_time());
-	printf("# SSDtime:%lf, SSItime:%lf\n", stats.ssdtime, stats.ssitime);
-	printf("# Barriertime : %lf, selfinvtime %lf\n", stats.barriertime, stats.selfinvtime);
-	printf("stores:%lu, loads:%lu, barriers:%lu\n", stats.stores, stats.loads, stats.barriers);
-	printf("Locks:%d\n", stats.locks);
-	printf("########################################################\n");
-	printf("\n\n");
+/** Define some colors */
+#define RED   "\x1B[31m"
+#define GRN   "\x1B[32m"
+#define YEL   "\x1B[33m"
+#define BLU   "\x1B[34m"
+#define MAG   "\x1B[35m"
+#define CYN   "\x1B[36m"
+#define WHT   "\x1B[37m"
+#define RESET "\x1B[0m"
+
+void print_statistics(){
+	/**
+	 * Store statistics for the cache lock
+	 */
+	double cache_lock_time = 0;
+	for( auto cache_lock : cache_locks ) {
+		cache_lock_time += cache_lock.get_lock_time();
+	}
+
+	/**
+	 *	Store MPI lock statistics for the data lock
+	 */
+	double data_total_lock_time(0), data_avg_lock_time(0), data_max_lock_time(0);
+	double data_total_unlock_time(0), data_avg_unlock_time(0), data_max_unlock_time(0);
+	double data_mpi_lock_time(0), data_mpi_unlock_time(0);
+	double data_total_hold_time(0), data_avg_hold_time(0), data_max_hold_time(0);
+	int data_num_locks(0);
+
+	for(int i=0; i<num_data_windows; i++){
+		for(int j=0; j<numtasks; j++){
+			data_total_lock_time += mpi_lock_data[i][j].get_locktime();
+			data_total_unlock_time += mpi_lock_data[i][j].get_unlocktime();
+			data_mpi_lock_time += mpi_lock_data[i][j].get_mpilocktime();
+			data_mpi_unlock_time += mpi_lock_data[i][j].get_mpiunlocktime();
+			data_total_hold_time += mpi_lock_data[i][j].get_holdtime();
+
+			if(mpi_lock_data[i][j].get_maxlocktime() > data_max_lock_time){
+				data_max_lock_time = mpi_lock_data[i][j].get_maxlocktime();
+			}
+			if(mpi_lock_data[i][j].get_maxunlocktime() > data_max_unlock_time){
+				data_max_unlock_time = mpi_lock_data[i][j].get_maxunlocktime();
+			}
+			if(mpi_lock_data[i][j].get_maxholdtime() > data_max_hold_time){
+				data_max_hold_time = mpi_lock_data[i][j].get_maxholdtime();
+			}
+			data_num_locks += mpi_lock_data[i][j].get_numlocks();
+		}
+	}
+	/** Get averages */
+	data_avg_lock_time = data_total_lock_time / data_num_locks;
+	data_avg_unlock_time = data_total_unlock_time / data_num_locks;
+	data_avg_hold_time = data_total_hold_time / data_num_locks;
+
+	/**
+	 *	Store MPI lock statistics for the sharer lock
+	 */
+	double sharer_total_lock_time(0), sharer_avg_lock_time(0), sharer_max_lock_time(0);
+	double sharer_total_unlock_time(0), sharer_avg_unlock_time(0), sharer_max_unlock_time(0);
+	double sharer_mpi_lock_time(0), sharer_mpi_unlock_time(0);
+	double sharer_total_hold_time(0), sharer_avg_hold_time(0), sharer_max_hold_time(0);
+	int sharer_num_locks(0);
+
+	for(int i=0; i<num_sharer_windows; i++){
+		for(int j=0; j<numtasks; j++){
+			sharer_total_lock_time += mpi_lock_sharer[i][j].get_locktime();
+			sharer_total_unlock_time += mpi_lock_sharer[i][j].get_unlocktime();
+			sharer_mpi_lock_time += mpi_lock_sharer[i][j].get_mpilocktime();
+			sharer_mpi_unlock_time += mpi_lock_sharer[i][j].get_mpiunlocktime();
+			sharer_total_hold_time += mpi_lock_sharer[i][j].get_holdtime();
+
+			if(mpi_lock_sharer[i][j].get_maxlocktime() > sharer_max_lock_time){
+				sharer_max_lock_time = mpi_lock_sharer[i][j].get_maxlocktime();
+			}
+			if(mpi_lock_sharer[i][j].get_maxunlocktime() > sharer_max_unlock_time){
+				sharer_max_unlock_time = mpi_lock_sharer[i][j].get_maxunlocktime();
+			}
+			if(mpi_lock_sharer[i][j].get_maxholdtime() > sharer_max_hold_time){
+				sharer_max_hold_time = mpi_lock_sharer[i][j].get_maxholdtime();
+			}
+			sharer_num_locks += mpi_lock_sharer[i][j].get_numlocks();
+		}
+	}
+	/** Get averages */
+	sharer_avg_lock_time = sharer_total_lock_time / sharer_num_locks;
+	sharer_avg_unlock_time = sharer_total_unlock_time / sharer_num_locks;
+	sharer_avg_hold_time = sharer_total_hold_time / sharer_num_locks;
+
+
+	/** Nicely format and print the results */
+	MPI_Barrier(MPI_COMM_WORLD);
+	if(workrank==0){
+		/** Adjust memory size */
+		double mem_size_readable = size_of_all;
+		std::vector<const char*> sizes = { "B ", "KB", "MB", "GB", "TB" };
+		std::size_t order = 0;
+		while (mem_size_readable >= 1024 && order < sizes.size()-1) {
+			order++;
+			mem_size_readable /= 1024;
+		}
+
+		printf("\n#################################" YEL" ArgoDSM statistics " RESET "#################################\n");
+		printf("#  memory size: %11.2f%s  page size (p): %10dB   cache size:%14ldp\n",	
+				mem_size_readable, sizes[order], pagesize, cachesize);
+		printf("#  write buffer size: %5ldp   write back size: %8ldp   CACHELINE:%15ldp\n",
+				env::write_buffer_size()/CACHELINE,
+				env::write_buffer_write_back_size()/CACHELINE,
+				CACHELINE);
+	}
+	for(int i=0; i<numtasks; i++){
+		MPI_Barrier(MPI_COMM_WORLD);
+		if(i==workrank){
+			printf("\n#" YEL "  ### PROCESS ID %d ###\n" RESET,workrank);
+
+			/* Print remote access info */
+			printf("#  " CYN "# Remote accesses\n" RESET);
+			printf("#  read misses: %12lu    access time: %12.4fs\n",
+					stats.loads, stats.loadtime);
+			printf("#  write misses: %11lu    access time: %12.4fs\n",
+					stats.stores, stats.storetime);
+
+			/* Print coherence info */
+			printf("#  " CYN "# Coherence actions\n" RESET);
+			printf("#  locks held: %13d    barriers passed: %8lu    barrier time: %11.4fs\n",
+					stats.locks, stats.barriers, stats.barriertime);
+			printf("#  si time: %16.4fs   ssi time: %15.4fs   ssd time: %15.4fs\n",
+					stats.selfinvtime, stats.ssitime, stats.ssdtime);
+
+			/* Print write buffer info */
+			printf("#  " CYN "# Write buffer\n" RESET);
+			printf("#  flush time: %13.4fs   wrtbk time: %13.4fs   lock time: %14.4fs\n",
+					argo_write_buffer->get_flush_time(),
+					argo_write_buffer->get_write_back_time(),
+					argo_write_buffer->get_buffer_lock_time());
+
+			/* Print cache lock info */
+			printf("#  " CYN "# Cache lock\n" RESET);
+			printf("#  cache lock time: %8.4fs\n",
+					cache_lock_time);
+
+			/* Print data lock info */
+			printf("#  " CYN "# Data lock  \t(%d locks held)\n" RESET, data_num_locks);
+			printf("#  ttl lock time: %10.4fs   avg lock time: %10.4fs   max lock time: %10.4fs\n",
+					data_total_lock_time, data_avg_lock_time, data_max_lock_time);
+			printf("#  ttl unlock time: %8.4fs   avg unlock time: %8.4fs   max unlock time: %8.4fs\n",
+					data_total_unlock_time, data_avg_unlock_time, data_max_unlock_time);
+			printf("#  ttl hold time: %10.4fs   avg hold time: %10.4fs   max hold time: %10.4fs\n",
+					data_total_hold_time, data_avg_hold_time, data_max_hold_time);
+			printf("#  mpi lock time: %10.4fs   mpi unlock time: %8.4fs\n",
+					data_mpi_lock_time, data_mpi_unlock_time);
+
+			/* Print sharer lock info */
+			printf("#  " CYN "# Sharer lock\t(%d locks held)\n" RESET, sharer_num_locks);
+			printf("#  ttl lock time: %10.4fs   avg lock time: %10.4fs   max lock time: %10.4fs\n",
+					sharer_total_lock_time, sharer_avg_lock_time, sharer_max_lock_time);
+			printf("#  ttl unlock time: %8.4fs   avg unlock time: %8.4fs   max unlock time: %8.4fs\n",
+					sharer_total_unlock_time, sharer_avg_unlock_time, sharer_max_unlock_time);
+			printf("#  ttl hold time: %10.4fs   avg hold time: %10.4fs   max hold time: %10.4fs\n",
+					sharer_total_hold_time, sharer_avg_hold_time, sharer_max_hold_time);
+			printf("#  mpi lock time: %10.4fs   mpi unlock time: %8.4fs\n",
+					sharer_mpi_lock_time, sharer_mpi_unlock_time);
+			printf("\n");
+			fflush(stdout);
+		}
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
 }
 
 void *argo_get_global_base() { return startAddr; }
