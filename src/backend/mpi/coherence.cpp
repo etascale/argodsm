@@ -197,7 +197,6 @@ namespace argo {
 					cacheControl[cache_index].dirty = CLEAN;
 				}
 				cache_locks[cache_index].unlock();
-				//TODO: Does this have to be outside?
 			}
 
 			double t2 = MPI_Wtime();

@@ -61,7 +61,7 @@ namespace {
 	 * @brief default requested cache lock granularity (if environment variable is unset)
 	 * @see @ref ARGO_MPI_WIN_GRANULARITY
 	 */
-	const std::size_t default_mpi_win_granularity = 16;
+	const std::size_t default_mpi_win_granularity = 64;
 
 	/**
 	 * @brief environment variable used for requesting memory size
