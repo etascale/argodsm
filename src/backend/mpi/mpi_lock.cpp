@@ -37,19 +37,17 @@ mpi_lock::mpi_lock()
  * @param window    MPI window to lock
  */
 void mpi_lock::lock(int lock_type, int target, MPI_Win window){
-	double mpi_start, mpi_end, lock_start, lock_end;
-
-	lock_start = MPI_Wtime();
+	double lock_start = MPI_Wtime();
 
 	// Take global spinlock and stat lock
 	pthread_spin_lock(&spin_lock);
 
 	// Lock MPI
-	mpi_start = MPI_Wtime();
+	double mpi_start = MPI_Wtime();
 	acquiretime = mpi_start;
 	MPI_Win_lock(lock_type, target, 0, window);
-	mpi_end = MPI_Wtime();
-	lock_end = MPI_Wtime();
+	double mpi_end = MPI_Wtime();
+	double lock_end = MPI_Wtime();
 
 	numlocksremote++;
 	/* Update max lock time */
@@ -67,17 +65,15 @@ void mpi_lock::lock(int lock_type, int target, MPI_Win window){
  * @param window    MPI window to lock
  */
 void mpi_lock::unlock(int target, MPI_Win window){
-	double g, unlock_start, unlock_end, mpi_start, mpi_end;
-
-	unlock_start = MPI_Wtime();
+	double unlock_start = MPI_Wtime();
 
 	/* Unlock MPI */
-	mpi_start = MPI_Wtime();
+	double mpi_start = MPI_Wtime();
 	MPI_Win_unlock(target, window);
-	mpi_end = MPI_Wtime();
+	double mpi_end = MPI_Wtime();
 	releasetime = mpi_end;
 
-	unlock_end = MPI_Wtime();
+	double unlock_end = MPI_Wtime();
 	/* Update max time spent in unlock */
 	if((unlock_end-unlock_start) > maxunlocktime){
 		maxunlocktime = unlock_end-unlock_start;
