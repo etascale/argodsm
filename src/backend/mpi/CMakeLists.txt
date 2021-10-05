@@ -8,11 +8,3 @@ install(TARGETS argobackend-mpi
 	RUNTIME DESTINATION bin
 	LIBRARY DESTINATION lib
 	ARCHIVE DESTINATION lib)
-
-option(ARGO_ENABLE_MT
-	"Enable support for multi-threaded MPI in ArgoDSM (MPI_THREAD_MULTIPLE)" OFF)
-if(ARGO_ENABLE_MT)
-	target_compile_definitions(argobackend-mpi PRIVATE ARGO_ENABLE_MT=1)
-else()
-	target_compile_definitions(argobackend-mpi PRIVATE ARGO_ENABLE_MT=0)
-endif()

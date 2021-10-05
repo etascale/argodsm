@@ -227,15 +227,5 @@ export ARGO_WRITE_BUFFER_WRITE_BACK_SIZE=64
 
 ## Multi-threaded MPI Support
 
-If the ArgoDSM library is used inside a project that already utilizes MPI,
-it is important to remember that MPI may only be initialized once. We
-advise that ArgoDSM is left to initialize MPI, as deferring initialization
-is not supported. ArgoDSM currently does not exploit multi-threaded MPI,
-and therefore by default initializes MPI with thread level
-`MPI_THREAD_SERIALIZED`. It is possible to force ArgoDSM to initialize MPI
-with support for multi-threaded MPI (`MPI_THREAD_MULTIPLE`); should this be
-requested by setting the CMake option `-DARGO_ENABLE_MT=ON` before building
-ArgoDSM. Note that support for, and the stability of, RMA over
-multi-threaded MPI depends on the MPI implementation, and therefore it is
-recommended to use this option only with the latest stable release of any
-MPI implementation.
+ArgoDSM now requires and utilizes multi-threaded MPI. Please ensure that
+your MPI installation supports `MPI_THREAD_MULTIPLE`.
