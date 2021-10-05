@@ -1484,13 +1484,10 @@ std::size_t get_sharer_win_offset(int classification_index){
 	return classification_index%(win_granularity*2);
 }
 
-std::size_t get_data_win_index(int offset){
+std::size_t get_data_win_index(std::size_t offset){
 	return (offset/(pagesize*CACHELINE))/win_granularity;
 }
 
-std::size_t get_data_win_offset(int offset){
-	//printf("[%d] Offset: %d\t Mod: %lu\t Return: %lu\n",
-	//		getID(), offset, (win_granularity*pagesize*CACHELINE),
-	//		offset%(win_granularity*(pagesize*CACHELINE)));
+std::size_t get_data_win_offset(std::size_t offset){
 	return offset%(win_granularity*(pagesize*CACHELINE));
 }
