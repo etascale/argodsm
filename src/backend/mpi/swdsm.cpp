@@ -1018,13 +1018,13 @@ void argo_finalize(){
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	// Free data windows
-	for(auto win_index : data_windows){
+	for(auto &win_index : data_windows){
 		for( auto window : win_index){
 			MPI_Win_free(&window);
 		}
 	}
 	// Free sharer windows
-	for(auto win_index : sharer_windows){
+	for(auto &win_index : sharer_windows){
 		for( auto window : win_index){
 			MPI_Win_free(&window);
 		}
@@ -1300,7 +1300,7 @@ void print_statistics(){
 	 * Store statistics for the cache lock
 	 */
 	double cache_lock_time = 0;
-	for( auto cache_lock : cache_locks ) {
+	for( auto &cache_lock : cache_locks ) {
 		cache_lock_time += cache_lock.get_lock_time();
 	}
 
@@ -1386,9 +1386,9 @@ void print_statistics(){
 		}
 
 		printf("\n#################################" YEL" ArgoDSM statistics " RESET "##################################\n");
-		printf("#  memory size: %12.2f%s  page size (p): %10dB   cache size:%14ldp\n",
+		printf("#  memory size: %12.2f%s  page size (p): %10dB   cache size: %13ldp\n",
 				mem_size_readable, sizes[order], pagesize, cachesize);
-		printf("#  write buffer size: %6ldp   write back size: %8ldp   CACHELINE:%15ldp\n",
+		printf("#  write buffer size: %6ldp   write back size: %8ldp   CACHELINE: %14ldp\n",
 				env::write_buffer_size()/CACHELINE,
 				env::write_buffer_write_back_size()/CACHELINE,
 				CACHELINE);

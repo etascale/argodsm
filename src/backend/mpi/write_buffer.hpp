@@ -22,12 +22,6 @@
 #include "qd.hpp"
 
 /**
- * @brief		Argo statistics struct
- * @deprecated 	This should be replaced with an API call
- */
-extern argo_statistics stats;
-
-/**
  * @brief		Argo cache data structure
  * @deprecated 	prototype implementation, should be replaced with API calls
  */
@@ -271,6 +265,7 @@ class write_buffer
 		/**
 		 * @brief	Copy constructor
 		 * @param	other The write_buffer object to copy from
+		 * @note	with c++14 we could use std::shared_lock for lock_other
 		 */
 		write_buffer(const write_buffer & other) {
 			// Ensure protection of data
@@ -292,6 +287,7 @@ class write_buffer
 		 * @brief	Copy assignment operator
 		 * @param	other the write_buffer object to copy assign from
 		 * @return	reference to the created copy
+		 * @note	with c++14 we could use std::shared_lock for lock_other
 		 */
 		write_buffer& operator=(const write_buffer & other) {
 			if(&other != this) {
