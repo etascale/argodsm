@@ -829,6 +829,7 @@ std::size_t align_forwards(std::size_t offset, std::size_t size){
 
 void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	initmpi();
+	double init_start = MPI_Wtime();
 
 	/** Standardise the ArgoDSM memory space */
 	argo_size = std::max(argo_size, static_cast<std::size_t>(pagesize*numtasks));
@@ -997,6 +998,9 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	}
 
 	argo_reset_coherence();
+	double init_end = MPI_Wtime();
+	stats.inittime = init_end - init_start;
+	stats.exectime = init_end;
 }
 
 void argo_finalize(){
@@ -1005,6 +1009,7 @@ void argo_finalize(){
 		printf("ArgoDSM shutting down\n");
 	}
 	swdsm_argo_barrier(1);
+	stats.exectime = MPI_Wtime() - stats.exectime;
 	mprotect(startAddr, size_of_all, PROT_WRITE|PROT_READ);
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -1226,6 +1231,8 @@ void clearStatistics() {
 	stats.loadtime = 0;
 	stats.storetime = 0;
 	stats.locktime = 0;
+	stats.inittime = 0;
+	stats.exectime = 0;
 	stats.barriertime = 0;
 	stats.stores = 0;
 	stats.writebacks = 0;
@@ -1378,13 +1385,17 @@ void print_statistics(){
 			mem_size_readable /= 1024;
 		}
 
-		printf("\n#################################" YEL" ArgoDSM statistics " RESET "#################################\n");
-		printf("#  memory size: %11.2f%s  page size (p): %10dB   cache size:%14ldp\n",	
+		printf("\n#################################" YEL" ArgoDSM statistics " RESET "##################################\n");
+		printf("#  memory size: %12.2f%s  page size (p): %10dB   cache size:%14ldp\n",
 				mem_size_readable, sizes[order], pagesize, cachesize);
-		printf("#  write buffer size: %5ldp   write back size: %8ldp   CACHELINE:%15ldp\n",
+		printf("#  write buffer size: %6ldp   write back size: %8ldp   CACHELINE:%15ldp\n",
 				env::write_buffer_size()/CACHELINE,
 				env::write_buffer_write_back_size()/CACHELINE,
 				CACHELINE);
+		printf("#  allocation policy: %6ld    policy block size: %6ldp   load size: %14ldp\n",
+				env::allocation_policy(), env::allocation_block_size(), env::load_size());
+		printf("#  active time: %12.4fs   init time: %14.4fs\n",
+				stats.exectime, stats.inittime);
 	}
 	for(int i=0; i<numtasks; i++){
 		MPI_Barrier(MPI_COMM_WORLD);
