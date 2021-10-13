@@ -16,15 +16,17 @@ class mpi_lock {
 		/* @brief spinlock protecting the MPI lock */
 		pthread_spinlock_t spin_lock;
 
-		/** @brief Timekeeping for lock */
-		double locktime, maxlocktime, mpilocktime;
-		int numlocksremote;
-
-		/** @brief Timekeeping for unlock */
-		double unlocktime, maxunlocktime, mpiunlocktime;
-
 		/** @brief General statistics */
-		double holdtime, maxholdtime, flagtime, acquiretime, releasetime;
+		int num_locks;
+
+		/** @brief Statistics for spin lock */
+		double spin_lock_time, max_spin_lock_time;
+		double spin_hold_time, max_spin_hold_time, spin_acquire_time, spin_release_time;
+
+		/** @brief Statistics for mpi lock */
+		double mpi_lock_time, max_mpi_lock_time;
+		double mpi_unlock_time, max_mpi_unlock_time;
+		double mpi_hold_time, max_mpi_hold_time, mpi_acquire_time, mpi_release_time;
 
 	public:
 		/**
@@ -61,90 +63,114 @@ class mpi_lock {
 		bool trylock(int lock_type, int target, MPI_Win window);
 
 
-
 		/*********************************************************
-		 * LOCK STATISTICS
+		 * SPIN LOCK STATISTICS
 		 * ******************************************************/
 
-		/** 
+		/**
 		 * @brief  get timekeeping statistics
-		 * @return the total time spent for all threads in the mpi_lock
+		 * @return the total time spent locking a spin lock
 		 */
-		double get_locktime();
+		double get_spin_lock_time();
 
-		/** 
+		/**
 		 * @brief  get timekeeping statistics
-		 * @return the maximum time spent locking a window
+		 * @return the average time spent locking a spin lock
 		 */
-		double get_avglocktime();
+		double get_avg_spin_lock_time();
 
-		/** 
+		/**
 		 * @brief  get timekeeping statistics
-		 * @return the maximum time spent locking a window
+		 * @return the maximum time spent locking a spin lock
 		 */
-		double get_maxlocktime();
+		double get_max_spin_lock_time();
 
-		/** 
+		/**
 		 * @brief  get timekeeping statistics
-		 * @return the total time spent for all threads waiting for MPI_Win_lock
+		 * @return the total time spent holding a spin lock
 		 */
-		double get_mpilocktime();
+		double get_spin_hold_time();
 
-		/** 
+		/**
+		 * @brief  get timekeeping statistics
+		 * @return the average time spent holding a spin lock
+		 */
+		double get_avg_spin_hold_time();
+
+		/**
+		 * @brief  get timekeeping statistics
+		 * @return the maximum time spent holding a spin lock
+		 */
+		double get_max_spin_hold_time();
+
+		/*********************************************************
+		 * MPI LOCK STATISTICS
+		 * ******************************************************/
+
+		/**
+		 * @brief  get timekeeping statistics
+		 * @return the total time spent locking an mpi_lock
+		 */
+		double get_mpi_lock_time();
+
+		/**
+		 * @brief  get timekeeping statistics
+		 * @return the average time spent locking an mpi_lock
+		 */
+		double get_avg_mpi_lock_time();
+
+		/**
+		 * @brief  get timekeeping statistics
+		 * @return the maximum time spent locking an mpi_lock
+		 */
+		double get_max_mpi_lock_time();
+
+		/**
+		 * @brief  get timekeeping statistics
+		 * @return the total time spent unlocking an mpi_lock
+		 */
+		double get_mpi_unlock_time();
+
+		/**
+		 * @brief  get timekeeping statistics
+		 * @return the average time spent unlocking an mpi_lock
+		 */
+		double get_avg_mpi_unlock_time();
+
+		/**
+		 * @brief  get timekeeping statistics
+		 * @return the maximum time spent unlocking an mpi_lock
+		 */
+		double get_max_mpi_unlock_time();
+
+		/**
+		 * @brief  get timekeeping statistics
+		 * @return the total time spent holding an mpi_lock
+		 */
+		double get_mpi_hold_time();
+
+		/**
+		 * @brief  get timekeeping statistics
+		 * @return the average time spent holding an mpi_lock
+		 */
+		double get_avg_mpi_hold_time();
+
+		/**
+		 * @brief  get timekeeping statistics
+		 * @return the maximum time spent holding an mpi_lock
+		 */
+		double get_max_mpi_hold_time();
+
+
+		/*********************************************************
+		 * GENERAL
+		 * ******************************************************/
+
+		/**
 		 * @brief  get timekeeping statistics
 		 * @return the total number of locks taken
 		 */
-		int get_numlocks();
-
-		/*********************************************************
-		 * UNLOCK STATISTICS
-		 * ******************************************************/
-
-		/** 
-		 * @brief  get timekeeping statistics
-		 * @return the total time spent unlocking the lock
-		 */
-		double get_unlocktime();
-
-		/** 
-		 * @brief  get timekeeping statistics
-		 * @return the average time spent unlocking the lock
-		 */
-		double get_avgunlocktime();
-
-		/** 
-		 * @brief  get timekeeping statistics
-		 * @return the maximum time spent unlocking a window
-		 */
-		double get_maxunlocktime();
-
-		/** 
-		 * @brief  get timekeeping statistics
-		 * @return the total time spent unlocking the MPI Windows
-		 */
-		double get_mpiunlocktime();
-
-		/*********************************************************
-		 * GENERAL STATISTICS
-		 * ******************************************************/
-
-		/** 
-		 * @brief  get lock statistics
-		 * @return the total amount of time holding an mpi_lock
-		 */
-		double get_holdtime();
-
-		/** 
-		 * @brief  get lock statistics
-		 * @return the total amount of time holding an mpi_lock
-		 */
-		double get_avgholdtime();
-
-		/** 
-		 * @brief  get lock statistics
-		 * @return the total amount of time holding an mpi_lock
-		 */
-		double get_maxholdtime();
+		int get_num_locks();
 
 		/**
 		 * @brief reset the timekeeping statistics

@@ -7,98 +7,84 @@
 
 #include "mpi_lock.hpp"
 
-/**
- * @brief mpi_lock constructor 
- */
 mpi_lock::mpi_lock()
-	/* Initialize lock timekeeping */
-	: locktime(0),
-	maxlocktime(0),
-	mpilocktime(0),
-	numlocksremote(0),
-	/* Initialize unlock timekeeping */
-	unlocktime(0),
-	maxunlocktime(0),
-	mpiunlocktime(0),
-	/* Initialize general statkeeping */
-	holdtime(0),
-	maxholdtime(0),
-	acquiretime(0),
-	releasetime(0)
-{ 
+	: num_locks(0),
+	/* spin lock statistics */
+	spin_lock_time(0),
+	max_spin_lock_time(0),
+	spin_hold_time(0),
+	max_spin_hold_time(0),
+	spin_acquire_time(0),
+	spin_release_time(0),
+	/* MPI lock statistics */
+	mpi_lock_time(0),
+	max_mpi_lock_time(0),
+	mpi_unlock_time(0),
+	max_mpi_unlock_time(0),
+	mpi_hold_time(0),
+	max_mpi_hold_time(0),
+	mpi_acquire_time(0),
+	mpi_release_time(0)
+{
 	pthread_spin_init(&spin_lock, PTHREAD_PROCESS_PRIVATE);
 };
 
 
-/**
- * @brief acquire mpi_lock
- * @param lock_type MPI_LOCK_SHARED or MPI_LOCK_EXCLUSIVE
- * @param target    target node of the lock
- * @param window    MPI window to lock
- */
 void mpi_lock::lock(int lock_type, int target, MPI_Win window){
-	double lock_start = MPI_Wtime();
 
-	// Take global spinlock and stat lock
+	// Take global spinlock
+	double spin_start = MPI_Wtime();
 	pthread_spin_lock(&spin_lock);
+	double spin_end = MPI_Wtime();
+	spin_acquire_time = spin_end;
 
 	// Lock MPI
 	double mpi_start = MPI_Wtime();
-	acquiretime = mpi_start;
 	MPI_Win_lock(lock_type, target, 0, window);
 	double mpi_end = MPI_Wtime();
-	double lock_end = MPI_Wtime();
+	mpi_acquire_time = mpi_end;
 
-	numlocksremote++;
-	/* Update max lock time */
-	if((lock_end-lock_start) > maxlocktime){
-		maxlocktime = lock_end-lock_start;
+	num_locks++;
+	/* Update max lock times */
+	if((spin_end-spin_start) > max_spin_lock_time){
+		max_spin_lock_time = spin_end-spin_start;
+	}
+	if((mpi_end-mpi_start) > max_mpi_lock_time){
+		max_mpi_lock_time = mpi_end - mpi_start;
 	}
 	/* Update time spent in lock */
-	mpilocktime += mpi_end-mpi_start;
-	locktime += lock_end-lock_start;
+	mpi_lock_time += mpi_end-mpi_start;
+	spin_lock_time += spin_end-spin_start;
 }
 
-/** 
- * @brief release mpi_lock
- * @param target    target node of the lock
- * @param window    MPI window to lock
- */
 void mpi_lock::unlock(int target, MPI_Win window){
-	double unlock_start = MPI_Wtime();
 
 	/* Unlock MPI */
 	double mpi_start = MPI_Wtime();
 	MPI_Win_unlock(target, window);
 	double mpi_end = MPI_Wtime();
-	releasetime = mpi_end;
+	mpi_release_time = mpi_end;
 
-	double unlock_end = MPI_Wtime();
-	/* Update max time spent in unlock */
-	if((unlock_end-unlock_start) > maxunlocktime){
-		maxunlocktime = unlock_end-unlock_start;
+	/* Update time spent in MPI lock */
+	mpi_unlock_time += mpi_end-mpi_start;
+	mpi_hold_time += mpi_release_time-mpi_acquire_time;
+	/* Update max time holding an MPI lock if new record*/
+	if((mpi_release_time-mpi_acquire_time) > max_mpi_hold_time){
+		max_mpi_hold_time = mpi_release_time-mpi_acquire_time;
 	}
-	/* Update max time held if this is a new record */
-	if((releasetime-acquiretime) > maxholdtime){
-		maxholdtime = releasetime-acquiretime;
+
+	/* Update the time spent in spin lock */
+	spin_release_time = MPI_Wtime();
+	spin_hold_time += spin_release_time-spin_acquire_time;
+	/* Update max time holding a spin lock if new record*/
+	if((spin_release_time-spin_acquire_time) > max_spin_hold_time){
+		max_spin_hold_time = spin_release_time-spin_acquire_time;
 	}
-	/* Update time spent in lock */
-	holdtime += (releasetime-acquiretime);
-	mpiunlocktime += mpi_end-mpi_start;
-	unlocktime += unlock_end-unlock_start;
 
 	/* Release the spinlock */
 	pthread_spin_unlock(&spin_lock);
 }
 
-
-/** 
- * @brief try to acquire lock
- * @param lock_type MPI_LOCK_SHARED or MPI_LOCK_EXCLUSIVE
- * @param target    target node of the lock
- * @param window    MPI window to lock
- * @return          true if successful, false otherwise
- */
 bool mpi_lock::trylock(int lock_type, int target, MPI_Win window){
 	/* TODO: Not really fully tested and no stat tracking */
 	// Try to take global spinlock
@@ -111,144 +97,121 @@ bool mpi_lock::trylock(int lock_type, int target, MPI_Win window){
 }
 
 
-
 /*********************************************************
- * LOCK STATISTICS
+ * SPIN LOCK STATISTICS
  * ******************************************************/
 
-/** 
- * @brief  get timekeeping statistics
- * @return the total time spent for all threads in the mpi_lock
- */
-double mpi_lock::get_locktime(){
-	return locktime;
+double mpi_lock::get_spin_lock_time(){
+	return spin_lock_time;
 }
 
-/** 
- * @brief  get timekeeping statistics
- * @return the average time spent per lock
- */
-double mpi_lock::get_avglocktime(){
-	double numlocks = static_cast<double>(numlocksremote);
-	if(numlocks>0){
-		return locktime/numlocks;
+double mpi_lock::get_avg_spin_lock_time(){
+	double locks = static_cast<double>(num_locks);
+	if(num_locks>0){
+		return spin_lock_time/locks;
 	}else{
 		return 0.0;
 	}
 }
 
-/** 
- * @brief  get timekeeping statistics
- * @return the average time spent per lock
- */
-double mpi_lock::get_maxlocktime(){
-	return maxlocktime;
+double mpi_lock::get_max_spin_lock_time(){
+	return max_spin_lock_time;
 }
 
-/** 
- * @brief  get timekeeping statistics
- * @return the total time spent for all threads waiting for MPI_Win_lock
- */
-double mpi_lock::get_mpilocktime(){
-	return mpilocktime;
+double mpi_lock::get_spin_hold_time(){
+	return spin_hold_time;
 }
 
-/** 
- * @brief  get timekeeping statistics
- * @return the total number of locks taken
- */
-int mpi_lock::get_numlocks(){
-	return numlocksremote;
-}
-
-/*********************************************************
- * UNLOCK STATISTICS
- * ******************************************************/
-
-/** 
- * @brief  get timekeeping statistics
- * @return the total time spent for all threads in the mpi_unlock
- */
-double mpi_lock::get_unlocktime(){
-	return unlocktime;
-}
-
-/** 
- * @brief  get timekeeping statistics
- * @return the average time spent per unlock
- */
-double mpi_lock::get_avgunlocktime(){
-	double numlocks = static_cast<double>(numlocksremote);
-	if(numlocks>0){
-		return unlocktime/numlocks;
+double mpi_lock::get_avg_spin_hold_time(){
+	double locks = static_cast<double>(num_locks);
+	if(num_locks>0){
+		return spin_hold_time/locks;
 	}else{
 		return 0.0;
 	}
 }
 
-/** 
- * @brief  get timekeeping statistics
- * @return the maximum time spent in mpi_unlock
- */
-double mpi_lock::get_maxunlocktime(){
-	return maxunlocktime;
-}
-
-/** 
- * @brief  get timekeeping statistics
- * @return the total time spent for all threads waiting for mpi_win_lock
- */
-double mpi_lock::get_mpiunlocktime(){
-	return mpiunlocktime;
+double mpi_lock::get_max_spin_hold_time(){
+	return max_spin_hold_time;
 }
 
 /*********************************************************
- * GENERAL STATISTICS
+ * MPI LOCK STATISTICS
  * ******************************************************/
 
-/** 
- * @brief  get timekeeping statistics
- * @return the total time spent holding an mpi_lock
- */
-double mpi_lock::get_holdtime(){
-	return holdtime;
+double mpi_lock::get_mpi_lock_time(){
+	return mpi_lock_time;
 }
 
-/** 
- * @brief  get timekeeping statistics
- * @return the average time spent holding an mpi_lock
- */
-double mpi_lock::get_avgholdtime(){
-	double numlocks = static_cast<double>(numlocksremote);
-	if(numlocks>0){
-		return holdtime/numlocks;
+double mpi_lock::get_avg_mpi_lock_time(){
+	double locks = static_cast<double>(num_locks);
+	if(num_locks>0){
+		return mpi_lock_time/locks;
 	}else{
 		return 0.0;
 	}
 }
 
-/** 
- * @brief  get timekeeping statistics
- * @return the maximum time spent holding an mpi_lock
- */
-double mpi_lock::get_maxholdtime(){
-	return maxholdtime;
+double mpi_lock::get_max_mpi_lock_time(){
+	return max_mpi_lock_time;
 }
 
-/**
- * @brief reset the timekeeping statistics
- */
+double mpi_lock::get_mpi_unlock_time(){
+	return mpi_unlock_time;
+}
+
+double mpi_lock::get_avg_mpi_unlock_time(){
+	double locks = static_cast<double>(num_locks);
+	if(num_locks>0){
+		return mpi_unlock_time/locks;
+	}else{
+		return 0.0;
+	}
+}
+
+double mpi_lock::get_max_mpi_unlock_time(){
+	return max_mpi_unlock_time;
+}
+
+double mpi_lock::get_mpi_hold_time(){
+	return mpi_hold_time;
+}
+
+double mpi_lock::get_avg_mpi_hold_time(){
+	double locks = static_cast<double>(num_locks);
+	if(num_locks>0){
+		return mpi_hold_time/locks;
+	}else{
+		return 0.0;
+	}
+}
+
+double mpi_lock::get_max_mpi_hold_time(){
+	return max_mpi_hold_time;
+}
+
+
+
+/*********************************************************
+ * GENERAL
+ * ******************************************************/
+
+int mpi_lock::get_num_locks(){
+	return num_locks;
+}
+
 void mpi_lock::reset_stats(){
-	/* Lock stuff */
-	locktime = 0;
-	maxlocktime = 0;
-	mpilocktime = 0;
-	numlocksremote = 0;
-	/* Unlock stuff */
-	unlocktime = 0;
-	maxunlocktime = 0;
-	mpiunlocktime = 0;
-	/* Other stuff */
-	holdtime = 0;
-	maxholdtime = 0;
+	num_locks = 0;
+	/* spin lock statistics */
+	spin_lock_time = 0;
+	max_spin_lock_time = 0;
+	spin_hold_time = 0;
+	max_spin_hold_time = 0;
+	/* MPI lock statistics */
+	mpi_lock_time = 0;
+	max_mpi_lock_time = 0;
+	mpi_unlock_time = 0;
+	max_mpi_unlock_time = 0;
+	mpi_hold_time = 0;
+	max_mpi_hold_time = 0;
 }
