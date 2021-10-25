@@ -64,6 +64,12 @@ namespace {
 	const std::size_t default_mpi_win_granularity = 64;
 
 	/**
+	 * @brief default requested statistics level (if environment variable is unset)
+	 * @see @ref ARGO_MPI_WIN_GRANULARITY
+	 */
+	const std::size_t default_print_statistics = 2; // default 2 is basic node statistics
+
+	/**
 	 * @brief environment variable used for requesting memory size
 	 * @see @ref ARGO_MEMORY_SIZE
 	 */
@@ -111,6 +117,12 @@ namespace {
 	 */
 	const std::string env_mpi_win_granularity = "ARGO_MPI_WIN_GRANULARITY";
 
+	/**
+	 * @brief environment variable used for requesting statistics level
+	 * @see @ref ARGO_MPI_WIN_GRANULARITY
+	 */
+	const std::string env_print_statistics = "ARGO_PRINT_STATISTICS";
+
 	/** @brief error message string */
 	const std::string msg_uninitialized = "argo::env::init() must be called before accessing environment values";
 	/** @brief error message string */
@@ -155,8 +167,14 @@ namespace {
 	std::size_t value_load_size;
 
 	/**
-	 * @brief cache lock granularity requested through the environment variable @ref ARGO_MPI_WIN_GRANULARITY */
+	 * @brief cache lock granularity requested through the environment variable @ref ARGO_MPI_WIN_GRANULARITY
+	 */
 	std::size_t value_mpi_win_granularity;
+
+	/**
+	 * @brief statistics output level requested through the environment variable @ref ARGO_PRINT_STATISTICS
+	 */
+	std::size_t value_print_statistics;
 
 	/** @brief flag to allow checking that environment variables have been read before accessing their values */
 	bool is_initialized = false;
@@ -224,6 +242,7 @@ namespace argo {
 			value_load_size = parse_env<std::size_t>(env_load_size, default_load_size).second;
 			value_mpi_win_granularity = parse_env<std::size_t>(env_mpi_win_granularity,
 					default_mpi_win_granularity).second;
+			value_print_statistics = parse_env<std::size_t>(env_print_statistics, default_print_statistics).second;
 
 			is_initialized = true;
 		}
@@ -266,6 +285,11 @@ namespace argo {
 		std::size_t mpi_win_granularity() {
 			assert_initialized();
 			return value_mpi_win_granularity;
+		}
+
+		std::size_t print_statistics() {
+			assert_initialized();
+			return value_print_statistics;
 		}
 	} // namespace env
 } // namespace argo

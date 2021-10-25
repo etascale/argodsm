@@ -1296,6 +1296,12 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr){
 #define RESET "\x1B[0m"
 
 void print_statistics(){
+	std::size_t print_level = env::print_statistics();
+	/* Don't print if disabled */
+	if(print_level == 0){
+		return;
+	}
+
 	/**
 	 * Store statistics for the cache lock
 	 */
@@ -1413,6 +1419,7 @@ void print_statistics(){
 			mem_size_readable /= 1024;
 		}
 
+		/* Print general information */
 		printf("\n#################################" YEL" ArgoDSM statistics " RESET "##################################\n");
 		printf("#  memory size: %12.2f%s  page size (p): %10dB   cache size: %13ldp\n",
 				mem_size_readable, sizes[order], pagesize, cachesize);
@@ -1424,66 +1431,73 @@ void print_statistics(){
 				env::allocation_policy(), env::allocation_block_size(), env::load_size());
 		printf("#  active time: %12.4fs   init time: %14.4fs\n",
 				stats.exectime, stats.inittime);
+		printf("\n");
 	}
-	for(int i=0; i<numtasks; i++){
-		MPI_Barrier(MPI_COMM_WORLD);
-		if(i==workrank){
-			printf("\n#" YEL "  ### PROCESS ID %d ###\n" RESET,workrank);
 
-			/* Print remote access info */
-			printf("#  " CYN "# Remote accesses\n" RESET);
-			printf("#  read misses: %12lu    access time: %12.4fs\n",
-					stats.loads, stats.loadtime);
-			printf("#  write misses: %11lu    access time: %12.4fs\n",
-					stats.stores, stats.storetime);
+	/* Print node information */
+	if(print_level > 1) {
+		for(int i=0; i<numtasks; i++){
+			MPI_Barrier(MPI_COMM_WORLD);
+			if(i==workrank){
+				printf("#" YEL "  ### PROCESS ID %d ###\n" RESET,workrank);
 
-			/* Print coherence info */
-			printf("#  " CYN "# Coherence actions\n" RESET);
-			printf("#  locks held: %13d    barriers passed: %8lu    barrier time: %11.4fs\n",
-					stats.locks, stats.barriers, stats.barriertime);
-			printf("#  si time: %16.4fs   ssi time: %15.4fs   ssd time: %15.4fs\n",
-					stats.selfinvtime, stats.ssitime, stats.ssdtime);
+				/* Print remote access info */
+				printf("#  " CYN "# Remote accesses\n" RESET);
+				printf("#  read misses: %12lu    access time: %12.4fs\n",
+						stats.loads, stats.loadtime);
+				printf("#  write misses: %11lu    access time: %12.4fs\n",
+						stats.stores, stats.storetime);
 
-			/* Print write buffer info */
-			printf("#  " CYN "# Write buffer\n" RESET);
-			printf("#  flush time: %13.4fs   wrtbk time: %13.4fs   lock time: %14.4fs\n",
-					argo_write_buffer->get_flush_time(),
-					argo_write_buffer->get_write_back_time(),
-					argo_write_buffer->get_buffer_lock_time());
+				/* Print coherence info */
+				printf("#  " CYN "# Coherence actions\n" RESET);
+				printf("#  locks held: %13d    barriers passed: %8lu    barrier time: %11.4fs\n",
+						stats.locks, stats.barriers, stats.barriertime);
+				printf("#  si time: %16.4fs   ssi time: %15.4fs   ssd time: %15.4fs\n",
+						stats.selfinvtime, stats.ssitime, stats.ssdtime);
 
-			/* Print cache lock info */
-			printf("#  " CYN "# Cache lock\n" RESET);
-			printf("#  cache lock time: %8.4fs\n",
-					cache_lock_time);
+				/* Print write buffer info */
+				printf("#  " CYN "# Write buffer\n" RESET);
+				printf("#  flush time: %13.4fs   wrtbk time: %13.4fs   lock time: %14.4fs\n",
+					   argo_write_buffer->get_flush_time(),
+					   argo_write_buffer->get_write_back_time(),
+					   argo_write_buffer->get_buffer_lock_time());
 
-			/* Print data lock info */
-			printf("#  " CYN "# Data lock  \t(%zu locks held)\n" RESET, data_num_locks);
-			printf("#  spin lock time: %9.4fs   avg lock time: %10.4fs   max lock time: %10.4fs\n",
-					data_spin_lock_time, data_spin_avg_lock_time, data_spin_max_lock_time);
-			printf("#  spin hold time: %9.4fs   avg hold time: %10.4fs   max hold time: %10.4fs\n",
-					data_spin_hold_time, data_spin_avg_hold_time, data_spin_max_hold_time);
-			printf("#  mpi lock time: %10.4fs   avg lock time: %10.4fs   max lock time: %10.4fs\n",
-					data_mpi_lock_time, data_mpi_avg_lock_time, data_mpi_max_lock_time);
-			printf("#  mpi unlock time: %8.4fs   avg unlock time: %8.4fs   max unlock time: %8.4fs\n",
-					data_mpi_unlock_time, data_mpi_avg_unlock_time, data_mpi_max_unlock_time);
-			printf("#  mpi hold time: %10.4fs   avg hold time: %10.4fs   max hold time: %10.4fs\n",
-					data_mpi_hold_time, data_mpi_avg_hold_time, data_mpi_max_hold_time);
+				/* Print advanced node information */
+				if(print_level > 2){
+					/* Print cache lock info */
+					printf("#  " CYN "# Cache lock\n" RESET);
+					printf("#  cache lock time: %8.4fs\n",
+							cache_lock_time);
+
+					/* Print data lock info */
+					printf("#  " CYN "# Data lock  \t(%zu locks held)\n" RESET, data_num_locks);
+					printf("#  spin lock time: %9.4fs   avg lock time: %10.4fs   max lock time: %10.4fs\n",
+							data_spin_lock_time, data_spin_avg_lock_time, data_spin_max_lock_time);
+					printf("#  spin hold time: %9.4fs   avg hold time: %10.4fs   max hold time: %10.4fs\n",
+							data_spin_hold_time, data_spin_avg_hold_time, data_spin_max_hold_time);
+					printf("#  mpi lock time: %10.4fs   avg lock time: %10.4fs   max lock time: %10.4fs\n",
+							data_mpi_lock_time, data_mpi_avg_lock_time, data_mpi_max_lock_time);
+					printf("#  mpi unlock time: %8.4fs   avg unlock time: %8.4fs   max unlock time: %8.4fs\n",
+							data_mpi_unlock_time, data_mpi_avg_unlock_time, data_mpi_max_unlock_time);
+					printf("#  mpi hold time: %10.4fs   avg hold time: %10.4fs   max hold time: %10.4fs\n",
+							data_mpi_hold_time, data_mpi_avg_hold_time, data_mpi_max_hold_time);
 
 
-			/* Print sharer lock info */
-			printf("#  " CYN "# Sharer lock  \t(%zu locks held)\n" RESET, sharer_num_locks);
-			printf("#  spin lock time: %9.4fs   avg lock time: %10.4fs   max lock time: %10.4fs\n",
-					sharer_spin_lock_time, sharer_spin_avg_lock_time, sharer_spin_max_lock_time);
-			printf("#  spin hold time: %9.4fs   avg hold time: %10.4fs   max hold time: %10.4fs\n",
-					sharer_spin_hold_time, sharer_spin_avg_hold_time, sharer_spin_max_hold_time);
-			printf("#  mpi lock time: %10.4fs   avg lock time: %10.4fs   max lock time: %10.4fs\n",
-					sharer_mpi_lock_time, sharer_mpi_avg_lock_time, sharer_mpi_max_lock_time);
-			printf("#  mpi unlock time: %8.4fs   avg unlock time: %8.4fs   max unlock time: %8.4fs\n",
-					sharer_mpi_unlock_time, sharer_mpi_avg_unlock_time, sharer_mpi_max_unlock_time);
-			printf("#  mpi hold time: %10.4fs   avg hold time: %10.4fs   max hold time: %10.4fs\n",
-					sharer_mpi_hold_time, sharer_mpi_avg_hold_time, sharer_mpi_max_hold_time);
-			printf("\n");
-			fflush(stdout);
+					/* Print sharer lock info */
+					printf("#  " CYN "# Sharer lock  \t(%zu locks held)\n" RESET, sharer_num_locks);
+					printf("#  spin lock time: %9.4fs   avg lock time: %10.4fs   max lock time: %10.4fs\n",
+							sharer_spin_lock_time, sharer_spin_avg_lock_time, sharer_spin_max_lock_time);
+					printf("#  spin hold time: %9.4fs   avg hold time: %10.4fs   max hold time: %10.4fs\n",
+							sharer_spin_hold_time, sharer_spin_avg_hold_time, sharer_spin_max_hold_time);
+					printf("#  mpi lock time: %10.4fs   avg lock time: %10.4fs   max lock time: %10.4fs\n",
+							sharer_mpi_lock_time, sharer_mpi_avg_lock_time, sharer_mpi_max_lock_time);
+					printf("#  mpi unlock time: %8.4fs   avg unlock time: %8.4fs   max unlock time: %8.4fs\n",
+							sharer_mpi_unlock_time, sharer_mpi_avg_unlock_time, sharer_mpi_max_unlock_time);
+					printf("#  mpi hold time: %10.4fs   avg hold time: %10.4fs   max hold time: %10.4fs\n",
+							sharer_mpi_hold_time, sharer_mpi_avg_hold_time, sharer_mpi_max_hold_time);
+				}
+				printf("\n");
+			}
 		}
 	}
 	MPI_Barrier(MPI_COMM_WORLD);

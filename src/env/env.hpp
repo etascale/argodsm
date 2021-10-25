@@ -50,6 +50,13 @@
  * @details This environment variable determines the amount of DSM pages that are
  * 			are protected by a single MPI Window. It can be accessed through
  *          @ref argo::env::mpi_win_granularity() after argo::env::init() has been called.
+ *
+ * @envvar{ARGO_PRINT_STATISTICS} control the detail of statistics printed at end
+ * @details This environment variable determines the amount of statistics printed at once
+ * 			ArgoDSM finalizes. 0 prints no statistics, 1 prints general system information,
+ * 			2 in addition prints basic node information, and 3 in addition prints detailed
+ * 			node information. It can be accessed through @ref argo::env::print_statistics()
+ * 			after argo::env::init() has been called.
  */
 
 namespace argo {
@@ -122,6 +129,11 @@ namespace argo {
 		 * @see @ref ARGO_MPI_WIN_GRANULARITY
 		 */
 		std::size_t mpi_win_granularity();
+
+		/**
+		 * @brief Get the level of statistics print
+		 */
+		std::size_t print_statistics();
 	} // namespace env
 } // namespace argo
 

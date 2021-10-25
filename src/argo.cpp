@@ -66,6 +66,12 @@ namespace argo {
 				"Invalid cache block size (must be a number bigger than 0)");
 		}
 
+		std::size_t requested_argo_print_level = env::print_statistics();
+		if(requested_argo_print_level > 3) {
+			throw std::invalid_argument(
+				"Invalid statistics level (must be a number between 0 and 3)");
+		}
+
 		/* note: the backend must currently initialize before the mempool can be set */
 		backend::init(requested_argo_size, requested_cache_size);
 		default_global_mempool = new mp();
