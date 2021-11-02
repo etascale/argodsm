@@ -35,6 +35,7 @@
 #include <functional>
 #include <cmath>
 #include <vector>
+#include <atomic>
 
 #include "argo.h"
 #include "backend/backend.hpp"
@@ -82,9 +83,11 @@ typedef struct argo_statisticsStruct
 		/** @brief Time spent self invalidating */
 		double selfinvtime;
 		/** @brief Time spent loading pages */
-		double loadtime;
+		std::atomic<double> load_time;
 		/** @brief Time spent storing pages */
-		double storetime;
+		std::atomic<double> store_time;
+		/** @brief Time spent locking the sync lock */
+		std::atomic<double> sync_lock_time;
 		/** @brief Time spent in global barrier */
 		double barriertime;
 		/** @brief Time spent initializing ArgoDSM */
@@ -92,19 +95,17 @@ typedef struct argo_statisticsStruct
 		/** @brief Time between init and finalize */
 		double exectime;
 		/** @brief Number of stores */
-		std::size_t stores;
+		std::atomic<std::size_t> write_misses;
 		/** @brief Number of loads */
-		std::size_t loads;
+		std::atomic<std::size_t> read_misses;
 		/** @brief Number of barriers executed */
 		std::size_t barriers;
-		/** @brief Number of writebacks from (full) writebuffer */
-		std::size_t writebacks;
 		/** @brief Number of locks */
 		int locks;
 		/** @brief Time spent performing selective acquire */
-		double ssitime;
+		std::atomic<double> ssi_time;
 		/** @brief Time spent performing selective release */
-		double ssdtime;
+		std::atomic<double> ssd_time;
 } argo_statistics;
 
 /**
@@ -116,25 +117,43 @@ class alignas(64) cache_lock {
 		/** 
 		 * @brief Mutex protecting one cache block 
 		 * @todo This should be used through std::scoped_lock
-		 * in the future, but sufficient for this dirty fix.
+		 * in the future, but this requires minimum C++17.
 		 */
 		std::mutex c_mutex;
 
 		/** @brief Time spent waiting for lock */
 		double wait_time;
 
+		/** @brief Time spent holding the lock */
+		double hold_time;
+
+		/** @brief For timekeeping hold time */
+		double acquire_time;
+
+		/** @brief Number of times held */
+		std::size_t num_locks;
+
 	public:
 		/** @brief Constructor */
 		cache_lock()
-			: wait_time(0)
+			: wait_time(0),
+			hold_time(0),
+			acquire_time(0),
+			num_locks(0)
 		{ };
 
 		cache_lock( const cache_lock& _other )
-			: wait_time(_other.wait_time)
+			: wait_time(_other.wait_time),
+			hold_time(_other.hold_time),
+			acquire_time(_other.acquire_time),
+			num_locks(_other.num_locks)
 		{ };
 
 		cache_lock( const cache_lock&& _other )
-			: wait_time(std::move(_other.wait_time))
+			: wait_time(std::move(_other.wait_time)),
+			hold_time(std::move(_other.hold_time)),
+			acquire_time(std::move(_other.acquire_time)),
+			num_locks(std::move(_other.num_locks))
 		{ };
 
 		/** Destructor */
@@ -146,6 +165,8 @@ class alignas(64) cache_lock {
 			c_mutex.lock();
 			double end = MPI_Wtime();
 			wait_time += end-start;
+			acquire_time = end;
+			num_locks++;
 		}
 
 		bool try_lock(){
@@ -154,6 +175,7 @@ class alignas(64) cache_lock {
 
 		/** @brief Release a cache lock */
 		void unlock(){
+			hold_time += MPI_Wtime()-acquire_time;
 			c_mutex.unlock();
 		}
 
@@ -165,6 +187,30 @@ class alignas(64) cache_lock {
 			return wait_time;
 		}
 
+		/**
+		 * @brief	Get the time spent holding the lock
+		 * @return	The time in seconds
+		 */
+		double get_hold_time(){
+			return hold_time;
+		}
+
+		/**
+		 * @brief	Get the number of times this lock was held
+		 * @return	The number of times this lock was held
+		 */
+		std::size_t get_num_locks(){
+			return num_locks;
+		}
+
+		/**
+		 * @brief Clear all recorded statistics
+		 */
+		void reset_stats(){
+			wait_time = 0;
+			hold_time = 0;
+			num_locks = 0;
+		}
 };
 
 /*constants for control values*/
@@ -261,9 +307,9 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr);
 
 /*Statistics*/
 /**
- * @brief Clears out all statistics
+ * @brief Resets all ArgoDSM statistics
  */
-void clearStatistics();
+void argo_reset_stats();
 
 /**
  * @brief Prints collected statistics

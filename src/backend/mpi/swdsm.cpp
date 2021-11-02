@@ -390,7 +390,7 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 	}
 
 	/* Increase stat counter as load will be performed */
-	stats.loads++;
+	stats.read_misses.fetch_add(1);
 
 	/* Get globalSharers info from local node and add self to it */
 	sharer_op(MPI_LOCK_SHARED, workrank, classification_index_array[0],
@@ -564,7 +564,13 @@ void handler(int sig, siginfo_t *si, void *context){
 	std::size_t sharer_win_offset = get_sharer_win_offset(classidx);
 
 	/* Acquire shared sync lock and first cache index lock */
+	double sync_lock_start = MPI_Wtime();
 	pthread_rwlock_rdlock(&sync_lock);
+	double sync_lock_end = MPI_Wtime();
+	auto current_slt = stats.sync_lock_time.load();
+	while (!stats.sync_lock_time.compare_exchange_weak(current_slt,
+				current_slt+sync_lock_end-sync_lock_start))
+		;
 	cache_locks[startIndex].lock();
 
 	/* page is local */
@@ -688,7 +694,9 @@ void handler(int sig, siginfo_t *si, void *context){
 		//sync_mutex.unlock_shared();
 		pthread_rwlock_unlock(&sync_lock);
 		double t2 = MPI_Wtime();
-		stats.loadtime += t2-t1;
+		auto current_lt = stats.load_time.load();
+		while (!stats.load_time.compare_exchange_weak(current_lt, current_lt+t2-t1))
+			;
 		return;
 	}
 
@@ -773,7 +781,9 @@ void handler(int sig, siginfo_t *si, void *context){
 	cache_locks[startIndex].unlock();
 	pthread_rwlock_unlock(&sync_lock);
 	double t2 = MPI_Wtime();
-	stats.storetime += t2-t1;
+	auto current_st = stats.store_time.load();
+	while (!stats.store_time.compare_exchange_weak(current_st, current_st+t2-t1))
+		;
 	// TODO: Check if this actually needs to be outside
 	argo_write_buffer->add(startIndex);
 	return;
@@ -1163,8 +1173,8 @@ void swdsm_argo_barrier(int n, upgrade_type upgrade){
 }
 
 void argo_reset_coherence(){
-	stats.writebacks = 0;
-	stats.stores = 0;
+	std::size_t j;
+	stats.write_misses.store(0);
 
 	memset(touchedcache, 0, cachesize);
 	for(std::size_t i = 0; i < cachesize; i++){
@@ -1201,7 +1211,7 @@ void argo_reset_coherence(){
 	swdsm_argo_barrier(1);
 	mprotect(startAddr, size_of_all, PROT_NONE);
 	swdsm_argo_barrier(1);
-	clearStatistics();
+	argo_reset_stats();
 }
 
 void argo_acquire() {
@@ -1226,21 +1236,44 @@ void argo_acq_rel() {
 	argo_release();
 }
 
-void clearStatistics() {
+void argo_reset_stats(){
+	// Clear the stats struct
 	stats.selfinvtime = 0;
-	stats.loadtime = 0;
-	stats.storetime = 0;
+	stats.load_time.store(0);
+	stats.store_time.store(0);
+	stats.sync_lock_time.store(0);
 	stats.locktime = 0;
 	stats.inittime = 0;
 	stats.exectime = 0;
 	stats.barriertime = 0;
-	stats.stores = 0;
-	stats.writebacks = 0;
-	stats.loads = 0;
+	stats.write_misses.store(0);
+	stats.read_misses.store(0);
 	stats.barriers = 0;
 	stats.locks = 0;
-	stats.ssitime = 0;
-	stats.ssdtime = 0;
+	stats.ssi_time.store(0);
+	stats.ssd_time.store(0);
+
+	// Clear the cache lock statistics
+	for( auto &cache_lock : cache_locks ){
+		cache_lock.reset_stats();
+	}
+
+	// Clear the sharer lock statistics
+	for( std::size_t i = 0; i < num_sharer_windows; i++ ) {
+		for( int j = 0; j < numtasks; j++ ) {
+			mpi_lock_sharer[i][j].reset_stats();
+		}
+	}
+
+	// Clear the data lock statistics
+	for( std::size_t i = 0; i < num_data_windows; i++ ) {
+		for( int j = 0; j < numtasks; j++ ) {
+			mpi_lock_data[i][j].reset_stats();
+		}
+	}
+
+	// Clear the write buffer statistics
+	argo_write_buffer->reset_stats();
 }
 
 void storepageDIFF(std::size_t index, std::uintptr_t addr){
@@ -1282,7 +1315,7 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr){
 	}
 
 	mpi_lock_data[win_index][homenode].unlock(homenode, data_windows[win_index][homenode]);
-	stats.stores++;
+	stats.write_misses.fetch_add(1);
 }
 
 /** Define some colors */
@@ -1306,9 +1339,12 @@ void print_statistics(){
 	 * Store statistics for the cache lock
 	 */
 	double cache_lock_time = 0;
+	std::size_t num_cache_locks = 0;
 	for( auto &cache_lock : cache_locks ) {
 		cache_lock_time += cache_lock.get_lock_time();
+		num_cache_locks += cache_lock.get_num_locks();
 	}
+
 
 	/**
 	 *	Store MPI lock statistics for the data lock
@@ -1444,16 +1480,16 @@ void print_statistics(){
 				/* Print remote access info */
 				printf("#  " CYN "# Remote accesses\n" RESET);
 				printf("#  read misses: %12lu    access time: %12.4fs\n",
-						stats.loads, stats.loadtime);
+						stats.read_misses.load(), stats.load_time.load());
 				printf("#  write misses: %11lu    access time: %12.4fs\n",
-						stats.stores, stats.storetime);
+						stats.write_misses.load(), stats.store_time.load());
 
 				/* Print coherence info */
 				printf("#  " CYN "# Coherence actions\n" RESET);
 				printf("#  locks held: %13d    barriers passed: %8lu    barrier time: %11.4fs\n",
 						stats.locks, stats.barriers, stats.barriertime);
 				printf("#  si time: %16.4fs   ssi time: %15.4fs   ssd time: %15.4fs\n",
-						stats.selfinvtime, stats.ssitime, stats.ssdtime);
+						stats.selfinvtime, stats.ssi_time.load(), stats.ssd_time.load());
 
 				/* Print write buffer info */
 				printf("#  " CYN "# Write buffer\n" RESET);
@@ -1466,8 +1502,8 @@ void print_statistics(){
 				if(print_level > 2){
 					/* Print cache lock info */
 					printf("#  " CYN "# Cache lock\n" RESET);
-					printf("#  cache lock time: %8.4fs\n",
-							cache_lock_time);
+					printf("#  cache lock time: %8.4fs   cache locks: %12zu    sync lock time: %9.4fs\n",
+							cache_lock_time, num_cache_locks, stats.sync_lock_time.load());
 
 					/* Print data lock info */
 					printf("#  " CYN "# Data lock  \t(%zu locks held)\n" RESET, data_num_locks);
