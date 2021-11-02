@@ -86,11 +86,12 @@ void mpi_lock::unlock(int target, MPI_Win window){
 }
 
 bool mpi_lock::trylock(int lock_type, int target, MPI_Win window){
-	/* TODO: Not really fully tested and no stat tracking */
 	// Try to take global spinlock
 	if(!pthread_spin_trylock(&spin_lock)){
+		spin_acquire_time = MPI_Wtime();
 		// Lock MPI
 		MPI_Win_lock(lock_type, target, 0, window);
+		mpi_acquire_time = MPI_Wtime();
 		return true;
 	}
 	return false;
@@ -105,30 +106,12 @@ double mpi_lock::get_spin_lock_time(){
 	return spin_lock_time;
 }
 
-double mpi_lock::get_avg_spin_lock_time(){
-	double locks = static_cast<double>(num_locks);
-	if(num_locks>0){
-		return spin_lock_time/locks;
-	}else{
-		return 0.0;
-	}
-}
-
 double mpi_lock::get_max_spin_lock_time(){
 	return max_spin_lock_time;
 }
 
 double mpi_lock::get_spin_hold_time(){
 	return spin_hold_time;
-}
-
-double mpi_lock::get_avg_spin_hold_time(){
-	double locks = static_cast<double>(num_locks);
-	if(num_locks>0){
-		return spin_hold_time/locks;
-	}else{
-		return 0.0;
-	}
 }
 
 double mpi_lock::get_max_spin_hold_time(){
@@ -143,15 +126,6 @@ double mpi_lock::get_mpi_lock_time(){
 	return mpi_lock_time;
 }
 
-double mpi_lock::get_avg_mpi_lock_time(){
-	double locks = static_cast<double>(num_locks);
-	if(num_locks>0){
-		return mpi_lock_time/locks;
-	}else{
-		return 0.0;
-	}
-}
-
 double mpi_lock::get_max_mpi_lock_time(){
 	return max_mpi_lock_time;
 }
@@ -160,30 +134,12 @@ double mpi_lock::get_mpi_unlock_time(){
 	return mpi_unlock_time;
 }
 
-double mpi_lock::get_avg_mpi_unlock_time(){
-	double locks = static_cast<double>(num_locks);
-	if(num_locks>0){
-		return mpi_unlock_time/locks;
-	}else{
-		return 0.0;
-	}
-}
-
 double mpi_lock::get_max_mpi_unlock_time(){
 	return max_mpi_unlock_time;
 }
 
 double mpi_lock::get_mpi_hold_time(){
 	return mpi_hold_time;
-}
-
-double mpi_lock::get_avg_mpi_hold_time(){
-	double locks = static_cast<double>(num_locks);
-	if(num_locks>0){
-		return mpi_hold_time/locks;
-	}else{
-		return 0.0;
-	}
 }
 
 double mpi_lock::get_max_mpi_hold_time(){

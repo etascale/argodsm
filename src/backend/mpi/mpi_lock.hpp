@@ -75,12 +75,6 @@ class mpi_lock {
 
 		/**
 		 * @brief  get timekeeping statistics
-		 * @return the average time spent locking a spin lock
-		 */
-		double get_avg_spin_lock_time();
-
-		/**
-		 * @brief  get timekeeping statistics
 		 * @return the maximum time spent locking a spin lock
 		 */
 		double get_max_spin_lock_time();
@@ -90,12 +84,6 @@ class mpi_lock {
 		 * @return the total time spent holding a spin lock
 		 */
 		double get_spin_hold_time();
-
-		/**
-		 * @brief  get timekeeping statistics
-		 * @return the average time spent holding a spin lock
-		 */
-		double get_avg_spin_hold_time();
 
 		/**
 		 * @brief  get timekeeping statistics
@@ -115,12 +103,6 @@ class mpi_lock {
 
 		/**
 		 * @brief  get timekeeping statistics
-		 * @return the average time spent locking an mpi_lock
-		 */
-		double get_avg_mpi_lock_time();
-
-		/**
-		 * @brief  get timekeeping statistics
 		 * @return the maximum time spent locking an mpi_lock
 		 */
 		double get_max_mpi_lock_time();
@@ -133,12 +115,6 @@ class mpi_lock {
 
 		/**
 		 * @brief  get timekeeping statistics
-		 * @return the average time spent unlocking an mpi_lock
-		 */
-		double get_avg_mpi_unlock_time();
-
-		/**
-		 * @brief  get timekeeping statistics
 		 * @return the maximum time spent unlocking an mpi_lock
 		 */
 		double get_max_mpi_unlock_time();
@@ -148,12 +124,6 @@ class mpi_lock {
 		 * @return the total time spent holding an mpi_lock
 		 */
 		double get_mpi_hold_time();
-
-		/**
-		 * @brief  get timekeeping statistics
-		 * @return the average time spent holding an mpi_lock
-		 */
-		double get_avg_mpi_hold_time();
 
 		/**
 		 * @brief  get timekeeping statistics
