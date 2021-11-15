@@ -30,7 +30,10 @@ extern control_data* cacheControl;
 /** @brief Block size based on backend definition */
 const std::size_t block_size = page_size*CACHELINE;
 
-//TODO: Document
+/**
+ * @brief		Argo cache lock structure
+ * @deprecated 	prototype implementation, should be replaced with API calls
+ */
 extern std::vector<cache_lock> cache_locks;
 
 /**

@@ -65,7 +65,7 @@ namespace {
 
 	/**
 	 * @brief default requested statistics level (if environment variable is unset)
-	 * @see @ref ARGO_MPI_WIN_GRANULARITY
+	 * @see @ref ARGO_PRINT_STATISTICS
 	 */
 	const std::size_t default_print_statistics = 2; // default 2 is basic node statistics
 
@@ -119,7 +119,7 @@ namespace {
 
 	/**
 	 * @brief environment variable used for requesting statistics level
-	 * @see @ref ARGO_MPI_WIN_GRANULARITY
+	 * @see @ref ARGO_PRINT_STATISTICS
 	 */
 	const std::string env_print_statistics = "ARGO_PRINT_STATISTICS";
 

@@ -14,17 +14,13 @@ mpi_lock::mpi_lock()
 	max_spin_lock_time(0),
 	spin_hold_time(0),
 	max_spin_hold_time(0),
-	spin_acquire_time(0),
-	spin_release_time(0),
 	/* MPI lock statistics */
 	mpi_lock_time(0),
 	max_mpi_lock_time(0),
 	mpi_unlock_time(0),
 	max_mpi_unlock_time(0),
 	mpi_hold_time(0),
-	max_mpi_hold_time(0),
-	mpi_acquire_time(0),
-	mpi_release_time(0)
+	max_mpi_hold_time(0)
 {
 	pthread_spin_init(&spin_lock, PTHREAD_PROCESS_PRIVATE);
 };

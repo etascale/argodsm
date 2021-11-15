@@ -22,11 +22,6 @@ extern control_data *cacheControl;
  * @deprecated Should eventually be handled by a cache module
  */
 extern std::uint64_t *globalSharers;
-///**
-// * @brief A cache mutex protects all operations on cacheControl
-// * @deprecated Should eventually be handled by a cache module
-// */
-//extern pthread_mutex_t cachemutex;
 /**
  * @brief A vector containing cache locks
  * @deprecated Should eventually be handled by a cache module
@@ -86,7 +81,6 @@ namespace argo {
 
 			// Lock relevant mutexes. Start statistics timekeeping
 			double t1 = MPI_Wtime();
-			//pthread_mutex_lock(&cachemutex);
 			pthread_rwlock_rdlock(&sync_lock);
 
 			// Iterate over all pages to selectively invalidate

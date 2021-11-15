@@ -132,6 +132,8 @@ namespace argo {
 
 		/**
 		 * @brief Get the level of statistics print
+		 * @return The initialized level
+		 * @see @ref ARGO_PRINT_STATISTICS
 		 */
 		std::size_t print_statistics();
 	} // namespace env

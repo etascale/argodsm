@@ -230,7 +230,6 @@ namespace argo {
 				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_EXCLUSIVE, obj.node(), data_windows[win_index][obj.node()]);
 				MPI_Fetch_and_op(desired, output_buffer, t_type, obj.node(), win_offset, MPI_REPLACE, data_windows[win_index][obj.node()]);
 				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);
-				// Cleanup
 			}
 
 			void _store(global_ptr<void> obj, void* desired, std::size_t size) {
@@ -241,7 +240,6 @@ namespace argo {
 				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_EXCLUSIVE, obj.node(), data_windows[win_index][obj.node()]);
 				MPI_Put(desired, 1, t_type, obj.node(), win_offset, 1, t_type, data_windows[win_index][obj.node()]);
 				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);
-				// Cleanup
 			}
 
 			void _store_public_owners_dir(const void* desired,
@@ -280,7 +278,6 @@ namespace argo {
 				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_SHARED, obj.node(), data_windows[win_index][obj.node()]);
 				MPI_Get(output_buffer, 1, t_type, obj.node(), win_offset, 1, t_type, data_windows[win_index][obj.node()]);
 				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);
-				// Cleanup
 			}
 
 			void _load_public_owners_dir(void* output_buffer,
@@ -321,7 +318,6 @@ namespace argo {
 				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_EXCLUSIVE, obj.node(), data_windows[win_index][obj.node()]);
 				MPI_Compare_and_swap(desired, expected, output_buffer, t_type, obj.node(), win_offset, data_windows[win_index][obj.node()]);
 				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);
-				// Cleanup
 			}
 
 			void _compare_exchange_owners_dir(const void* desired, const void* expected, void* output_buffer,
@@ -364,7 +360,6 @@ namespace argo {
 				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_EXCLUSIVE, obj.node(), data_windows[win_index][obj.node()]);
 				MPI_Fetch_and_op(value, output_buffer, t_type, obj.node(), win_offset, MPI_SUM, data_windows[win_index][obj.node()]);
 				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);
-				// Cleanup
 			}
 
 			void _fetch_add_int(global_ptr<void> obj, void* value,

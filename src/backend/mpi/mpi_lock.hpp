@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef mpi_lock_h
-#define mpi_lock_h mpi_lock_h
+#ifndef argo_mpi_lock_hpp
+#define argo_mpi_lock_hpp argo_mpi_lock_hpp
 
 #include <pthread.h>
 #include <mpi.h>
@@ -13,20 +13,28 @@
 /** @brief Provides MPI RMA epoch locking */
 class mpi_lock {
 	private:
-		/* @brief spinlock protecting the MPI lock */
+		/** @brief spinlock protecting the MPI lock */
 		pthread_spinlock_t spin_lock;
 
 		/** @brief General statistics */
 		int num_locks;
 
-		/** @brief Statistics for spin lock */
+		/**@{*/
+		/**
+		 * @brief Variables used to track spin lock statistics
+		 */
 		double spin_lock_time, max_spin_lock_time;
 		double spin_hold_time, max_spin_hold_time, spin_acquire_time, spin_release_time;
+		/**@}*/
 
-		/** @brief Statistics for mpi lock */
+		/**@{*/
+		/**
+		 * @brief Variables used to track MPI lock statistics
+		 */
 		double mpi_lock_time, max_mpi_lock_time;
 		double mpi_unlock_time, max_mpi_unlock_time;
 		double mpi_hold_time, max_mpi_hold_time, mpi_acquire_time, mpi_release_time;
+		/**@}*/
 
 	public:
 		/**
@@ -148,4 +156,4 @@ class mpi_lock {
 		void reset_stats();
 };
 
-#endif /* mpi_lock_h */
+#endif /* argo_mpi_lock_hpp */
