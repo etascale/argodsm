@@ -66,8 +66,8 @@ extern write_buffer<std::size_t>* argo_write_buffer;
 namespace argo {
 	namespace backend {
 		void _selective_acquire(void *addr, std::size_t size){
+			// Skip selective acquire if the size of the region is 0
 			if(size == 0){
-				// Nothing to invalidate
 				return;
 			}
 
@@ -151,8 +151,8 @@ namespace argo {
 		}
 
 		void _selective_release(void *addr, std::size_t size){
+			// Skip selective release if the size of the region is 0
 			if(size == 0){
-				// Nothing to downgrade
 				return;
 			}
 
@@ -180,6 +180,7 @@ namespace argo {
 					homenode_id == argo::data_distribution::invalid_node_id) {
 					continue;
 				}
+
 				const std::size_t cache_index = getCacheIndex(page_address);
 				cache_locks[cache_index].lock();
 
