@@ -864,7 +864,8 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 
 	cacheoffset = pagesize*cachesize+cacheControlSize;
 
-	globalData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_chunk));
+	// CSPext: Double the physical memory to allow for replication
+	globalData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_chunk*2));
 	cacheData = static_cast<char*>(vm::allocate_mappable(pagesize, cachesize*pagesize));
 	cacheControl = static_cast<control_data*>(vm::allocate_mappable(pagesize, cacheControlSize));
 
@@ -1158,6 +1159,10 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	int cnt = 0;
 	const argo::node_id_t homenode = get_homenode(addr);
 	const std::size_t offset = get_offset(addr);
+	
+	// CSPext: Calculate the replication id and mem offset
+	const argo::node_id_t repl_node = homenode + 1 % argo_get_nodes();
+	// const std::size_t repl_offset = offset + size_of_chunk;
 
 	char * copy = (char *)(pagecopy + index*pagesize);
 	char * real = (char *)startAddr+addr;
@@ -1181,13 +1186,17 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 		}
 		else{
 			if(cnt > 0){
+				// CSP: Ask what is wrong with the second put
 				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
+				MPI_Put(&real[i-cnt], 0, MPI_BYTE, repl_node, offset+(i-cnt), 0, MPI_BYTE, globalDataWindow[repl_node]);
 				cnt = 0;
 			}
 		}
 	}
 	if(cnt > 0){
+		// CSP: Ask what is wrong with the second put
 		MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
+		MPI_Put(&real[i-cnt], 0, MPI_BYTE, repl_node, offset+(i-cnt), 0, MPI_BYTE, globalDataWindow[repl_node]);
 	}
 	stats.stores++;
 }
