@@ -254,6 +254,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 	unsigned long startIndex = getCacheIndex(aligned_access_offset);
 
 	/* Get homenode and offset, protect with ibsem if first touch */
+	/* CSP: First touch not important for now */
 	argo::node_id_t homenode;
 	std::size_t offset;
 	if(dd::is_first_touch_policy()){
@@ -353,6 +354,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 	state  = cacheControl[startIndex].state;
 	tag = cacheControl[startIndex].tag;
 
+	/* CSP: State of cachline is invalid or the cacheline has a valid page but not the one we are looking for => eviction required */
 	if(state == INVALID || (tag != aligned_access_offset && tag != GLOBAL_NULL)) {
 		load_cache_entry(aligned_access_offset);
 		pthread_mutex_unlock(&cachemutex);
@@ -361,6 +363,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 		return;
 	}
 
+	/*CSP: These 2 lines not relevant for us */
 	unsigned long line = startIndex / CACHELINE;
 	line *= CACHELINE;
 
@@ -374,7 +377,9 @@ void handler(int sig, siginfo_t *si, void *unused){
 	cacheControl[line].dirty = DIRTY;
 
 	sem_wait(&ibsem);
+	/* CSP: Workrank = Node ID */
 	MPI_Win_lock(MPI_LOCK_SHARED, workrank, 0, sharerWindow);
+	/* CSP: globalShares = Pyxis directory array */
 	unsigned long writers = globalSharers[classidx+1];
 	unsigned long sharers = globalSharers[classidx];
 	MPI_Win_unlock(workrank, sharerWindow);
@@ -398,6 +403,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 		MPI_Win_unlock(workrank, sharerWindow);
 
 		/* check if we need to update */
+		/* CSP: There is a single writer and your are not a writer */
 		if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
 			int n;
 			for(n=0; n<numtasks; n++){
@@ -406,13 +412,16 @@ void handler(int sig, siginfo_t *si, void *unused){
 					break;
 				}
 			}
+			/* CSP: Update Pyxis directory of the single writer */
 			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
 			MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
 			MPI_Win_unlock(owner, sharerWindow);
 		}
+		/* CSP: You are the only writer or there are no writers */
 		else if(writers==id || writers==0){
 			int n;
 			for(n=0; n<numtasks; n++){
+				/* CSP: Check for sharers and update their Pyxis directory */
 				if(n != workrank && ((1<<n)&sharers) != 0){
 					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
 					MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
@@ -482,6 +491,7 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 	sem_wait(&ibsem);
 
 	/* Return if requested cache entry is already up to date. */
+	/* CSP: Updated by another thread? */
 	if(cacheControl[start_index].tag == aligned_access_offset &&
 			cacheControl[start_index].state != INVALID){
 		sem_post(&ibsem);
@@ -555,6 +565,7 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 				argo_write_buffer->erase(idx);
 			}
 			/* Ensure the writeback has finished */
+			/* CSP: ??? Why can't this happen in the storepageDIFF function? */
 			for(int i = 0; i < numtasks; i++){
 				if(barwindowsused[i] == 1){
 					MPI_Win_unlock(i, globalDataWindow[i]);
