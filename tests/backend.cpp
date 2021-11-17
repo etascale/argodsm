@@ -566,6 +566,23 @@ TEST_F(backendTest, writeBufferLoad) {
 }
 
 /**
+ * @brief Test data replication
+ */
+TEST_F(backendTest, dataReplication) {
+	// int* val = argo::conew_<int>(0);
+
+	global_int val(argo::conew_<int>(0));
+	printf("Node %d: %d, %lu\n", argo::node_id(), val.node(), val.offset());//start_of_replData + val.offset()
+
+	// *val += 1;	
+	// argo::barrier();
+
+	// printf("%c", val);
+
+	// ASSERT_EQ(val, argo::get_replicated());
+}
+
+/**
  * @brief The main function that runs the tests
  * @param argc Number of command line arguments
  * @param argv Command line arguments

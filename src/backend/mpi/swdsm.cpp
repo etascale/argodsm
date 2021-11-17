@@ -69,6 +69,9 @@ MPI_Win sharerWindow;
 MPI_Win lockWindow;
 /** @brief MPI windows for reading and writing data in global address space */
 MPI_Win *globalDataWindow;
+/* CSPext: Create replDataWindow */
+/** @brief MPI windows for reading and writing duplicated data in global address space */
+MPI_Win *replDataWindow;
 /** @brief MPI data structure for sending cache control data*/
 MPI_Datatype mpi_control_data;
 /** @brief MPI data structure for a block containing an ArgoDSM cacheline of pages */
@@ -81,6 +84,9 @@ int rank;
 int workrank;
 /** @brief tracking which windows are used for reading and writing global address space*/
 char * barwindowsused;
+/* CSPext: add flag for repl mem area */
+/** @brief tracking which windows are used for writing repl mem area*/
+char * repl_barwindowsused;
 /** @brief Semaphore protecting infiniband accesses*/
 /** @todo replace with a (qd?)lock */
 sem_t ibsem;
@@ -112,6 +118,9 @@ pthread_mutex_t gmallocmutex = PTHREAD_MUTEX_INITIALIZER;
 void * startAddr;
 /** @brief  Points to start of global address space this process is serving */
 char* globalData;
+/* CSPext: Create repl data area */
+/** @brief  Points to start of replication area */
+char* replData;
 /** @brief  Size of global address space*/
 unsigned long size_of_all;
 /** @brief  Size of this process part of global address space*/
@@ -571,6 +580,11 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 					MPI_Win_unlock(i, globalDataWindow[i]);
 					barwindowsused[i] = 0;
 				}
+				/* CSPext: unlock replDataWindow too */
+				if(repl_barwindowsused[(i + 1) % argo_get_nodes()] == 1){
+					MPI_Win_unlock((i + 1) % argo_get_nodes(), replDataWindow[(i + 1) % argo_get_nodes()]);
+					repl_barwindowsused[(i + 1) % argo_get_nodes()] = 0;
+				}
 			}
 
 			/* Clean up cache and protect memory */
@@ -826,6 +840,11 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	for(i = 0; i < numtasks; i++){
 		barwindowsused[i] = 0;
 	}
+	/* CSPext: initialize repl's barwindowsused */
+	repl_barwindowsused = (char *)malloc(numtasks*sizeof(char));
+	for(i = 0; i < numtasks; i++){
+		repl_barwindowsused[i] = 0;
+	}
 
 	int *workranks = (int *) malloc(sizeof(int)*numtasks);
 	int *procranks = (int *) malloc(sizeof(int)*2);
@@ -864,8 +883,10 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 
 	cacheoffset = pagesize*cachesize+cacheControlSize;
 
-	// CSPext: Double the physical memory to allow for replication
-	globalData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_chunk*2));
+	globalData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_chunk));
+	// CSPext: Not doubling the physical memory to allow for replication
+	// but instead creating a replData area
+	replData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_chunk));
 	cacheData = static_cast<char*>(vm::allocate_mappable(pagesize, cachesize*pagesize));
 	cacheControl = static_cast<control_data*>(vm::allocate_mappable(pagesize, cacheControlSize));
 
@@ -902,6 +923,11 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	tmpcache=globalData;
 	vm::map_memory(tmpcache, size_of_chunk, current_offset, PROT_READ|PROT_WRITE);
 
+	/* CSPext: map the memory in replData area */
+	current_offset += size_of_chunk;
+	tmpcache=replData;
+	vm::map_memory(tmpcache, size_of_chunk, current_offset, PROT_READ|PROT_WRITE);
+
 	current_offset += size_of_chunk;
 	tmpcache=globalSharers;
 	vm::map_memory(tmpcache, gwritersize, current_offset, PROT_READ|PROT_WRITE);
@@ -930,6 +956,14 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 									 MPI_INFO_NULL, MPI_COMM_WORLD, &globalDataWindow[i]);
 	}
 
+	/* CSPext: initialize replDataWindow */
+	replDataWindow = (MPI_Win*)malloc(sizeof(MPI_Win)*numtasks);
+
+	for(i = 0; i < numtasks; i++){
+ 		MPI_Win_create(replData, size_of_chunk*sizeof(argo_byte), 1,
+									 MPI_INFO_NULL, MPI_COMM_WORLD, &replDataWindow[i]);
+	}
+
 	MPI_Win_create(globalSharers, gwritersize, sizeof(unsigned long),
 								 MPI_INFO_NULL, MPI_COMM_WORLD, &sharerWindow);
 	MPI_Win_create(lockbuffer, pagesize, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &lockWindow);
@@ -944,6 +978,8 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	memset(pagecopy, 0, cachesize*pagesize);
 	memset(touchedcache, 0, cachesize);
 	memset(globalData, 0, size_of_chunk*sizeof(argo_byte));
+	/* CSPext: initialize replData to all 0 */
+	memset(replData, 0, size_of_chunk*sizeof(argo_byte));
 	memset(cacheData, 0, cachesize*pagesize);
 	memset(lockbuffer, 0, pagesize);
 	memset(globalSharers, 0, gwritersize);
@@ -982,6 +1018,8 @@ void argo_finalize(){
 	MPI_Barrier(MPI_COMM_WORLD);
 	for(i=0; i<numtasks; i++){
 		MPI_Win_free(&globalDataWindow[i]);
+		/* CSPext: free replDataWindow */
+		MPI_Win_free(&replDataWindow[i]);
 	}
 	MPI_Win_free(&sharerWindow);
 	MPI_Win_free(&lockWindow);
@@ -1160,17 +1198,24 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	const argo::node_id_t homenode = get_homenode(addr);
 	const std::size_t offset = get_offset(addr);
 	
-	// CSPext: Calculate the replication id and mem offset
-	const argo::node_id_t repl_node = homenode + 1 % argo_get_nodes();
-	// const std::size_t repl_offset = offset + size_of_chunk;
+	// CSPext: Calculate the replication id
+	const argo::node_id_t repl_node = (homenode + 1) % argo_get_nodes();
 
 	char * copy = (char *)(pagecopy + index*pagesize);
 	char * real = (char *)startAddr+addr;
 	size_t drf_unit = sizeof(char);
 
+	// printf("%p\n", (void *) &real);
+
 	if(barwindowsused[homenode] == 0){
 		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, homenode, 0, globalDataWindow[homenode]);
 		barwindowsused[homenode] = 1;
+	}
+
+	/* CSPext: lock replDataWindow too */
+	if (repl_barwindowsused[repl_node] == 0) {
+		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, repl_node, 0, replDataWindow[repl_node]);
+		repl_barwindowsused[repl_node] = 1;
 	}
 
 	for(i = 0; i < pagesize; i+=drf_unit){
@@ -1186,17 +1231,17 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 		}
 		else{
 			if(cnt > 0){
-				// CSP: Ask what is wrong with the second put
 				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
-				MPI_Put(&real[i-cnt], 0, MPI_BYTE, repl_node, offset+(i-cnt), 0, MPI_BYTE, globalDataWindow[repl_node]);
+				// CSPext: Update page on repl node
+				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
 				cnt = 0;
 			}
 		}
 	}
 	if(cnt > 0){
-		// CSP: Ask what is wrong with the second put
 		MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
-		MPI_Put(&real[i-cnt], 0, MPI_BYTE, repl_node, offset+(i-cnt), 0, MPI_BYTE, globalDataWindow[repl_node]);
+		// CSPext: Update page on repl node
+		MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
 	}
 	stats.stores++;
 }
