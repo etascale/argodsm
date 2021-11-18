@@ -352,5 +352,7 @@ unsigned long get_classification_index(uint64_t addr);
  * @todo This should be moved in to a dedicated cache class
  */
 bool _is_cached(std::size_t addr);
+
+bool cmp_replicated_data(argo::data_distribution::global_ptr<char> ptr);
 #endif /* argo_swdsm_h */
 

@@ -1282,3 +1282,11 @@ bool _is_cached(std::size_t addr) {
 	return ((homenode == getID()) || (cacheControl[cache_index].tag == aligned_address &&
 				cacheControl[cache_index].state == VALID));
 }
+
+bool cmp_replicated_data(dd::global_ptr<char> ptr) {
+	if ((unsigned int) workrank == (ptr.node() + 1) % argo_get_nodes()) {
+		char *addr = replData + ptr.offset();
+		return *addr == *ptr;
+	}
+	return false;
+}
