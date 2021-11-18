@@ -497,10 +497,11 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 	const argo::node_id_t load_node = get_homenode(aligned_access_offset);
 	const std::size_t load_offset = get_offset(aligned_access_offset);
 
+	// CSP: Only one thread at a time can make MPI calls
 	sem_wait(&ibsem);
 
 	/* Return if requested cache entry is already up to date. */
-	/* CSP: Updated by another thread? */
+	/* CSP: Updated by another thread */
 	if(cacheControl[start_index].tag == aligned_access_offset &&
 			cacheControl[start_index].state != INVALID){
 		sem_post(&ibsem);
@@ -573,8 +574,8 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 				}
 				argo_write_buffer->erase(idx);
 			}
+
 			/* Ensure the writeback has finished */
-			/* CSP: ??? Why can't this happen in the storepageDIFF function? */
 			for(int i = 0; i < numtasks; i++){
 				if(barwindowsused[i] == 1){
 					MPI_Win_unlock(i, globalDataWindow[i]);
@@ -960,8 +961,9 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	replDataWindow = (MPI_Win*)malloc(sizeof(MPI_Win)*numtasks);
 
 	for(i = 0; i < numtasks; i++){
+		// CSP: Can potentially optimise by specifying the "no locks" key.
  		MPI_Win_create(replData, size_of_chunk*sizeof(argo_byte), 1,
-									 MPI_INFO_NULL, MPI_COMM_WORLD, &replDataWindow[i]);
+									MPI_INFO_NULL, MPI_COMM_WORLD, &replDataWindow[i]);
 	}
 
 	MPI_Win_create(globalSharers, gwritersize, sizeof(unsigned long),
