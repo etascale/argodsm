@@ -577,14 +577,15 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 
 			/* Ensure the writeback has finished */
 			for(int i = 0; i < numtasks; i++){
+				argo::node_id_t repl_node_i = calc_rid(i);	// get replication node
 				if(barwindowsused[i] == 1){
 					MPI_Win_unlock(i, globalDataWindow[i]);
 					barwindowsused[i] = 0;
 				}
 				/* CSPext: unlock replDataWindow too */
-				if(repl_barwindowsused[(i + 1) % argo_get_nodes()] == 1){
-					MPI_Win_unlock((i + 1) % argo_get_nodes(), replDataWindow[(i + 1) % argo_get_nodes()]);
-					repl_barwindowsused[(i + 1) % argo_get_nodes()] = 0;
+				if(repl_barwindowsused[repl_node_i] == 1){
+					MPI_Win_unlock(repl_node_i, replDataWindow[repl_node_i]);
+					repl_barwindowsused[repl_node_i] = 0;
 				}
 			}
 
@@ -1201,7 +1202,7 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	const std::size_t offset = get_offset(addr);
 	
 	// CSPext: Calculate the replication id
-	const argo::node_id_t repl_node = (homenode + 1) % argo_get_nodes();
+	const argo::node_id_t repl_node = calc_rid(homenode);
 
 	char * copy = (char *)(pagecopy + index*pagesize);
 	char * real = (char *)startAddr+addr;
@@ -1283,10 +1284,21 @@ bool _is_cached(std::size_t addr) {
 				cacheControl[cache_index].state == VALID));
 }
 
+/* CSP: Wrapping up a function to calculate the replication node */
+argo::node_id_t argo_get_rid(){
+	return (workrank + 1) % argo_get_nodes();
+}
+
+/* CSP: Wrapping up a function to calculate the replication node, used locally */
+argo::node_id_t calc_rid(argo::node_id_t n){
+	return (n + 1) % argo_get_nodes();
+}
+
 bool cmp_replicated_data(dd::global_ptr<char> ptr) {
-	if ((unsigned int) workrank == (ptr.node() + 1) % argo_get_nodes()) {
+	if (workrank == calc_rid(ptr.node())) {
 		char *addr = replData + ptr.offset();
 		return *addr == *ptr;
 	}
 	return false;
 }
+

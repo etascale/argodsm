@@ -164,6 +164,11 @@ namespace argo {
 			return argo_get_nid();
 		}
 
+		/* CSP: add function to get replication node id */
+		node_id_t repl_node_id() {
+			return argo_get_rid();
+		}
+
 		node_id_t number_of_nodes() {
 			return argo_get_nodes();
 		}
@@ -178,6 +183,12 @@ namespace argo {
 
 		bool is_cached(void* addr) {
 			return _is_cached(reinterpret_cast<std::size_t>(addr));
+		}
+
+		/* CSP: add function to compare repl data and original data */
+		/* TODO: just testing */
+		bool cmp_repl_data(argo::data_distribution::global_ptr<char> ptr) {
+			return cmp_replicated_data(ptr);
 		}
 
 		void finalize() {

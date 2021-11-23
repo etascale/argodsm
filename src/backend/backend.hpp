@@ -58,6 +58,13 @@ namespace argo {
 		 */
 		node_id_t node_id();
 
+		/* CSP: add function to get replication node id */
+		/**
+		 * @brief get ArgoDSM repl node ID
+		 * @return repl node ID
+		 */
+		node_id_t repl_node_id();
+
 		/**
 		 * @brief get total number of ArgoDSM nodes
 		 * @return total number of ArgoDSM nodes
@@ -89,6 +96,10 @@ namespace argo {
 		 * @todo THIS SHOULD BE BAKED IN TO A CACHE CLASS
 		 */
 		bool is_cached(void* addr);
+
+		/* CSP: add function to compare repl data and original data */
+		/* TODO: just testing */
+		bool cmp_repl_data(argo::data_distribution::global_ptr<char> ptr);
 
 		/**
 		 * @brief global memory space address

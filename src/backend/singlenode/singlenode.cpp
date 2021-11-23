@@ -108,6 +108,11 @@ namespace argo {
 			return my_node_id;
 		}
 
+		/* CSP: had to add this to keep backend.hpp defined */
+		node_id_t repl_node_id() {
+			return (my_node_id + 1) % nodes;
+		}
+
 		node_id_t number_of_nodes() {
 			return nodes;
 		}
@@ -123,6 +128,15 @@ namespace argo {
 		bool is_cached(void* addr) {
 			(void)addr;
 			return true;
+		}
+
+
+		/* CSP: must add this to make backend.hpp defined. */
+		bool cmp_repl_data(argo::data_distribution::global_ptr<char> ptr) {
+			if (ptr.get() == ptr.get()) {	// to use ptr
+				return false;
+			}
+			return false;
 		}
 
 		void finalize() {

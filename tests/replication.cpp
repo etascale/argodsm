@@ -9,7 +9,6 @@
 
 #include "argo.hpp"
 #include "data_distribution/global_ptr.hpp"
-#include "backend/mpi/swdsm.h"
 
 #include "gtest/gtest.h"
 
@@ -62,10 +61,12 @@ class replicationTest : public testing::Test, public ::testing::WithParamInterfa
 TEST_F(replicationTest, dataReplication) {
 	global_char val;
     val = argo::conew_<char>('a');
-	printf("Node %d: %d, %lu, %p\n", argo::node_id(), val.node(), val.offset(), val.get());
+	printf("Node %d: pointer's node: %d, %lu, %p\n", argo::node_id(), val.node(), val.offset(), val.get());
+
+	printf("Node %d's repl node:%d, pointer's repl_node: %d\n", argo::node_id(), argo::repl_node_id(), argo_get_replnode(val.get()));
 
 	if (argo::is_argo_address(val.get())) {
-		printf("%s", "Yes");
+		printf("%s", "Yes, pointer val is an argo address\n");
 	}
 
 	*val += 1;
@@ -73,7 +74,8 @@ TEST_F(replicationTest, dataReplication) {
 
     printf("Node %d, %d\n", argo::node_id(), *val);
 
-    ASSERT_TRUE(cmp_replicated_data(val));
+	bool equal = argo::backend::cmp_repl_data(val);
+    ASSERT_TRUE(equal);
 }
 
 /**

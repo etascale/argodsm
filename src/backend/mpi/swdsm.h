@@ -344,15 +344,31 @@ std::size_t peek_offset(std::size_t addr);
  */
 unsigned long get_classification_index(uint64_t addr);
 /**
- * @brief Check whether a page is either cached on the node or
+ * @brief check whether a page is either cached on the node or
  * locally backed.
- * @param addr Address in the global address space
+ * @param addr address in the global address space
  * @return true if cached or locally backed, else false
- * @warning This is strictly meant for testing prefetching
- * @todo This should be moved in to a dedicated cache class
+ * @warning this is strictly meant for testing prefetching
+ * @todo this should be moved in to a dedicated cache class
  */
 bool _is_cached(std::size_t addr);
 
+/* CSP: Wrapping up a function to calculate the replication node */
+/**
+ * @brief give the replication node of current node id.
+ * @return node id of the corresponding replication node
+ */
+argo::node_id_t argo_get_rid();
+
+/* CSP: Wrapping up a function to calculate the replication node, used locally */
+/**
+ * @brief give the replication node of one node id.
+ * @param n node id of the target node
+ * @return node id of the corresponding replication node
+ */
+argo::node_id_t calc_rid(argo::node_id_t n);
+
 bool cmp_replicated_data(argo::data_distribution::global_ptr<char> ptr);
+
 #endif /* argo_swdsm_h */
 

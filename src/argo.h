@@ -42,6 +42,13 @@ void argo_reset();
  */
 int  argo_node_id();
 
+/* CSP: get repl node id of current node */
+/**
+ * @brief A unique ArgoDSM node identifier of current node's repl node.
+ * @return The repl node id of current node
+ */
+int  argo_repl_node_id();
+
 /**
  * @brief Number of ArgoDSM nodes being run
  * @return The total number of ArgoDSM nodes
@@ -64,6 +71,17 @@ bool argo_is_argo_address(void* addr);
  * @pre addr must be an address in ArgoDSM memory
  */
 int argo_get_homenode(void* addr);
+
+/* CSP: add function to get repl node of one addr */
+/**
+ * @brief Get the repl node id of the home node of addr
+ * @param addr A valid address in the ArgoDSM memory space
+ * @return The id of the repl node of addr's homenode, or
+ * argo::data_distribution::invalid_node_id if addr has not yet
+ * been first-touched under the first-touch allocation policy
+ * @pre addr must be an address in ArgoDSM memory
+ */
+int argo_get_replnode(void* addr);
 
 /**
  * @brief Get the block size of the current allocation policy

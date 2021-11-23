@@ -67,6 +67,11 @@ namespace argo {
 		return static_cast<int>(argo::backend::node_id());
 	}
 
+	/* CSP: return replication node id */
+	int repl_node_id() {
+		return static_cast<int>(argo::backend::repl_node_id());
+	}
+
 	int number_of_nodes() {
 		return static_cast<int>(argo::backend::number_of_nodes());
 	}
@@ -103,6 +108,11 @@ extern "C" {
 		return argo::node_id();
 	}
 
+	/* CSP: current node's repl node */
+	int argo_repl_node_id() {
+		return argo::repl_node_id();
+	}
+
 	int argo_number_of_nodes() {
 		return argo::number_of_nodes();
 	}
@@ -113,6 +123,11 @@ extern "C" {
 
 	int argo_get_homenode(void* addr) {
 		return argo::get_homenode(addr);
+	}
+
+	/* CSP: add function for getting repl node */
+	int argo_get_replnode(void* addr) {
+		return argo::get_replnode(addr);
 	}
 
 	size_t argo_get_block_size() {
