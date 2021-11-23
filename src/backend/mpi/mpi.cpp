@@ -166,7 +166,7 @@ namespace argo {
 
 		/* CSP: add function to get replication node id */
 		node_id_t repl_node_id() {
-			return argo_get_rid();
+			return argo_get_rid();	// defined in swdsm.cpp
 		}
 
 		node_id_t number_of_nodes() {
