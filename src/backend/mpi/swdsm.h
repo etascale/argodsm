@@ -76,18 +76,22 @@ typedef struct myControlData //global cache control data / directory
 } control_data;
 
 /** @brief Struct containing statistics */
-typedef struct argo_statisticsStruct
+typedef struct argo_statistics_struct
 {
-		/** @brief Time spend locking */
-		double locktime;
 		/** @brief Time spent self invalidating */
 		double selfinvtime;
 		/** @brief Time spent loading pages */
-		std::atomic<double> load_time;
+		double load_time;
+		/** @brief Mutex to update load_time */
+		std::mutex load_time_mutex;
 		/** @brief Time spent storing pages */
-		std::atomic<double> store_time;
+		double store_time;
+		/** @brief Mutex to update store_time */
+		std::mutex store_time_mutex;
 		/** @brief Time spent locking the sync lock */
-		std::atomic<double> sync_lock_time;
+		double sync_lock_time;
+		/** @brief Mutex to update sync_lock_time */
+		std::mutex sync_lock_time_mutex;
 		/** @brief Time spent in global barrier */
 		double barriertime;
 		/** @brief Time spent initializing ArgoDSM */
@@ -103,9 +107,13 @@ typedef struct argo_statisticsStruct
 		/** @brief Number of locks */
 		int locks;
 		/** @brief Time spent performing selective acquire */
-		std::atomic<double> ssi_time;
+		double ssi_time;
+		/** @brief Mutex to update ssi_time */
+		std::mutex ssi_time_mutex;
 		/** @brief Time spent performing selective release */
-		std::atomic<double> ssd_time;
+		double ssd_time;
+		/** @brief Mutex to update ssd_time */
+		std::mutex ssd_time_mutex;
 } argo_statistics;
 
 /**

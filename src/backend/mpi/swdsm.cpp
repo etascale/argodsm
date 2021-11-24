@@ -554,10 +554,10 @@ void handler(int sig, siginfo_t *si, void *context){
 	double sync_lock_start = MPI_Wtime();
 	pthread_rwlock_rdlock(&sync_lock);
 	double sync_lock_end = MPI_Wtime();
-	auto current_slt = stats.sync_lock_time.load();
-	while (!stats.sync_lock_time.compare_exchange_weak(current_slt,
-				current_slt+sync_lock_end-sync_lock_start))
-		;
+	{
+		std::lock_guard<std::mutex> sync_time_lock(stats.sync_lock_time_mutex);
+		stats.sync_lock_time += sync_lock_end-sync_lock_start;
+	}
 	cache_locks[startIndex].lock();
 
 	/* page is local */
@@ -670,9 +670,8 @@ void handler(int sig, siginfo_t *si, void *context){
 		//sync_mutex.unlock_shared();
 		pthread_rwlock_unlock(&sync_lock);
 		double t2 = MPI_Wtime();
-		auto current_lt = stats.load_time.load();
-		while (!stats.load_time.compare_exchange_weak(current_lt, current_lt+t2-t1))
-			;
+		std::lock_guard<std::mutex> load_lock(stats.load_time_mutex);
+		stats.load_time += t2-t1;
 		return;
 	}
 
@@ -752,11 +751,10 @@ void handler(int sig, siginfo_t *si, void *context){
 	cache_locks[startIndex].unlock();
 	pthread_rwlock_unlock(&sync_lock);
 	double t2 = MPI_Wtime();
-	auto current_st = stats.store_time.load();
-	while (!stats.store_time.compare_exchange_weak(current_st, current_st+t2-t1))
-		;
 	// TODO: Check if this actually needs to be outside
 	argo_write_buffer->add(startIndex);
+	std::lock_guard<std::mutex> store_lock(stats.store_time_mutex);
+	stats.store_time += t2-t1;
 	return;
 }
 
@@ -1198,7 +1196,11 @@ void argo_reset_coherence(){
 
 void argo_acquire() {
 	int flag;
+	double t1 = MPI_Wtime();
 	pthread_rwlock_wrlock(&sync_lock);
+	double t2 = MPI_Wtime();
+	// Sync lock can only be held by one so no lock_guard required
+	stats.sync_lock_time += t2-t1;
 	self_invalidation();
 	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
 	pthread_rwlock_unlock(&sync_lock);
@@ -1207,7 +1209,11 @@ void argo_acquire() {
 
 void argo_release() {
 	int flag;
+	double t1 = MPI_Wtime();
 	pthread_rwlock_wrlock(&sync_lock);
+	double t2 = MPI_Wtime();
+	// Sync lock can only be held by one so no lock_guard required
+	stats.sync_lock_time += t2-t1;
 	argo_write_buffer->flush();
 	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
 	pthread_rwlock_unlock(&sync_lock);
@@ -1221,10 +1227,9 @@ void argo_acq_rel() {
 void argo_reset_stats(){
 	// Clear the stats struct
 	stats.selfinvtime = 0;
-	stats.load_time.store(0);
-	stats.store_time.store(0);
-	stats.sync_lock_time.store(0);
-	stats.locktime = 0;
+	stats.load_time = 0;
+	stats.store_time = 0;
+	stats.sync_lock_time = 0;
 	stats.inittime = 0;
 	stats.exectime = 0;
 	stats.barriertime = 0;
@@ -1232,8 +1237,8 @@ void argo_reset_stats(){
 	stats.read_misses.store(0);
 	stats.barriers = 0;
 	stats.locks = 0;
-	stats.ssi_time.store(0);
-	stats.ssd_time.store(0);
+	stats.ssi_time = 0;
+	stats.ssd_time = 0;
 
 	// Clear the cache lock statistics
 	for( auto &cache_lock : cache_locks ){
@@ -1469,16 +1474,16 @@ void print_statistics(){
 				/* Print remote access info */
 				printf("#  " CYN "# Remote accesses\n" RESET);
 				printf("#  read misses: %12lu    access time: %12.4fs\n",
-						stats.read_misses.load(), stats.load_time.load());
+						stats.read_misses.load(), stats.load_time);
 				printf("#  write misses: %11lu    access time: %12.4fs\n",
-						stats.write_misses.load(), stats.store_time.load());
+						stats.write_misses.load(), stats.store_time);
 
 				/* Print coherence info */
 				printf("#  " CYN "# Coherence actions\n" RESET);
 				printf("#  locks held: %13d    barriers passed: %8lu    barrier time: %11.4fs\n",
 						stats.locks, stats.barriers, stats.barriertime);
 				printf("#  si time: %16.4fs   ssi time: %15.4fs   ssd time: %15.4fs\n",
-						stats.selfinvtime, stats.ssi_time.load(), stats.ssd_time.load());
+						stats.selfinvtime, stats.ssi_time, stats.ssd_time);
 
 				/* Print write buffer info */
 				printf("#  " CYN "# Write buffer\n" RESET);
@@ -1492,7 +1497,7 @@ void print_statistics(){
 					/* Print cache lock info */
 					printf("#  " CYN "# Cache lock\n" RESET);
 					printf("#  cache lock time: %8.4fs   cache locks: %12zu    sync lock time: %9.4fs\n",
-							cache_lock_time, num_cache_locks, stats.sync_lock_time.load());
+							cache_lock_time, num_cache_locks, stats.sync_lock_time);
 
 					/* Print data lock info */
 					printf("#  " CYN "# Data lock  \t(%zu locks held)\n" RESET, data_num_locks);
