@@ -61,21 +61,33 @@ class replicationTest : public testing::Test, public ::testing::WithParamInterfa
 TEST_F(replicationTest, dataReplication) {
 	global_char val;
     val = argo::conew_<char>('a');
-	printf("Node %d: pointer's node: %d, %lu, %p\n", argo::node_id(), val.node(), val.offset(), val.get());
 
-	printf("Node %d's repl node:%d, pointer's repl_node: %d\n", argo::node_id(), argo::repl_node_id(), argo_get_replnode(val.get()));
+	printf("Node %d: pointer's node: %d, offset %lu, pointer = %p\n",
+				   argo::node_id(), val.node(), val.offset(), val.get());
 
-	if (argo::is_argo_address(val.get())) {
-		printf("%s", "Yes, pointer val is an argo address\n");
+	//printf("Node %d's repl node:%d, pointer's repl_node: %d\n",
+	//				argo::node_id(), argo::repl_node_id(), argo_get_replnode(val.get()));
+
+	//if (argo::is_argo_address(val.get())) {
+	//	printf("%s", "Yes, pointer val is an argo address\n");
+	//}
+
+	*val += 1;			// All nodes does this!
+	argo::barrier();	// Wait until writing is commited
+
+    // printf("Node %d: now val is %c\n", argo::node_id(), *val);
+
+	char receiver = 'z';
+	bool equal = false;
+	if (argo::node_id() == argo_get_replnode(val.get())) {
+		argo::backend::get_repl_data(val, (void *)(&receiver), 1);
+		equal = (*val == receiver);
+		printf("orignial val is %x = %c, repl val is %x = %c\n", *val, *val, receiver, receiver);
+    	ASSERT_TRUE(equal);
+	} else {
+		printf("Not target node; automatically passing\n");
+		ASSERT_TRUE(true);
 	}
-
-	*val += 1;
-	argo::barrier();
-
-    printf("Node %d, %d\n", argo::node_id(), *val);
-
-	bool equal = argo::backend::cmp_repl_data(val);
-    ASSERT_TRUE(equal);
 }
 
 /**

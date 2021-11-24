@@ -97,9 +97,15 @@ namespace argo {
 		 */
 		bool is_cached(void* addr);
 
-		/* CSP: add function to compare repl data and original data */
-		/* TODO: just testing */
-		bool cmp_repl_data(argo::data_distribution::global_ptr<char> ptr);
+		/* CSP: Copy data from the input pointer's repl node */
+		/**
+		 * @brief copy replicated data of given pointer.
+	 	 * @param ptr a global pointer to the target data.
+		 * @param container destination to copy data into.
+		 * @param len length (in bytes) of data to copy.
+		 * @warning container acts as the receiver of "returned" data.
+		 */
+		void get_repl_data(argo::data_distribution::global_ptr<char> ptr, void* container, unsigned int len);
 
 		/**
 		 * @brief global memory space address

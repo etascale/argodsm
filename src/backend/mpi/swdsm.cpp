@@ -1284,21 +1284,58 @@ bool _is_cached(std::size_t addr) {
 				cacheControl[cache_index].state == VALID));
 }
 
+/* CSP: Wrapping up a function to expose current node's globaldata start. */
+char* argo_get_globaldata_start() {
+	return globalData;
+}
+
+/* CSP: Wrapping up a function to expose current node'repldata start. */
+char* argo_get_repldata_start() {
+	return replData;
+}
+
 /* CSP: Wrapping up a function to calculate the replication node */
 argo::node_id_t argo_get_rid(){
 	return (workrank + 1) % argo_get_nodes();
 }
 
-/* CSP: Wrapping up a function to calculate the replication node, used locally */
+/* CSP: A function to calculate the replication node, used locally */
 argo::node_id_t calc_rid(argo::node_id_t n){
-	return (n + 1) % argo_get_nodes();
+	if (n < 0) {
+		return dd::invalid_node_id;
+	} else {
+		return (n + 1) % argo_get_nodes();
+	}
 }
 
-bool cmp_replicated_data(dd::global_ptr<char> ptr) {
-	if (workrank == calc_rid(ptr.node())) {
-		char *addr = replData + ptr.offset();
-		return *addr == *ptr;
+void get_replicated_data(dd::global_ptr<char> ptr, void* container, unsigned int len) {
+	argo::node_id_t h = ptr.peek_node();
+	argo::node_id_t r = calc_rid(h);	// repl node id
+	std::size_t offset = ptr.offset();
+	
+	if (h == dd::invalid_node_id || r == dd::invalid_node_id) {
+		// TODO: Do nothing and return. Or what should we do?
+		return;
 	}
-	return false;
+	if (argo_get_nid() == r) {
+		memcpy(container, replData + ptr.offset(), len);
+		return;
+	} else {
+		// TODO: This branch deadlocks 
+		/* 
+		 * I suspect multiple locks may be applied to the same window,
+		 * 	due to unfinished MPI_Put (they have latency right?).
+		 *
+		 * Then, one of the unlock will successfully unlock and all others
+		 * 	will hang because they have no lock to un
+		 */
+		int err;
+		err = MPI_Win_lock(MPI_LOCK_EXCLUSIVE, r, 0, replDataWindow[r]);
+		printf("------lock return: %d\n", err);		// returns 0 (MPI_SUCCESS)
+		err = MPI_Get(container, len, MPI_CHAR,
+					r, offset, len, MPI_CHAR, replDataWindow[r]);
+		printf("------first get return: %d\n", err);// returns 0 (MPI_SUCCESS)
+		MPI_Win_unlock(r, replDataWindow[r]);		// Can never unlock!
+	}
 }
 
