@@ -3,3 +3,4 @@ build
 .vscode
 gtest-1.7.0
 *.swp
+tags
