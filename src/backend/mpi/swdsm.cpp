@@ -577,7 +577,7 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 
 			/* Ensure the writeback has finished */
 			for(int i = 0; i < numtasks; i++){
-				argo::node_id_t repl_node_i = calc_rid(i);	// get replication node
+				argo::node_id_t repl_node_i = _calc_rid(i);	// get replication node
 				if(barwindowsused[i] == 1){
 					MPI_Win_unlock(i, globalDataWindow[i]);
 					barwindowsused[i] = 0;
@@ -1202,13 +1202,11 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	const std::size_t offset = get_offset(addr);
 	
 	// CSPext: Calculate the replication id
-	const argo::node_id_t repl_node = calc_rid(homenode);
+	const argo::node_id_t repl_node = _calc_rid(homenode);
 
 	char * copy = (char *)(pagecopy + index*pagesize);
 	char * real = (char *)startAddr+addr;
 	size_t drf_unit = sizeof(char);
-
-	// printf("%p\n", (void *) &real);
 
 	if(barwindowsused[homenode] == 0){
 		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, homenode, 0, globalDataWindow[homenode]);
@@ -1284,23 +1282,23 @@ bool _is_cached(std::size_t addr) {
 				cacheControl[cache_index].state == VALID));
 }
 
-/* CSP: Wrapping up a function to expose current node's globaldata start. */
+/* CSPext: Wrapping up a function to expose current node's globaldata start. */
 char* argo_get_globaldata_start() {
 	return globalData;
 }
 
-/* CSP: Wrapping up a function to expose current node'repldata start. */
+/* CSPext: Wrapping up a function to expose current node's repldata start. */
 char* argo_get_repldata_start() {
 	return replData;
 }
 
-/* CSP: Wrapping up a function to calculate the replication node */
+/* CSPext: Wrapping up a function to calculate the replication node */
 argo::node_id_t argo_get_rid(){
 	return (workrank + 1) % argo_get_nodes();
 }
 
-/* CSP: A function to calculate the replication node, used locally */
-argo::node_id_t calc_rid(argo::node_id_t n){
+/* CSPext: A function to calculate the replication node, used locally */
+argo::node_id_t _calc_rid(argo::node_id_t n){
 	if (n < 0) {
 		return dd::invalid_node_id;
 	} else {
@@ -1308,9 +1306,10 @@ argo::node_id_t calc_rid(argo::node_id_t n){
 	}
 }
 
+/* CSPext: A function to copy data from the input pointer's repl node */
 void get_replicated_data(dd::global_ptr<char> ptr, void* container, unsigned int len) {
 	argo::node_id_t h = ptr.peek_node();
-	argo::node_id_t r = calc_rid(h);	// repl node id
+	argo::node_id_t r = _calc_rid(h);	// repl node id
 	std::size_t offset = ptr.offset();
 	
 	if (h == dd::invalid_node_id || r == dd::invalid_node_id) {

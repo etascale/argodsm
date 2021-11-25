@@ -42,7 +42,7 @@ void argo_reset();
  */
 int  argo_node_id();
 
-/* CSP: get repl node id of current node */
+/* CSPext: get repl node id of current node */
 /**
  * @brief A unique ArgoDSM node identifier of current node's repl node.
  * @return The repl node id of current node
@@ -72,7 +72,7 @@ bool argo_is_argo_address(void* addr);
  */
 int argo_get_homenode(void* addr);
 
-/* CSP: add function to get repl node of one addr */
+/* CSPext: add function to get repl node of one addr */
 /**
  * @brief Get the repl node id of the home node of addr
  * @param addr A valid address in the ArgoDSM memory space

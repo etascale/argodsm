@@ -58,7 +58,7 @@ namespace argo {
 		 */
 		node_id_t node_id();
 
-		/* CSP: add function to get replication node id */
+		/* CSPext: add function to get replication node id */
 		/**
 		 * @brief get ArgoDSM repl node ID
 		 * @return repl node ID
@@ -97,7 +97,7 @@ namespace argo {
 		 */
 		bool is_cached(void* addr);
 
-		/* CSP: Copy data from the input pointer's repl node */
+		/* CSPext: Copy data from the input pointer's repl node */
 		/**
 		 * @brief copy replicated data of given pointer.
 	 	 * @param ptr a global pointer to the target data.

@@ -108,7 +108,7 @@ extern "C" {
 		return argo::node_id();
 	}
 
-	/* CSP: current node's repl node */
+	/* CSPext: current node's repl node */
 	int argo_repl_node_id() {
 		return argo::repl_node_id();
 	}
@@ -125,7 +125,7 @@ extern "C" {
 		return argo::get_homenode(addr);
 	}
 
-	/* CSP: add function for getting repl node */
+	/* CSPext: add function for getting repl node */
 	int argo_get_replnode(void* addr) {
 		return argo::get_replnode(addr);
 	}

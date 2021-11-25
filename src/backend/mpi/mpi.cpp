@@ -164,7 +164,7 @@ namespace argo {
 			return argo_get_nid();
 		}
 
-		/* CSP: add function to get replication node id */
+		/* CSPext: add function to get replication node id */
 		node_id_t repl_node_id() {
 			return argo_get_rid();	// defined in swdsm.cpp
 		}
@@ -185,14 +185,7 @@ namespace argo {
 			return _is_cached(reinterpret_cast<std::size_t>(addr));
 		}
 
-		/* CSP: Copy data from the input pointer's repl node */
-		/**
-		 * @brief copy replicated data of given pointer.
-	 	 * @param ptr a global pointer to the target data.
-		 * @param container destination to copy data into.
-		 * @param len length (in bytes) of data to copy.
-		 * @warning container acts as the receiver of "returned" data.
-		 */
+		/* CSPext: Copy data from the input pointer's repl node */
 		void get_repl_data(argo::data_distribution::global_ptr<char> ptr, void* container, unsigned int len) {
 			get_replicated_data(ptr, container, len);
 		}

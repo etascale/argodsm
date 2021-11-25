@@ -108,7 +108,7 @@ namespace argo {
 			return my_node_id;
 		}
 
-		/* CSP: had to add this to keep backend.hpp defined */
+		/* CSPext: had to add this to keep backend.hpp defined */
 		node_id_t repl_node_id() {
 			return (my_node_id + 1) % nodes;
 		}
@@ -131,7 +131,7 @@ namespace argo {
 		}
 
 
-		/* CSP: must add this to make backend.hpp fully defined. See the same function in mpi.cpp. */
+		/* CSPext: must add this to make backend.hpp fully defined. See the same function in mpi.cpp. */
 		void get_repl_data(argo::data_distribution::global_ptr<char> ptr, void* container, unsigned int len) {
 			// to use ptr, container and len
 			if (ptr.get() == ptr.get() && container == nullptr && len == 0) { }
