@@ -47,6 +47,7 @@ forall_backends(barrierTests barrier.cpp)
 forall_backends(uninitializedTests uninitialized.cpp)
 forall_backends(lockTests lock.cpp)
 forall_backends(backendTests backend.cpp)
+forall_backends(replicationTests replication.cpp)
 
 
 # Enable OpenMP

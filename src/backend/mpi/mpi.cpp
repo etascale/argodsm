@@ -164,6 +164,11 @@ namespace argo {
 			return argo_get_nid();
 		}
 
+		/* CSPext: add function to get replication node id */
+		node_id_t repl_node_id() {
+			return argo_get_rid();	// defined in swdsm.cpp
+		}
+
 		node_id_t number_of_nodes() {
 			return argo_get_nodes();
 		}
@@ -178,6 +183,11 @@ namespace argo {
 
 		bool is_cached(void* addr) {
 			return _is_cached(reinterpret_cast<std::size_t>(addr));
+		}
+
+		/* CSPext: Copy data from the input pointer's repl node */
+		void get_repl_data(argo::data_distribution::global_ptr<char> ptr, void* container, unsigned int len) {
+			get_replicated_data(ptr, container, len);
 		}
 
 		void finalize() {

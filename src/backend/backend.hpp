@@ -58,6 +58,13 @@ namespace argo {
 		 */
 		node_id_t node_id();
 
+		/* CSPext: add function to get replication node id */
+		/**
+		 * @brief get ArgoDSM repl node ID
+		 * @return repl node ID
+		 */
+		node_id_t repl_node_id();
+
 		/**
 		 * @brief get total number of ArgoDSM nodes
 		 * @return total number of ArgoDSM nodes
@@ -89,6 +96,16 @@ namespace argo {
 		 * @todo THIS SHOULD BE BAKED IN TO A CACHE CLASS
 		 */
 		bool is_cached(void* addr);
+
+		/* CSPext: Copy data from the input pointer's repl node */
+		/**
+		 * @brief copy replicated data of given pointer.
+	 	 * @param ptr a global pointer to the target data.
+		 * @param container destination to copy data into.
+		 * @param len length (in bytes) of data to copy.
+		 * @warning container acts as the receiver of "returned" data.
+		 */
+		void get_repl_data(argo::data_distribution::global_ptr<char> ptr, void* container, unsigned int len);
 
 		/**
 		 * @brief global memory space address

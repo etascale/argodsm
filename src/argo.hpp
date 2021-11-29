@@ -64,6 +64,12 @@ namespace argo {
 	 * @return The node ID
 	 */
 	int node_id();
+	/* CSPext: get repl node id of current node */
+	/**
+	 * @brief A unique ArgoDSM node identifier of current node's repl node.
+	 * @return The repl node id of current node
+	 */
+	int repl_node_id();
 	/**
 	 * @brief Number of ArgoDSM nodes being run
 	 * @return The total number of ArgoDSM nodes
@@ -97,6 +103,26 @@ namespace argo {
 	int get_homenode(T* addr) {
 		data_distribution::global_ptr<T> gptr(addr, false, false);
 		return gptr.peek_node();
+	}
+
+	/* CSPext: add function to get repl node of one addr */
+	/**
+	 * @brief Get the repl node id of the home node of addr
+	 * @param addr A valid address in the ArgoDSM memory space
+	 * @return The id of the repl node of addr's homenode, or
+	 * argo::data_distribution::invalid_node_id if addr has not yet
+	 * been first-touched under the first-touch allocation policy
+	 * @pre addr must be an address in ArgoDSM memory
+	 */
+	template<typename T>
+	int get_replnode(T* addr) {
+		data_distribution::global_ptr<T> gptr(addr, false, false);
+		int gptr_home = gptr.peek_node();
+		if (gptr_home == data_distribution::invalid_node_id) {
+			return data_distribution::invalid_node_id;
+		} else {
+			return (gptr_home + 1) % number_of_nodes();
+		}
 	}
 
 	/**

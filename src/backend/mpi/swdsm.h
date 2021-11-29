@@ -344,13 +344,53 @@ std::size_t peek_offset(std::size_t addr);
  */
 unsigned long get_classification_index(uint64_t addr);
 /**
- * @brief Check whether a page is either cached on the node or
+ * @brief check whether a page is either cached on the node or
  * locally backed.
- * @param addr Address in the global address space
+ * @param addr address in the global address space
  * @return true if cached or locally backed, else false
- * @warning This is strictly meant for testing prefetching
- * @todo This should be moved in to a dedicated cache class
+ * @warning this is strictly meant for testing prefetching
+ * @todo this should be moved in to a dedicated cache class
  */
 bool _is_cached(std::size_t addr);
+
+/* CSPext: Wrapping up a function to expose current node's globaldata start. */
+/**
+ * @brief give the start of current node's globalData.
+ * @return a pointer to the start of current node's globalData.
+ */
+char* argo_get_globaldata_start();
+
+/* CSPext: Wrapping up a function to expose current node's repldata start. */
+/**
+ * @brief give the start of current node's replData.
+ * @return a pointer to the start of current node's replData.
+ */
+char* argo_get_repldata_start();
+
+/* CSPext: Wrapping up a function to calculate the replication node */
+/**
+ * @brief give the replication node of current node id.
+ * @return node id of the corresponding replication node
+ */
+argo::node_id_t argo_get_rid();
+
+/* CSPext: A function to calculate the replication node, used locally */
+/**
+ * @brief give the replication node of one node id.
+ * @param n node id of the target node
+ * @return node id of the corresponding replication node
+ */
+argo::node_id_t _calc_rid(argo::node_id_t n);
+
+/* CSPext: Copy data from the input pointer's repl node */
+/**
+ * @brief copy replicated data of given pointer.
+ * @param ptr a global pointer to the target data.
+ * @param container destination to copy data into.
+ * @param len length (in bytes) of data to copy.
+ * @warning container acts as the receiver of "returned" data.
+ */
+void get_replicated_data(argo::data_distribution::global_ptr<char> ptr, void* container, unsigned int len);
+
 #endif /* argo_swdsm_h */
 

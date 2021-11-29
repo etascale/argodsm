@@ -108,6 +108,11 @@ namespace argo {
 			return my_node_id;
 		}
 
+		/* CSPext: had to add this to keep backend.hpp defined */
+		node_id_t repl_node_id() {
+			return (my_node_id + 1) % nodes;
+		}
+
 		node_id_t number_of_nodes() {
 			return nodes;
 		}
@@ -123,6 +128,13 @@ namespace argo {
 		bool is_cached(void* addr) {
 			(void)addr;
 			return true;
+		}
+
+
+		/* CSPext: must add this to make backend.hpp fully defined. See the same function in mpi.cpp. */
+		void get_repl_data(argo::data_distribution::global_ptr<char> ptr, void* container, unsigned int len) {
+			// to use ptr, container and len
+			if (ptr.get() == ptr.get() && container == nullptr && len == 0) { }
 		}
 
 		void finalize() {

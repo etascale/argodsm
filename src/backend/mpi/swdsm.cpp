@@ -69,6 +69,9 @@ MPI_Win sharerWindow;
 MPI_Win lockWindow;
 /** @brief MPI windows for reading and writing data in global address space */
 MPI_Win *globalDataWindow;
+/* CSPext: Create replDataWindow */
+/** @brief MPI windows for reading and writing duplicated data in global address space */
+MPI_Win *replDataWindow;
 /** @brief MPI data structure for sending cache control data*/
 MPI_Datatype mpi_control_data;
 /** @brief MPI data structure for a block containing an ArgoDSM cacheline of pages */
@@ -81,6 +84,9 @@ int rank;
 int workrank;
 /** @brief tracking which windows are used for reading and writing global address space*/
 char * barwindowsused;
+/* CSPext: add flag for repl mem area */
+/** @brief tracking which windows are used for writing repl mem area*/
+char * repl_barwindowsused;
 /** @brief Semaphore protecting infiniband accesses*/
 /** @todo replace with a (qd?)lock */
 sem_t ibsem;
@@ -112,6 +118,9 @@ pthread_mutex_t gmallocmutex = PTHREAD_MUTEX_INITIALIZER;
 void * startAddr;
 /** @brief  Points to start of global address space this process is serving */
 char* globalData;
+/* CSPext: Create repl data area */
+/** @brief  Points to start of replication area */
+char* replData;
 /** @brief  Size of global address space*/
 unsigned long size_of_all;
 /** @brief  Size of this process part of global address space*/
@@ -254,6 +263,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 	unsigned long startIndex = getCacheIndex(aligned_access_offset);
 
 	/* Get homenode and offset, protect with ibsem if first touch */
+	/* CSP: First touch not important for now */
 	argo::node_id_t homenode;
 	std::size_t offset;
 	if(dd::is_first_touch_policy()){
@@ -353,6 +363,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 	state  = cacheControl[startIndex].state;
 	tag = cacheControl[startIndex].tag;
 
+	/* CSP: State of cachline is invalid or the cacheline has a valid page but not the one we are looking for => eviction required */
 	if(state == INVALID || (tag != aligned_access_offset && tag != GLOBAL_NULL)) {
 		load_cache_entry(aligned_access_offset);
 		pthread_mutex_unlock(&cachemutex);
@@ -361,6 +372,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 		return;
 	}
 
+	/*CSP: These 2 lines not relevant for us */
 	unsigned long line = startIndex / CACHELINE;
 	line *= CACHELINE;
 
@@ -374,7 +386,9 @@ void handler(int sig, siginfo_t *si, void *unused){
 	cacheControl[line].dirty = DIRTY;
 
 	sem_wait(&ibsem);
+	/* CSP: Workrank = Node ID */
 	MPI_Win_lock(MPI_LOCK_SHARED, workrank, 0, sharerWindow);
+	/* CSP: globalShares = Pyxis directory array */
 	unsigned long writers = globalSharers[classidx+1];
 	unsigned long sharers = globalSharers[classidx];
 	MPI_Win_unlock(workrank, sharerWindow);
@@ -398,6 +412,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 		MPI_Win_unlock(workrank, sharerWindow);
 
 		/* check if we need to update */
+		/* CSP: There is a single writer and your are not a writer */
 		if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
 			int n;
 			for(n=0; n<numtasks; n++){
@@ -406,13 +421,16 @@ void handler(int sig, siginfo_t *si, void *unused){
 					break;
 				}
 			}
+			/* CSP: Update Pyxis directory of the single writer */
 			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
 			MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
 			MPI_Win_unlock(owner, sharerWindow);
 		}
+		/* CSP: You are the only writer or there are no writers */
 		else if(writers==id || writers==0){
 			int n;
 			for(n=0; n<numtasks; n++){
+				/* CSP: Check for sharers and update their Pyxis directory */
 				if(n != workrank && ((1<<n)&sharers) != 0){
 					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
 					MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
@@ -479,9 +497,11 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 	const argo::node_id_t load_node = get_homenode(aligned_access_offset);
 	const std::size_t load_offset = get_offset(aligned_access_offset);
 
+	// CSP: Only one thread at a time can make MPI calls
 	sem_wait(&ibsem);
 
 	/* Return if requested cache entry is already up to date. */
+	/* CSP: Updated by another thread */
 	if(cacheControl[start_index].tag == aligned_access_offset &&
 			cacheControl[start_index].state != INVALID){
 		sem_post(&ibsem);
@@ -554,11 +574,18 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 				}
 				argo_write_buffer->erase(idx);
 			}
+
 			/* Ensure the writeback has finished */
 			for(int i = 0; i < numtasks; i++){
+				argo::node_id_t repl_node_i = _calc_rid(i);	// get replication node
 				if(barwindowsused[i] == 1){
 					MPI_Win_unlock(i, globalDataWindow[i]);
 					barwindowsused[i] = 0;
+				}
+				/* CSPext: unlock replDataWindow too */
+				if(repl_barwindowsused[repl_node_i] == 1){
+					MPI_Win_unlock(repl_node_i, replDataWindow[repl_node_i]);
+					repl_barwindowsused[repl_node_i] = 0;
 				}
 			}
 
@@ -815,6 +842,11 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	for(i = 0; i < numtasks; i++){
 		barwindowsused[i] = 0;
 	}
+	/* CSPext: initialize repl's barwindowsused */
+	repl_barwindowsused = (char *)malloc(numtasks*sizeof(char));
+	for(i = 0; i < numtasks; i++){
+		repl_barwindowsused[i] = 0;
+	}
 
 	int *workranks = (int *) malloc(sizeof(int)*numtasks);
 	int *procranks = (int *) malloc(sizeof(int)*2);
@@ -854,6 +886,9 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	cacheoffset = pagesize*cachesize+cacheControlSize;
 
 	globalData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_chunk));
+	// CSPext: Not doubling the physical memory to allow for replication
+	// but instead creating a replData area
+	replData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_chunk));
 	cacheData = static_cast<char*>(vm::allocate_mappable(pagesize, cachesize*pagesize));
 	cacheControl = static_cast<control_data*>(vm::allocate_mappable(pagesize, cacheControlSize));
 
@@ -890,6 +925,11 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	tmpcache=globalData;
 	vm::map_memory(tmpcache, size_of_chunk, current_offset, PROT_READ|PROT_WRITE);
 
+	/* CSPext: map the memory in replData area */
+	current_offset += size_of_chunk;
+	tmpcache=replData;
+	vm::map_memory(tmpcache, size_of_chunk, current_offset, PROT_READ|PROT_WRITE);
+
 	current_offset += size_of_chunk;
 	tmpcache=globalSharers;
 	vm::map_memory(tmpcache, gwritersize, current_offset, PROT_READ|PROT_WRITE);
@@ -918,6 +958,15 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 									 MPI_INFO_NULL, MPI_COMM_WORLD, &globalDataWindow[i]);
 	}
 
+	/* CSPext: initialize replDataWindow */
+	replDataWindow = (MPI_Win*)malloc(sizeof(MPI_Win)*numtasks);
+
+	for(i = 0; i < numtasks; i++){
+		// CSP: Can potentially optimise by specifying the "no locks" key.
+ 		MPI_Win_create(replData, size_of_chunk*sizeof(argo_byte), 1,
+									MPI_INFO_NULL, MPI_COMM_WORLD, &replDataWindow[i]);
+	}
+
 	MPI_Win_create(globalSharers, gwritersize, sizeof(unsigned long),
 								 MPI_INFO_NULL, MPI_COMM_WORLD, &sharerWindow);
 	MPI_Win_create(lockbuffer, pagesize, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &lockWindow);
@@ -932,6 +981,8 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	memset(pagecopy, 0, cachesize*pagesize);
 	memset(touchedcache, 0, cachesize);
 	memset(globalData, 0, size_of_chunk*sizeof(argo_byte));
+	/* CSPext: initialize replData to all 0 */
+	memset(replData, 0, size_of_chunk*sizeof(argo_byte));
 	memset(cacheData, 0, cachesize*pagesize);
 	memset(lockbuffer, 0, pagesize);
 	memset(globalSharers, 0, gwritersize);
@@ -970,6 +1021,8 @@ void argo_finalize(){
 	MPI_Barrier(MPI_COMM_WORLD);
 	for(i=0; i<numtasks; i++){
 		MPI_Win_free(&globalDataWindow[i]);
+		/* CSPext: free replDataWindow */
+		MPI_Win_free(&replDataWindow[i]);
 	}
 	MPI_Win_free(&sharerWindow);
 	MPI_Win_free(&lockWindow);
@@ -1147,6 +1200,9 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	int cnt = 0;
 	const argo::node_id_t homenode = get_homenode(addr);
 	const std::size_t offset = get_offset(addr);
+	
+	// CSPext: Calculate the replication id
+	const argo::node_id_t repl_node = _calc_rid(homenode);
 
 	char * copy = (char *)(pagecopy + index*pagesize);
 	char * real = (char *)startAddr+addr;
@@ -1155,6 +1211,12 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	if(barwindowsused[homenode] == 0){
 		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, homenode, 0, globalDataWindow[homenode]);
 		barwindowsused[homenode] = 1;
+	}
+
+	/* CSPext: lock replDataWindow too */
+	if (repl_barwindowsused[repl_node] == 0) {
+		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, repl_node, 0, replDataWindow[repl_node]);
+		repl_barwindowsused[repl_node] = 1;
 	}
 
 	for(i = 0; i < pagesize; i+=drf_unit){
@@ -1171,12 +1233,16 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 		else{
 			if(cnt > 0){
 				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
+				// CSPext: Update page on repl node
+				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
 				cnt = 0;
 			}
 		}
 	}
 	if(cnt > 0){
 		MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
+		// CSPext: Update page on repl node
+		MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
 	}
 	stats.stores++;
 }
@@ -1215,3 +1281,60 @@ bool _is_cached(std::size_t addr) {
 	return ((homenode == getID()) || (cacheControl[cache_index].tag == aligned_address &&
 				cacheControl[cache_index].state == VALID));
 }
+
+/* CSPext: Wrapping up a function to expose current node's globaldata start. */
+char* argo_get_globaldata_start() {
+	return globalData;
+}
+
+/* CSPext: Wrapping up a function to expose current node's repldata start. */
+char* argo_get_repldata_start() {
+	return replData;
+}
+
+/* CSPext: Wrapping up a function to calculate the replication node */
+argo::node_id_t argo_get_rid(){
+	return (workrank + 1) % argo_get_nodes();
+}
+
+/* CSPext: A function to calculate the replication node, used locally */
+argo::node_id_t _calc_rid(argo::node_id_t n){
+	if (n < 0) {
+		return dd::invalid_node_id;
+	} else {
+		return (n + 1) % argo_get_nodes();
+	}
+}
+
+/* CSPext: A function to copy data from the input pointer's repl node */
+void get_replicated_data(dd::global_ptr<char> ptr, void* container, unsigned int len) {
+	argo::node_id_t h = ptr.peek_node();
+	argo::node_id_t r = _calc_rid(h);	// repl node id
+	std::size_t offset = ptr.offset();
+	
+	if (h == dd::invalid_node_id || r == dd::invalid_node_id) {
+		// TODO: Do nothing and return. Or what should we do?
+		return;
+	}
+	if (argo_get_nid() == r) {
+		memcpy(container, replData + ptr.offset(), len);
+		return;
+	} else {
+		// TODO: This branch deadlocks 
+		/* 
+		 * I suspect multiple locks may be applied to the same window,
+		 * 	due to unfinished MPI_Put (they have latency right?).
+		 *
+		 * Then, one of the unlock will successfully unlock and all others
+		 * 	will hang because they have no lock to un
+		 */
+		int err;
+		err = MPI_Win_lock(MPI_LOCK_EXCLUSIVE, r, 0, replDataWindow[r]);
+		printf("------lock return: %d\n", err);		// returns 0 (MPI_SUCCESS)
+		err = MPI_Get(container, len, MPI_CHAR,
+					r, offset, len, MPI_CHAR, replDataWindow[r]);
+		printf("------first get return: %d\n", err);// returns 0 (MPI_SUCCESS)
+		MPI_Win_unlock(r, replDataWindow[r]);		// Can never unlock!
+	}
+}
+
