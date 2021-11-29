@@ -1193,8 +1193,6 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	// CSPext: Calculate the replication id
 	const argo::node_id_t repl_node = _calc_rid(homenode);
 
-	// printf("------storepagediff for homenode %d and repl node %d\n", homenode, repl_node);
-
 	char * copy = (char *)(pagecopy + index*pagesize);
 	char * real = (char *)startAddr+addr;
 	size_t drf_unit = sizeof(char);
@@ -1204,8 +1202,7 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 		barwindowsused[homenode] = 1;
 	}
 
-	// CSPext: Lock replicated node window
-	// printf("------storepagediff lock repl window\n");
+	// CSPext: Lock replicated data window
 	MPI_Win_lock(MPI_LOCK_EXCLUSIVE, repl_node, 0, replDataWindow[repl_node]);
 
 	for(i = 0; i < pagesize; i+=drf_unit){
@@ -1221,7 +1218,6 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 		}
 		else{
 			if(cnt > 0){
-				// printf("------storepagediff put (1)\n");
 				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
 				// CSPext: Update page on repl node
 				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
@@ -1230,13 +1226,11 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 		}
 	}
 	if(cnt > 0){
-		// printf("------storepagediff put (2)\n");
 		MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
 		// CSPext: Update page on repl node
 		MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
 	}
 	stats.stores++;
-	// printf("------storepagediff done for page %lu\n", index);
 
 	// CSPext: Unlock repl node window
 	MPI_Win_unlock(repl_node, replDataWindow[repl_node]);
