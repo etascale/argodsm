@@ -54,6 +54,14 @@ namespace argo {
 				/** @brief one node's share of the memory space */
 				static std::size_t size_per_node;
 
+				// CSPext: umber of data fragments (pages) to calculate parity on
+				static node_id_t data_fragments;
+
+				// CSPext: number of parity fragments to calculate for each set of data_fragments
+				static node_id_t parity_fragments;
+
+				// CSPext: note, data_fragments + parity_fragments == nodes
+
 			public:
 				/**
 				 * @brief set runtime parameters for global memory space
@@ -133,6 +141,31 @@ namespace argo {
 				 */
 				static char* get_ptr(const node_id_t homenode, const std::size_t offset) {
 					return start_address + homenode*size_per_node + offset;
+				}
+
+				// CSPext:
+
+				/**
+				 * @brief compute replication node of an address
+				 * 
+				 * @param ptr address to find replication node of
+				 * @return the computed replication node
+				 */
+
+				virtual node_id_t parity_node(char* const ptr) {
+					return invalid_node_id;
+				}
+
+				// CSPext:
+
+				/**
+				 * @brief compute the offset of a ptr in the backing store
+				 * on ptr's replication node
+				 * @param ptr address to find offset of
+				 * @return the backing store offset
+				 */
+				virtual std::size_t parity_offset(char* const ptr) {
+					return invalid_offset;
 				}
 		};
 		template<int i> node_id_t base_distribution<i>::nodes;

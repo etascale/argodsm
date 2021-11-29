@@ -51,6 +51,21 @@ namespace argo {
 				virtual std::size_t peek_local_offset (char* const ptr) {
 					return local_offset(ptr);
 				}
+
+				// CSPext:
+
+				virtual node_id_t parity_node(char* const ptr) {
+					// CSP: TODO: find parity node of an address
+					return invalid_node_id;
+				}
+
+				// CSPext:
+
+				virtual std::size_t parity_offset(char* const ptr) {
+					return local_offset(ptr) / (data_distribution::granularity * base_distribution<instance>::data_fragments);
+				}
+
+
 		};
 	} // namespace data_distribution
 } // namespace argo
