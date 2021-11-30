@@ -55,14 +55,18 @@ namespace argo {
 				// CSPext:
 
 				virtual node_id_t parity_node(char* const ptr) {
-					// CSP: TODO: find parity node of an address
-					return invalid_node_id;
+					std::size_t nodes = base_distribution<instance>::nodes;
+					std::size_t local_page_number = local_offset(ptr) / data_distribution::granularity;
+					std::size_t cyclical_page_number = homenode(ptr) + (local_page_number * nodes);
+					std::size_t data_blocks = nodes - 1;
+					return (((cyclical_page_number / data_blocks) + 1) * data_blocks) % nodes;
+
 				}
 
 				// CSPext:
 
 				virtual std::size_t parity_offset(char* const ptr) {
-					std::size_t parity_page_number = local_offset(ptr) / (data_distribution::granularity * base_distribution<instance>::data_fragments);
+					std::size_t parity_page_number = local_offset(ptr) / (data_distribution::granularity * (base_distribution<instance>::nodes - 1));
 					return parity_page_number * data_distribution::granularity;
 				}
 
