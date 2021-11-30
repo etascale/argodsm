@@ -1300,23 +1300,24 @@ void get_replicated_data(dd::global_ptr<char> ptr, void* container, unsigned int
 	const argo::node_id_t h = ptr.peek_node();
 	const argo::node_id_t r = _calc_rid(h);	// repl node id
 	const std::size_t offset = ptr.offset();
+
+	printf("Node %d: array[0] = %d\n", argo_get_nid(), ((int *) (replData + ptr.offset()))[0]);
+
+	printf("------get repl data: ptr %p container %p\n", ptr.get(), container);
+	printf("------get repl data: h %d r %d offset %lu length %u\n", h, r, offset, len);
 	
-	// printf("------get repl data, h: %d, r: %d\n", h, r);
 	if (h == dd::invalid_node_id || r == dd::invalid_node_id) {
 		// TODO: Do nothing and return. Or what should we do?
-		// printf("------get repl data: invalid node id\n");
 		return;
 	}
 	if (argo_get_nid() == r) {
-		// printf("------get repl data: node id same as repl id\n");
 		memcpy(container, replData + ptr.offset(), len);
 		return;
 	} else {
 		// Lock needed? (Probably)
 		sem_wait(&ibsem);
 		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, r, 0, replDataWindow[r]);
-		MPI_Get(container, len, MPI_CHAR, r, offset, len, MPI_CHAR, replDataWindow[r]);
-		// printf("------get repl data: unlock repl window\n");
+		MPI_Get(container, len, MPI_BYTE, r, offset, len, MPI_BYTE, replDataWindow[r]);
 		MPI_Win_unlock(r, replDataWindow[r]);
 		sem_post(&ibsem);
 	}
