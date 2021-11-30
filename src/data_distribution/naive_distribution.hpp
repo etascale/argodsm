@@ -62,7 +62,8 @@ namespace argo {
 				// CSPext:
 
 				virtual std::size_t parity_offset(char* const ptr) {
-					return local_offset(ptr) / (data_distribution::granularity * base_distribution<instance>::data_fragments);
+					std::size_t parity_page_number = local_offset(ptr) / (data_distribution::granularity * base_distribution<instance>::data_fragments);
+					return parity_page_number * data_distribution::granularity;
 				}
 
 
