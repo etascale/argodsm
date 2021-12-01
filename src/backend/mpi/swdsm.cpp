@@ -352,6 +352,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ|PROT_WRITE);
 
 		}
+
 		sem_post(&ibsem);
 		pthread_mutex_unlock(&cachemutex);
 		return;
@@ -1193,6 +1194,8 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	// CSPext: Calculate the replication id
 	const argo::node_id_t repl_node = _calc_rid(homenode);
 
+	printf("----storepagediff: Node = %d\n", argo_get_nid());
+
 	char * copy = (char *)(pagecopy + index*pagesize);
 	char * real = (char *)startAddr+addr;
 	size_t drf_unit = sizeof(char);
@@ -1301,16 +1304,16 @@ void get_replicated_data(dd::global_ptr<char> ptr, void* container, unsigned int
 	const argo::node_id_t r = _calc_rid(h);	// repl node id
 	const std::size_t offset = ptr.offset();
 
-	printf("Node %d: array[0] = %d\n", argo_get_nid(), ((int *) (replData + ptr.offset()))[0]);
+	printf("----get repl data: Node %d: array[0] = %d, container[0] = %d\n", getID(), ((int *) (replData + ptr.offset()))[0], ((int *) container)[0]);
 
-	printf("------get repl data: ptr %p container %p\n", ptr.get(), container);
-	printf("------get repl data: h %d r %d offset %lu length %u\n", h, r, offset, len);
+	printf("----get repl data: ptr %p container %p\n", ptr.get(), container);
+	printf("----get repl data: h %d r %d offset %lu length %u\n", h, r, offset, len);
 	
 	if (h == dd::invalid_node_id || r == dd::invalid_node_id) {
 		// TODO: Do nothing and return. Or what should we do?
 		return;
 	}
-	if (argo_get_nid() == r) {
+	if (getID() == r) {
 		memcpy(container, replData + ptr.offset(), len);
 		return;
 	} else {
