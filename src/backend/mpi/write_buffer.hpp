@@ -167,7 +167,6 @@ class write_buffer
 				// Write back the page
 				mprotect(page_ptr, block_size, PROT_READ);
 				cacheControl[cache_index].dirty=CLEAN;
-				printf("----write buffer: Partial flush in node %d\n", argo_get_nid());
 				for(int i=0; i < CACHELINE; i++){
 					storepageDIFF(cache_index+i,page_size*i+page_address);
 				}
@@ -262,7 +261,6 @@ class write_buffer
 				// Write back the page
 				mprotect(page_ptr, block_size, PROT_READ);
 				cacheControl[cache_index].dirty=CLEAN;
-				printf("----write buffer: Flush in node %d\n", argo_get_nid());
 				for(int i=0; i < CACHELINE; i++){
 					storepageDIFF(cache_index+i,page_size*i+page_address);
 				}

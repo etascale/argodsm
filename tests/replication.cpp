@@ -139,13 +139,13 @@ TEST_F(replicationTest, completeReplicationArray) {
 	}
 	argo::barrier();
 
-	printf("----test: Node %d: array[0] = %d, receiver[0] = %d\n", argo::node_id(), array[0], receiver[0]);
+	// printf("----test: Node %d: array[0] = %d, receiver[0] = %d\n", argo::node_id(), array[0], receiver[0]);
 
 	argo::backend::get_repl_data((char *) array, receiver, array_size * sizeof(*array));
 	int count = 0;
 	for (std::size_t i = 0; i < array_size; i++) {
 		count += receiver[i];
-		printf("receiver[%lu] = %d\n", i, receiver[i]);
+		// printf("receiver[%lu] = %d\n", i, receiver[i]);
 	}
 	ASSERT_EQ(count, array_size);
 

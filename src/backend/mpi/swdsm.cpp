@@ -561,7 +561,6 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 
 		/* If another page occupies the cache index, begin to evict it. */
 		if((cacheControl[idx].tag != temp_addr) && (cacheControl[idx].tag != GLOBAL_NULL)){
-			printf("------load cache entry: evict\n");
 			void* old_ptr = static_cast<char*>(startAddr) + cacheControl[idx].tag;
 			void* temp_ptr = static_cast<char*>(startAddr) + temp_addr;
 
@@ -574,7 +573,6 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 				argo_write_buffer->erase(idx);
 			}
 
-			printf("------load cache entry: unlock windows\n");
 			/* Ensure the writeback has finished */
 			for(int i = 0; i < numtasks; i++){
 				argo::node_id_t repl_node_i = _calc_rid(i);	// get replication node
@@ -1194,7 +1192,7 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	// CSPext: Calculate the replication id
 	const argo::node_id_t repl_node = _calc_rid(homenode);
 
-	printf("----storepagediff: Node = %d\n", argo_get_nid());
+	// printf("----storepagediff: Node = %d\n", argo_get_nid());
 
 	char * copy = (char *)(pagecopy + index*pagesize);
 	char * real = (char *)startAddr+addr;
@@ -1304,10 +1302,9 @@ void get_replicated_data(dd::global_ptr<char> ptr, void* container, unsigned int
 	const argo::node_id_t r = _calc_rid(h);	// repl node id
 	const std::size_t offset = ptr.offset();
 
-	printf("----get repl data: Node %d: array[0] = %d, container[0] = %d\n", getID(), ((int *) (replData + ptr.offset()))[0], ((int *) container)[0]);
-
-	printf("----get repl data: ptr %p container %p\n", ptr.get(), container);
-	printf("----get repl data: h %d r %d offset %lu length %u\n", h, r, offset, len);
+	// printf("----get repl data: Node %d: array[0] = %d, container[0] = %d\n", getID(), ((int *) (replData + ptr.offset()))[0], ((int *) container)[0]);
+	// printf("----get repl data: ptr %p container %p\n", ptr.get(), container);
+	// printf("----get repl data: h %d r %d offset %lu length %u\n", h, r, offset, len);
 	
 	if (h == dd::invalid_node_id || r == dd::invalid_node_id) {
 		// TODO: Do nothing and return. Or what should we do?
