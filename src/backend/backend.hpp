@@ -65,6 +65,14 @@ namespace argo {
 		 */
 		node_id_t repl_node_id();
 
+		/* CSPext: add function to calc replication node id */
+		/**
+		 * @brief get ArgoDSM repl node ID from given node id
+ 		 * @param n node id of the target node
+		 * @return repl node ID
+		 */
+		node_id_t calc_repl_node_id(argo::node_id_t n);
+
 		/**
 		 * @brief get total number of ArgoDSM nodes
 		 * @return total number of ArgoDSM nodes

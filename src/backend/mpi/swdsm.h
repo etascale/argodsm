@@ -234,6 +234,21 @@ argo::node_id_t getID();
  */
 argo::node_id_t argo_get_nid();
 
+/* CSPext: Wrapping up a function to calculate the replication node */
+/**
+ * @brief give the replication node of current node id.
+ * @return node id of the corresponding replication node
+ */
+argo::node_id_t argo_get_rid();
+
+/* CSPext: A function to calculate the replication node */
+/**
+ * @brief give the replication node of one node id.
+ * @param n node id of the target node
+ * @return node id of the corresponding replication node
+ */
+argo::node_id_t argo_calc_rid(argo::node_id_t n);
+
 /**
  * @brief Gives number of ArgoDSM nodes
  * @return Number of ArgoDSM nodes
@@ -352,35 +367,6 @@ unsigned long get_classification_index(uint64_t addr);
  * @todo this should be moved in to a dedicated cache class
  */
 bool _is_cached(std::size_t addr);
-
-/* CSPext: Wrapping up a function to expose current node's globaldata start. */
-/**
- * @brief give the start of current node's globalData.
- * @return a pointer to the start of current node's globalData.
- */
-char* argo_get_globaldata_start();
-
-/* CSPext: Wrapping up a function to expose current node's repldata start. */
-/**
- * @brief give the start of current node's replData.
- * @return a pointer to the start of current node's replData.
- */
-char* argo_get_repldata_start();
-
-/* CSPext: Wrapping up a function to calculate the replication node */
-/**
- * @brief give the replication node of current node id.
- * @return node id of the corresponding replication node
- */
-argo::node_id_t argo_get_rid();
-
-/* CSPext: A function to calculate the replication node, used locally */
-/**
- * @brief give the replication node of one node id.
- * @param n node id of the target node
- * @return node id of the corresponding replication node
- */
-argo::node_id_t _calc_rid(argo::node_id_t n);
 
 /* CSPext: Copy data from the input pointer's repl node */
 /**

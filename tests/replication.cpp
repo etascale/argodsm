@@ -92,7 +92,7 @@ TEST_F(replicationTest, completeReplicationRemote) {
 	}
 
 	global_char val;
-	val = argo::conew_<char>('a');
+	val = argo::conew_<char>('g');
 
 	*val += 1;
 	argo::barrier();
