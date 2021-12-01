@@ -66,7 +66,7 @@ TEST_F(replicationTest, completeReplicationLocal) {
 
 	char* val = argo::conew_<char>(c_const);
 
-	// TODO: Set == 0 when "page is local" replication bug if fixed!
+	// TODO: Set == 0 when "page is local" replication bug is fixed!
 	if (argo::node_id() == 1) {
 		*val += 1;
 	}
@@ -95,7 +95,7 @@ TEST_F(replicationTest, completeReplicationRemote) {
 
 	char* val = argo::conew_<char>(c_const);
 
-	// TODO: Set == 0 when "page is local" replication bug if fixed!
+	// TODO: Set == 0 when "page is local" replication bug is fixed!
 	if (argo::node_id() == 1) {
 		*val += 1;
 	}
@@ -131,7 +131,7 @@ TEST_F(replicationTest, completeReplicationArray) {
 	}
 
 	// Initialize write buffer
-	// TODO: Set == 0 when "page is local" replication bug if fixed!
+	// TODO: Set == 0 when "page is local" replication bug is fixed!
 	if (argo::node_id() == 1) {
 		for (std::size_t i = 0; i < array_size; i++) {
 			array[i] = 1;
