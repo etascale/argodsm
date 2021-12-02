@@ -268,16 +268,13 @@ void handler(int sig, siginfo_t *si, void *unused){
 	/* Get homenode and offset, protect with ibsem if first touch */
 	/* CSP: First touch not important for now */
 	argo::node_id_t homenode;
-	std::size_t offset;
 	if(dd::is_first_touch_policy()){
 		std::lock_guard<std::mutex> lock(spin_mutex);
 		sem_wait(&ibsem);
 		homenode = get_homenode(aligned_access_offset);
-		offset = get_offset(aligned_access_offset);
 		sem_post(&ibsem);
 	}else{
 		homenode = get_homenode(aligned_access_offset);
-		offset = get_offset(aligned_access_offset);
 	}
 
 	unsigned long id = 1 << getID();

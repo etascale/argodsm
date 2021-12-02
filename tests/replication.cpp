@@ -137,7 +137,7 @@ TEST_F(replicationTest, completeReplicationArray) {
 	for (std::size_t i = 0; i < array_size; i++) {
 		count += receiver[i];
 	}
-	ASSERT_EQ(count, array_size);
+	ASSERT_EQ((unsigned)count, array_size);
 
 	delete [] receiver;
 	argo::codelete_array(array);
