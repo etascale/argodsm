@@ -113,6 +113,15 @@ namespace argo {
 			return (my_node_id + 1) % nodes;
 		}
 
+		/* CSPext: had to add this to keep backend.hpp defined */
+		node_id_t calc_repl_node_id(argo::node_id_t n) {
+			if (n < 0) {
+				return argo::data_distribution::invalid_node_id;
+			} else {
+				return (n + 1) % nodes;
+			}
+		}
+
 		node_id_t number_of_nodes() {
 			return nodes;
 		}
