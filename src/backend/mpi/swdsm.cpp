@@ -115,9 +115,6 @@ pthread_mutex_t gmallocmutex = PTHREAD_MUTEX_INITIALIZER;
 void * startAddr;
 /** @brief  Points to start of global address space this process is serving */
 char* globalData;
-/* CSPext: Create repl data area */
-/** @brief  Points to start of replication area */
-char* replData;
 /** @brief  Size of global address space*/
 unsigned long size_of_all;
 /** @brief  Size of this process part of global address space*/
@@ -128,6 +125,15 @@ static const unsigned int pagesize = 4096;
 unsigned long GLOBAL_NULL;
 /** @brief  Statistics */
 argo_statistics stats;
+
+/* CSPext: added this area */
+/*Data Replication and Rebuild*/
+/** @brief  Points to start of replication area */
+char* replData;
+/** @brief  Homenode alternation table */
+argo::node_id_t* home_alter_tbl;
+/** @brief  MPI window for updating homenode alternation table */
+MPI_Win* home_alter_tbl_window;
 
 /*First-Touch policy*/
 /** @brief  Holds the owner and backing offset of a page */
@@ -474,6 +480,13 @@ std::size_t peek_offset(std::size_t addr) {
 }
 
 void load_cache_entry(std::size_t aligned_access_offset) {
+	/* CSP: 
+	 * We need to refer to the node alternation table when
+	 * 	loading from a remote node, in case it's a rebuilt node.
+	 * Plus, we need to check the data window. On a rebuilt
+	 * 	node, we can't use the same old globalData area and 
+	 * 	the corresponding window and offsets. (TODO)
+	 * */
 
 	/* If it's not an ArgoDSM address, do not handle it */
 	if(aligned_access_offset >= size_of_all){
@@ -575,7 +588,6 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 
 			/* Ensure the writeback has finished */
 			for(int i = 0; i < numtasks; i++){
-				argo::node_id_t repl_node_i = _calc_rid(i);	// get replication node
 				if(barwindowsused[i] == 1){
 					MPI_Win_unlock(i, globalDataWindow[i]);
 					barwindowsused[i] = 0;
@@ -744,6 +756,22 @@ argo::node_id_t argo_get_nid(){
 	return workrank;
 }
 
+/* CSPext: Wrapping up a function to calculate the replication node */
+argo::node_id_t argo_get_rid(){
+	/* CSPext: Does not need to return invalid_node_id 
+	 * 	because only an unassigned page returns a node_id */
+	return (workrank + 1) % argo_get_nodes();
+}
+
+/* CSPext: A function to calculate the replication node */
+argo::node_id_t argo_calc_rid(argo::node_id_t n){
+	if (n < 0) {
+		return dd::invalid_node_id;
+	} else {
+		return (n + 1) % argo_get_nodes();
+	}
+}
+
 unsigned int argo_get_nodes(){
 	return numtasks;
 }
@@ -890,6 +918,9 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	pagecopy = static_cast<char*>(vm::allocate_mappable(pagesize, cachesize*pagesize));
 	globalSharers = static_cast<unsigned long*>(vm::allocate_mappable(pagesize, gwritersize));
 
+	/* CSPext: Initialize home alternation table */
+	home_alter_tbl = static_cast<argo::node_id_t*>(vm::allocate_mappable(pagesize, pagesize));
+
 	if (dd::is_first_touch_policy()) {
 		global_owners_dir = static_cast<std::uintptr_t*>(vm::allocate_mappable(pagesize, owners_dir_size_bytes));
 		global_offsets_tbl = static_cast<std::uintptr_t*>(vm::allocate_mappable(pagesize, offsets_tbl_size_bytes));
@@ -926,6 +957,11 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	tmpcache=lockbuffer;
 	vm::map_memory(tmpcache, pagesize, current_offset, PROT_READ|PROT_WRITE);
 
+	/* CSPext: map the memory for home node alternation table */
+	current_offset += pagesize;
+	tmpcache=home_alter_tbl;
+	vm::map_memory(tmpcache, page_size, current_offset, PROT_READ|PROT_WRITE);
+
 	if (dd::is_first_touch_policy()) {
 		current_offset += pagesize;
 		tmpcache=global_owners_dir;
@@ -934,6 +970,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		tmpcache=global_offsets_tbl;
 		vm::map_memory(tmpcache, offsets_tbl_size_bytes, current_offset, PROT_READ|PROT_WRITE);
 	}
+
 
 	sem_init(&ibsem,0,1);
 	sem_init(&globallocksem,0,1);
@@ -959,6 +996,14 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 								 MPI_INFO_NULL, MPI_COMM_WORLD, &sharerWindow);
 	MPI_Win_create(lockbuffer, pagesize, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &lockWindow);
 
+	/* CSPext: initialize home_alter_tbl_window */
+	home_alter_tbl_window = (MPI_Win*)malloc(sizeof(MPI_Win)*numtasks);
+
+	for(i = 0; i < numtasks; i++) {
+ 		MPI_Win_create(home_alter_tbl, page_size*sizeof(argo_byte), 1,
+									MPI_INFO_NULL, MPI_COMM_WORLD, &home_alter_tbl_window[i]);
+	}
+
 	if (dd::is_first_touch_policy()) {
 		MPI_Win_create(global_owners_dir, owners_dir_size_bytes, sizeof(std::uintptr_t),
 									 MPI_INFO_NULL, MPI_COMM_WORLD, &owners_dir_window);
@@ -975,6 +1020,10 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	memset(lockbuffer, 0, pagesize);
 	memset(globalSharers, 0, gwritersize);
 	memset(cacheControl, 0, cachesize*sizeof(control_data));
+	/* CSPext: initialize home_alter_tbl */
+	for (i = 0; i < numtasks; i++) {
+		home_alter_tbl[i] = i;
+	}
 
 	if (dd::is_first_touch_policy()) {
 		memset(global_owners_dir, 0, owners_dir_size_bytes);
@@ -1011,6 +1060,8 @@ void argo_finalize(){
 		MPI_Win_free(&globalDataWindow[i]);
 		/* CSPext: free replDataWindow */
 		MPI_Win_free(&replDataWindow[i]);
+		/* CSPext: free home_alter_tbl_window */
+		MPI_Win_free(&home_alter_tbl_window[i]);
 	}
 	MPI_Win_free(&sharerWindow);
 	MPI_Win_free(&lockWindow);
@@ -1190,7 +1241,7 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	const std::size_t offset = get_offset(addr);
 	
 	// CSPext: Calculate the replication id
-	const argo::node_id_t repl_node = _calc_rid(homenode);
+	const argo::node_id_t repl_node = argo_calc_rid(homenode);
 
 	// printf("----storepagediff: Node = %d\n", argo_get_nid());
 
@@ -1272,34 +1323,10 @@ bool _is_cached(std::size_t addr) {
 				cacheControl[cache_index].state == VALID));
 }
 
-/* CSPext: Wrapping up a function to expose current node's globaldata start. */
-char* argo_get_globaldata_start() {
-	return globalData;
-}
-
-/* CSPext: Wrapping up a function to expose current node's repldata start. */
-char* argo_get_repldata_start() {
-	return replData;
-}
-
-/* CSPext: Wrapping up a function to calculate the replication node */
-argo::node_id_t argo_get_rid(){
-	return (workrank + 1) % argo_get_nodes();
-}
-
-/* CSPext: A function to calculate the replication node, used locally */
-argo::node_id_t _calc_rid(argo::node_id_t n){
-	if (n < 0) {
-		return dd::invalid_node_id;
-	} else {
-		return (n + 1) % argo_get_nodes();
-	}
-}
-
 /* CSPext: A function to copy data from the input pointer's repl node */
 void get_replicated_data(dd::global_ptr<char> ptr, void* container, unsigned int len) {
 	const argo::node_id_t h = ptr.peek_node();
-	const argo::node_id_t r = _calc_rid(h);	// repl node id
+	const argo::node_id_t r = argo_calc_rid(h);	// repl node id
 	const std::size_t offset = ptr.offset();
 
 	// printf("----get repl data: Node %d: array[0] = %d, container[0] = %d\n", getID(), ((int *) (replData + ptr.offset()))[0], ((int *) container)[0]);
@@ -1315,6 +1342,11 @@ void get_replicated_data(dd::global_ptr<char> ptr, void* container, unsigned int
 		return;
 	} else {
 		// Lock needed? (Probably)
+		printf("Start address: %p; ptr address: %p; ptr offset: %lu; globalData: %p\n", 
+						argo::backend::global_base(), ptr.get(), ptr.offset(), globalData);
+
+		printf("ptr.get(): %x, globalData + offset(): %x\n", 
+						*ptr.get(), *(globalData + ptr.offset()));
 		sem_wait(&ibsem);
 		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, r, 0, replDataWindow[r]);
 		MPI_Get(container, len, MPI_BYTE, r, offset, len, MPI_BYTE, replDataWindow[r]);

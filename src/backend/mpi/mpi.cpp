@@ -169,6 +169,11 @@ namespace argo {
 			return argo_get_rid();	// defined in swdsm.cpp
 		}
 
+		/* CSPext: add function to calculate replication node id */
+		node_id_t calc_repl_node_id(argo::node_id_t n) {
+			return argo_calc_rid(n);// defined in swdsm.cpp
+		}
+
 		node_id_t number_of_nodes() {
 			return argo_get_nodes();
 		}

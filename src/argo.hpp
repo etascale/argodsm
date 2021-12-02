@@ -121,7 +121,7 @@ namespace argo {
 		if (gptr_home == data_distribution::invalid_node_id) {
 			return data_distribution::invalid_node_id;
 		} else {
-			return (gptr_home + 1) % number_of_nodes();
+			return argo::backend::calc_repl_node_id(gptr_home);
 		}
 	}
 
