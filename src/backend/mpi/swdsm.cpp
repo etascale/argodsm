@@ -918,7 +918,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	globalSharers = static_cast<unsigned long*>(vm::allocate_mappable(pagesize, gwritersize));
 
 	/* CSPext: Initialize home alternation table */
-	home_alter_tbl = static_cast<argo::node_id_t*>(vm::allocate_mappable(pagesize, argo_get_nodes()));
+	home_alter_tbl = static_cast<argo::node_id_t*>(vm::allocate_mappable(pagesize, pagesize));
 
 	if (dd::is_first_touch_policy()) {
 		global_owners_dir = static_cast<std::uintptr_t*>(vm::allocate_mappable(pagesize, owners_dir_size_bytes));
@@ -959,7 +959,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	/* CSPext: map the memory for home node alternation table */
 	current_offset += pagesize;
 	tmpcache=home_alter_tbl;
-	vm::map_memory(tmpcache, pagesize, current_offset, PROT_READ|PROT_WRITE);
+	vm::map_memory(tmpcache, page_size, current_offset, PROT_READ|PROT_WRITE);
 
 	if (dd::is_first_touch_policy()) {
 		current_offset += pagesize;
