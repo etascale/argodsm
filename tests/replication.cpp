@@ -66,8 +66,7 @@ TEST_F(replicationTest, completeReplicationLocal) {
 
 	char* val = argo::conew_<char>(c_const);
 
-	// TODO: Set == 0 when "page is local" replication bug is fixed!
-	if (argo::node_id() == 1) {
+	if (argo::node_id() == 0) {
 		*val += 1;
 	}
 	argo::barrier(); // Wait until writing is commited
@@ -75,7 +74,6 @@ TEST_F(replicationTest, completeReplicationLocal) {
 	char receiver = 'z';
 	if (argo::node_id() == argo_get_replnode(val)) {
 		argo::backend::get_repl_data(val, (void *)(&receiver), 1);
-		// printf("orignial val is %x = %c, repl val is %x = %c\n", *val, *val, receiver, receiver);
 		ASSERT_EQ(*val, receiver);
 	} else {
 		// Not target node; automatically passing
@@ -95,8 +93,7 @@ TEST_F(replicationTest, completeReplicationRemote) {
 
 	char* val = argo::conew_<char>(c_const);
 
-	// TODO: Set == 0 when "page is local" replication bug is fixed!
-	if (argo::node_id() == 1) {
+	if (argo::node_id() == 0) {
 		*val += 1;
 	}
 	argo::barrier();
@@ -104,10 +101,8 @@ TEST_F(replicationTest, completeReplicationRemote) {
 	char receiver = 'z';
 	if (argo::node_id() != argo_get_replnode(val)) {
 		argo::backend::get_repl_data(val, (void *)&receiver, 1);
-		// printf("orignial val is %x = %c, repl val is %x = %c\n", *val, *val, receiver, receiver);
 		ASSERT_EQ(*val, receiver);
 	} else {
-		// Not target node; automatically passing
 		ASSERT_TRUE(true);
 	}
 }
@@ -130,22 +125,17 @@ TEST_F(replicationTest, completeReplicationArray) {
 		receiver[i] = 0;
 	}
 
-	// Initialize write buffer
-	// TODO: Set == 0 when "page is local" replication bug is fixed!
-	if (argo::node_id() == 1) {
+	if (argo::node_id() == 0) {
 		for (std::size_t i = 0; i < array_size; i++) {
 			array[i] = 1;
 		}
 	}
 	argo::barrier();
 
-	// printf("----test: Node %d: array[0] = %d, receiver[0] = %d\n", argo::node_id(), array[0], receiver[0]);
-
 	argo::backend::get_repl_data((char *) array, receiver, array_size * sizeof(*array));
 	int count = 0;
 	for (std::size_t i = 0; i < array_size; i++) {
 		count += receiver[i];
-		// printf("receiver[%lu] = %d\n", i, receiver[i]);
 	}
 	ASSERT_EQ(count, array_size);
 

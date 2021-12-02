@@ -285,84 +285,86 @@ void handler(int sig, siginfo_t *si, void *unused){
 
 	pthread_mutex_lock(&cachemutex);
 
+	// CSPext: For replication to occur, we cannot enter this branch
+	// CSPext: If we have time, we can try to make it work with this branch
 	/* page is local */
-	if(homenode == (getID())){
-		int n;
-		sem_wait(&ibsem);
-		unsigned long sharers;
-		MPI_Win_lock(MPI_LOCK_SHARED, workrank, 0, sharerWindow);
-		unsigned long prevsharer = (globalSharers[classidx])&id;
-		MPI_Win_unlock(workrank, sharerWindow);
-		if(prevsharer != id){
-			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
-			sharers = globalSharers[classidx];
-			globalSharers[classidx] |= id;
-			MPI_Win_unlock(workrank, sharerWindow);
-			if(sharers != 0 && sharers != id && isPowerOf2(sharers)){
-				unsigned long ownid = sharers&invid;
-				unsigned long owner = workrank;
-				for(n=0; n<numtasks; n++){
-					if((unsigned long)(1<<n)==ownid){
-						owner = n; //just get rank...
-						break;
-					}
-				}
-				if(owner==(unsigned long)workrank){
-					throw "bad owner in local access";
-				}
-				else{
-					/* update remote private holder to shared */
-					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
-					MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx,1,MPI_LONG,MPI_BOR,sharerWindow);
-					MPI_Win_unlock(owner, sharerWindow);
-				}
-			}
-			/* set page to permit reads and map it to the page cache */
-			/** @todo Set cache offset to a variable instead of calculating it here */
-			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ);
+	// if(homenode == (getID())){
+	// 	int n;
+	// 	sem_wait(&ibsem);
+	// 	unsigned long sharers;
+	// 	MPI_Win_lock(MPI_LOCK_SHARED, workrank, 0, sharerWindow);
+	// 	unsigned long prevsharer = (globalSharers[classidx])&id;
+	// 	MPI_Win_unlock(workrank, sharerWindow);
+	// 	if(prevsharer != id){
+	// 		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
+	// 		sharers = globalSharers[classidx];
+	// 		globalSharers[classidx] |= id;
+	// 		MPI_Win_unlock(workrank, sharerWindow);
+	// 		if(sharers != 0 && sharers != id && isPowerOf2(sharers)){
+	// 			unsigned long ownid = sharers&invid;
+	// 			unsigned long owner = workrank;
+	// 			for(n=0; n<numtasks; n++){
+	// 				if((unsigned long)(1<<n)==ownid){
+	// 					owner = n; //just get rank...
+	// 					break;
+	// 				}
+	// 			}
+	// 			if(owner==(unsigned long)workrank){
+	// 				throw "bad owner in local access";
+	// 			}
+	// 			else{
+	// 				/* update remote private holder to shared */
+	// 				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
+	// 				MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx,1,MPI_LONG,MPI_BOR,sharerWindow);
+	// 				MPI_Win_unlock(owner, sharerWindow);
+	// 			}
+	// 		}
+	// 		/* set page to permit reads and map it to the page cache */
+	// 		/** @todo Set cache offset to a variable instead of calculating it here */
+	// 		vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ);
 
-		}
-		else{
+	// 	}
+	// 	else{
 
-			/* get current sharers/writers and then add your own id */
-			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
-			unsigned long sharers = globalSharers[classidx];
-			unsigned long writers = globalSharers[classidx+1];
-			globalSharers[classidx+1] |= id;
-			MPI_Win_unlock(workrank, sharerWindow);
+	// 		/* get current sharers/writers and then add your own id */
+	// 		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
+	// 		unsigned long sharers = globalSharers[classidx];
+	// 		unsigned long writers = globalSharers[classidx+1];
+	// 		globalSharers[classidx+1] |= id;
+	// 		MPI_Win_unlock(workrank, sharerWindow);
 
-			/* remote single writer */
-			if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
-				int n;
-				for(n=0; n<numtasks; n++){
-					if(((unsigned long)(1<<n))==(writers&invid)){
-						owner = n; //just get rank...
-						break;
-					}
-				}
-				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
-				MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
-				MPI_Win_unlock(owner, sharerWindow);
-			}
-			else if(writers == id || writers == 0){
-				int n;
-				for(n=0; n<numtasks; n++){
-					if(n != workrank && ((1<<n)&sharers) != 0){
-						MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
-						MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
-						MPI_Win_unlock(n, sharerWindow);
-					}
-				}
-			}
-			/* set page to permit read/write and map it to the page cache */
-			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ|PROT_WRITE);
+	// 		/* remote single writer */
+	// 		if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
+	// 			int n;
+	// 			for(n=0; n<numtasks; n++){
+	// 				if(((unsigned long)(1<<n))==(writers&invid)){
+	// 					owner = n; //just get rank...
+	// 					break;
+	// 				}
+	// 			}
+	// 			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
+	// 			MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
+	// 			MPI_Win_unlock(owner, sharerWindow);
+	// 		}
+	// 		else if(writers == id || writers == 0){
+	// 			int n;
+	// 			for(n=0; n<numtasks; n++){
+	// 				if(n != workrank && ((1<<n)&sharers) != 0){
+	// 					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
+	// 					MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
+	// 					MPI_Win_unlock(n, sharerWindow);
+	// 				}
+	// 			}
+	// 		}
+	// 		/* set page to permit read/write and map it to the page cache */
+	// 		vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ|PROT_WRITE);
 
-		}
+	// 	}
 
-		sem_post(&ibsem);
-		pthread_mutex_unlock(&cachemutex);
-		return;
-	}
+	// 	sem_post(&ibsem);
+	// 	pthread_mutex_unlock(&cachemutex);
+	// 	return;
+	// }
 
 	state  = cacheControl[startIndex].state;
 	tag = cacheControl[startIndex].tag;
