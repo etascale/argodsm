@@ -84,9 +84,6 @@ int rank;
 int workrank;
 /** @brief tracking which windows are used for reading and writing global address space*/
 char * barwindowsused;
-/* CSPext: add flag for repl mem area */
-/** @brief tracking which windows are used for writing repl mem area*/
-char * repl_barwindowsused;
 /** @brief Semaphore protecting infiniband accesses*/
 /** @todo replace with a (qd?)lock */
 sem_t ibsem;
@@ -355,6 +352,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ|PROT_WRITE);
 
 		}
+
 		sem_post(&ibsem);
 		pthread_mutex_unlock(&cachemutex);
 		return;
@@ -581,11 +579,6 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 				if(barwindowsused[i] == 1){
 					MPI_Win_unlock(i, globalDataWindow[i]);
 					barwindowsused[i] = 0;
-				}
-				/* CSPext: unlock replDataWindow too */
-				if(repl_barwindowsused[repl_node_i] == 1){
-					MPI_Win_unlock(repl_node_i, replDataWindow[repl_node_i]);
-					repl_barwindowsused[repl_node_i] = 0;
 				}
 			}
 
@@ -841,11 +834,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	barwindowsused = (char *)malloc(numtasks*sizeof(char));
 	for(i = 0; i < numtasks; i++){
 		barwindowsused[i] = 0;
-	}
-	/* CSPext: initialize repl's barwindowsused */
-	repl_barwindowsused = (char *)malloc(numtasks*sizeof(char));
-	for(i = 0; i < numtasks; i++){
-		repl_barwindowsused[i] = 0;
 	}
 
 	int *workranks = (int *) malloc(sizeof(int)*numtasks);
@@ -1204,6 +1192,8 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	// CSPext: Calculate the replication id
 	const argo::node_id_t repl_node = _calc_rid(homenode);
 
+	// printf("----storepagediff: Node = %d\n", argo_get_nid());
+
 	char * copy = (char *)(pagecopy + index*pagesize);
 	char * real = (char *)startAddr+addr;
 	size_t drf_unit = sizeof(char);
@@ -1213,11 +1203,8 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 		barwindowsused[homenode] = 1;
 	}
 
-	/* CSPext: lock replDataWindow too */
-	if (repl_barwindowsused[repl_node] == 0) {
-		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, repl_node, 0, replDataWindow[repl_node]);
-		repl_barwindowsused[repl_node] = 1;
-	}
+	// CSPext: Lock replicated data window
+	MPI_Win_lock(MPI_LOCK_EXCLUSIVE, repl_node, 0, replDataWindow[repl_node]);
 
 	for(i = 0; i < pagesize; i+=drf_unit){
 		int branchval;
@@ -1245,6 +1232,9 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 		MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
 	}
 	stats.stores++;
+
+	// CSPext: Unlock repl node window
+	MPI_Win_unlock(repl_node, replDataWindow[repl_node]);
 }
 
 void printStatistics(){
@@ -1308,33 +1298,29 @@ argo::node_id_t _calc_rid(argo::node_id_t n){
 
 /* CSPext: A function to copy data from the input pointer's repl node */
 void get_replicated_data(dd::global_ptr<char> ptr, void* container, unsigned int len) {
-	argo::node_id_t h = ptr.peek_node();
-	argo::node_id_t r = _calc_rid(h);	// repl node id
-	std::size_t offset = ptr.offset();
+	const argo::node_id_t h = ptr.peek_node();
+	const argo::node_id_t r = _calc_rid(h);	// repl node id
+	const std::size_t offset = ptr.offset();
+
+	// printf("----get repl data: Node %d: array[0] = %d, container[0] = %d\n", getID(), ((int *) (replData + ptr.offset()))[0], ((int *) container)[0]);
+	// printf("----get repl data: ptr %p container %p\n", ptr.get(), container);
+	// printf("----get repl data: h %d r %d offset %lu length %u\n", h, r, offset, len);
 	
 	if (h == dd::invalid_node_id || r == dd::invalid_node_id) {
 		// TODO: Do nothing and return. Or what should we do?
 		return;
 	}
-	if (argo_get_nid() == r) {
+	if (getID() == r) {
 		memcpy(container, replData + ptr.offset(), len);
 		return;
 	} else {
-		// TODO: This branch deadlocks 
-		/* 
-		 * I suspect multiple locks may be applied to the same window,
-		 * 	due to unfinished MPI_Put (they have latency right?).
-		 *
-		 * Then, one of the unlock will successfully unlock and all others
-		 * 	will hang because they have no lock to un
-		 */
-		int err;
-		err = MPI_Win_lock(MPI_LOCK_EXCLUSIVE, r, 0, replDataWindow[r]);
-		printf("------lock return: %d\n", err);		// returns 0 (MPI_SUCCESS)
-		err = MPI_Get(container, len, MPI_CHAR,
-					r, offset, len, MPI_CHAR, replDataWindow[r]);
-		printf("------first get return: %d\n", err);// returns 0 (MPI_SUCCESS)
-		MPI_Win_unlock(r, replDataWindow[r]);		// Can never unlock!
+		// Lock needed? (Probably)
+		sem_wait(&ibsem);
+		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, r, 0, replDataWindow[r]);
+		MPI_Get(container, len, MPI_BYTE, r, offset, len, MPI_BYTE, replDataWindow[r]);
+		MPI_Win_unlock(r, replDataWindow[r]);
+		sem_post(&ibsem);
 	}
+
 }
 
