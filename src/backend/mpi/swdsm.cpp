@@ -119,6 +119,9 @@ char* globalData;
 unsigned long size_of_all;
 /** @brief  Size of this process part of global address space*/
 unsigned long size_of_chunk;
+// CSP
+/** @brief size of this process replication address space */
+unsigned long size_of_replication;
 /** @brief  size of a page */
 static const unsigned int pagesize = 4096;
 /** @brief  Magic value for invalid cacheindices */
@@ -268,16 +271,16 @@ void handler(int sig, siginfo_t *si, void *unused){
 	/* Get homenode and offset, protect with ibsem if first touch */
 	/* CSP: First touch not important for now */
 	argo::node_id_t homenode;
-	std::size_t offset;
+	//std::size_t offset;
 	if(dd::is_first_touch_policy()){
 		std::lock_guard<std::mutex> lock(spin_mutex);
 		sem_wait(&ibsem);
 		homenode = get_homenode(aligned_access_offset);
-		offset = get_offset(aligned_access_offset);
+		//offset = get_offset(aligned_access_offset);
 		sem_post(&ibsem);
 	}else{
 		homenode = get_homenode(aligned_access_offset);
-		offset = get_offset(aligned_access_offset);
+		//offset = get_offset(aligned_access_offset);
 	}
 
 	unsigned long id = 1 << getID();
@@ -886,6 +889,17 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	size_of_all = argo_size; //total distr. global memory
 	GLOBAL_NULL=size_of_all+1;
 	size_of_chunk = argo_size/(numtasks); //part on each node
+	// CSPext
+	if (env::replication_policy() == 0) {
+		// complete replication
+		printf("COMPLETE REPLICATION\n");
+		size_of_replication = size_of_chunk;
+	}
+	else if (env::replication_policy() == 1) {
+		// erasure coding (n-1, 1)
+		printf("EASURE CODING\n");
+		size_of_replication = size_of_chunk / (numtasks - 1);
+	}
 	sig::signal_handler<SIGSEGV>::install_argo_handler(&handler);
 
 	unsigned long cacheControlSize = sizeof(control_data)*cachesize;
@@ -904,9 +918,8 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	cacheoffset = pagesize*cachesize+cacheControlSize;
 
 	globalData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_chunk));
-	// CSPext: Not doubling the physical memory to allow for replication
-	// but instead creating a replData area
-	replData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_chunk));
+	// CSPext: 
+	replData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_replication));
 	cacheData = static_cast<char*>(vm::allocate_mappable(pagesize, cachesize*pagesize));
 	cacheControl = static_cast<control_data*>(vm::allocate_mappable(pagesize, cacheControlSize));
 
@@ -949,9 +962,9 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	/* CSPext: map the memory in replData area */
 	current_offset += size_of_chunk;
 	tmpcache=replData;
-	vm::map_memory(tmpcache, size_of_chunk, current_offset, PROT_READ|PROT_WRITE);
+	vm::map_memory(tmpcache, size_of_replication, current_offset, PROT_READ|PROT_WRITE);
 
-	current_offset += size_of_chunk;
+	current_offset += size_of_replication;
 	tmpcache=globalSharers;
 	vm::map_memory(tmpcache, gwritersize, current_offset, PROT_READ|PROT_WRITE);
 
@@ -990,7 +1003,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 
 	for(i = 0; i < numtasks; i++){
 		// CSP: Can potentially optimise by specifying the "no locks" key.
- 		MPI_Win_create(replData, size_of_chunk*sizeof(argo_byte), 1,
+ 		MPI_Win_create(replData, size_of_replication*sizeof(argo_byte), 1,
 									MPI_INFO_NULL, MPI_COMM_WORLD, &replDataWindow[i]);
 	}
 
@@ -1017,7 +1030,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	memset(touchedcache, 0, cachesize);
 	memset(globalData, 0, size_of_chunk*sizeof(argo_byte));
 	/* CSPext: initialize replData to all 0 */
-	memset(replData, 0, size_of_chunk*sizeof(argo_byte));
+	memset(replData, 0, size_of_replication*sizeof(argo_byte));
 	memset(cacheData, 0, cachesize*pagesize);
 	memset(lockbuffer, 0, pagesize);
 	memset(globalSharers, 0, gwritersize);

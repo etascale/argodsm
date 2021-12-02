@@ -133,7 +133,7 @@ TEST_F(replicationTest, completeReplicationArray) {
 	argo::barrier();
 
 	argo::backend::get_repl_data((char *) array, receiver, array_size * sizeof(*array));
-	int count = 0;
+	unsigned long count = 0;
 	for (std::size_t i = 0; i < array_size; i++) {
 		count += receiver[i];
 	}
