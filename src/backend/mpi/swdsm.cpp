@@ -271,16 +271,16 @@ void handler(int sig, siginfo_t *si, void *unused){
 	/* Get homenode and offset, protect with ibsem if first touch */
 	/* CSP: First touch not important for now */
 	argo::node_id_t homenode;
-	std::size_t offset;
+	//std::size_t offset;
 	if(dd::is_first_touch_policy()){
 		std::lock_guard<std::mutex> lock(spin_mutex);
 		sem_wait(&ibsem);
 		homenode = get_homenode(aligned_access_offset);
-		offset = get_offset(aligned_access_offset);
+		//offset = get_offset(aligned_access_offset);
 		sem_post(&ibsem);
 	}else{
 		homenode = get_homenode(aligned_access_offset);
-		offset = get_offset(aligned_access_offset);
+		//offset = get_offset(aligned_access_offset);
 	}
 
 	unsigned long id = 1 << getID();
@@ -892,10 +892,12 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	// CSPext
 	if (env::replication_policy() == 0) {
 		// complete replication
+		printf("COMPLETE REPLICATION\n");
 		size_of_replication = size_of_chunk;
 	}
 	else if (env::replication_policy() == 1) {
 		// erasure coding (n-1, 1)
+		printf("EASURE CODING\n");
 		size_of_replication = size_of_chunk / (numtasks - 1);
 	}
 	sig::signal_handler<SIGSEGV>::install_argo_handler(&handler);
@@ -958,11 +960,11 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	vm::map_memory(tmpcache, size_of_chunk, current_offset, PROT_READ|PROT_WRITE);
 
 	/* CSPext: map the memory in replData area */
-	current_offset += size_of_replication;
+	current_offset += size_of_chunk;
 	tmpcache=replData;
 	vm::map_memory(tmpcache, size_of_replication, current_offset, PROT_READ|PROT_WRITE);
 
-	current_offset += size_of_chunk;
+	current_offset += size_of_replication;
 	tmpcache=globalSharers;
 	vm::map_memory(tmpcache, gwritersize, current_offset, PROT_READ|PROT_WRITE);
 
@@ -1338,7 +1340,6 @@ bool _is_cached(std::size_t addr) {
 
 /* CSPext: A function to copy data from the input pointer's repl node */
 void get_replicated_data(dd::global_ptr<char> ptr, void* container, unsigned int len) {
-	return; // skip, implementation does not work for erasure coding
 	const argo::node_id_t h = ptr.peek_node();
 	const argo::node_id_t r = argo_calc_rid(h);	// repl node id
 	const std::size_t offset = ptr.offset();
