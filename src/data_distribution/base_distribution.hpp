@@ -153,6 +153,7 @@ namespace argo {
 				 */
 
 				virtual node_id_t parity_node(char* const ptr) {
+					(void)ptr;
 					return invalid_node_id;
 				}
 
@@ -165,6 +166,7 @@ namespace argo {
 				 * @return the backing store offset
 				 */
 				virtual std::size_t parity_offset(char* const ptr) {
+					(void)ptr;
 					return invalid_offset;
 				}
 		};
