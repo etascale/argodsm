@@ -37,6 +37,10 @@
  * @details This environment variable can be accessed through
  *          @ref argo::env::allocation_policy() after argo::env::init() has been called.
  * 
+ * @envvar{ARGO_REPLICATION_POLICY} request a specific replication policy with a number
+ * @details This environment variable can be accessed through
+ *          @ref argo::env::replication_policy() after argo::env::init() has been called.
+ * 
  * @envvar{ARGO_ALLOCATION_BLOCK_SIZE} request a specific allocation block size in number of pages
  * @details This environment variable can be accessed through
  *          @ref argo::env::allocation_block_size() after argo::env::init() has been called.
@@ -102,6 +106,14 @@ namespace argo {
 		 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
 		 */
 		std::size_t allocation_block_size();
+
+		// CSPext
+
+		/**
+		 * @brief get the replication policy requested by environment variable
+		 * @return the requested replication policy as a number. 0 == complete replication, 1 == erasure code (n-1, 1)
+		 */
+		std::size_t replication_policy();
 
 		/**
 		 * @brief get the number of pages fetched remotely per load requested

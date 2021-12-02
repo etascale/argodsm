@@ -578,7 +578,6 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 
 			/* Ensure the writeback has finished */
 			for(int i = 0; i < numtasks; i++){
-				argo::node_id_t repl_node_i = _calc_rid(i);	// get replication node
 				if(barwindowsused[i] == 1){
 					MPI_Win_unlock(i, globalDataWindow[i]);
 					barwindowsused[i] = 0;
@@ -859,7 +858,15 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	size_of_all = argo_size; //total distr. global memory
 	GLOBAL_NULL=size_of_all+1;
 	size_of_chunk = argo_size/(numtasks); //part on each node
-	size_of_replication = size_of_chunk; // CSPext: TODO: change this depending on replication policy
+	// CSPext
+	if (env::replication_policy() == 0) {
+		// complete replication
+		size_of_replication = size_of_chunk;
+	}
+	else if (env::replication_policy() == 1) {
+		// erasure coding (n-1, 1)
+		size_of_replication = size_of_chunk / (numtasks - 1);
+	}
 	sig::signal_handler<SIGSEGV>::install_argo_handler(&handler);
 
 	unsigned long cacheControlSize = sizeof(control_data)*cachesize;
