@@ -33,6 +33,12 @@ namespace argo {
 				/** @brief array holding an instance of each available policy */
 				static Dist* policies[5];
 
+				/** @brief the  ArgoDSM node that holds the replicated/parity data of the data this pointer is pointing to */
+				node_id_t replication_node;
+
+				/** @brief local offset in the ArgoDSM node's local replication memory space */
+				std::size_t replication_offset;
+
 			public:
 				/** @brief construct nullptr */
 				global_ptr() : homenode(invalid_node_id), local_offset(invalid_offset) {}
@@ -44,14 +50,23 @@ namespace argo {
 				 * @param compute_offset If true, compute local offset in constructor
 				 */
 				global_ptr(T* ptr, const bool compute_homenode = true,
-									const bool compute_offset = true)
-						: homenode(invalid_node_id), local_offset(invalid_offset), access_ptr(ptr) {
+									const bool compute_offset = true,
+									const bool compute_replication_node = true,
+									const bool compute_replication_offset = true)
+						: homenode(invalid_node_id), local_offset(invalid_offset), access_ptr(ptr), replication_node(invalid_node_id), replication_offset(invalid_offset) {
 					if(compute_homenode){
 						homenode = policy()->homenode(reinterpret_cast<char*>(ptr));
 					}
 					if(compute_offset){
 						local_offset = policy()->local_offset(reinterpret_cast<char*>(ptr));
 					}
+					if (compute_replication_node) {
+						replication_node = policy()->parity_node(reinterpret_cast<char*>(ptr));
+					}
+					if (compute_replication_offset) {
+						replication_offset = policy()->parity_offset(reinterpret_cast<char*>(ptr));
+					}
+					
 				}
 
 				/**
@@ -149,6 +164,33 @@ namespace argo {
 						}
 					}
 					return local_offset;
+				}
+
+				//CSPext:
+
+				/**
+				 * @brief get the replication/parity node of the value pointed to
+				 * @return replication node id
+				 */
+				node_id_t get_replication_node() {
+					// If replication node is not yet calculated we need to find it
+					if(replication_node == invalid_node_id) {
+						replication_node = policy()->parity_node(
+								reinterpret_cast<char*>(access_ptr));
+					}
+					return replication_node;
+				}
+
+				/**
+				 * @brief return the offset on the replication node's local replication memory
+				 * @return replication offset
+				 */
+				std::size_t get_replication_offset() {
+					if(replication_offset == invalid_offset) {
+						replication_offset = policy()->parity_offset(
+								reinterpret_cast<char*>(access_ptr));
+					}
+					return replication_offset;
 				}
 
 				/**

@@ -484,6 +484,36 @@ std::size_t peek_offset(std::size_t addr) {
 	return gptr.peek_offset();
 }
 
+//CSPext:
+
+argo::node_id_t get_replication_node(std::size_t addr) {
+	dd::global_ptr<char> gptr(reinterpret_cast<char*>(
+			addr + reinterpret_cast<unsigned long>(startAddr)), false, false);
+
+	argo::node_id_t replication_node;
+	if (env::replication_policy() == 0) {
+		replication_node = argo_calc_rid(gptr.node());
+	}
+	else if (env::replication_policy() == 1) {
+		replication_node = gptr.get_replication_node();
+	}
+	return replication_node;
+}
+
+std::size_t get_replication_offset(std::size_t addr) {
+	dd::global_ptr<char> gptr(reinterpret_cast<char*>(
+			addr + reinterpret_cast<unsigned long>(startAddr)), false, false);
+
+	std::size_t replication_offset;
+	if (env::replication_policy() == 0) {
+		replication_offset = gptr.offset();
+	}
+	else if (env::replication_policy() == 1) {
+		replication_offset = gptr.get_replication_offset();
+	}
+	return replication_offset;
+}
+
 void load_cache_entry(std::size_t aligned_access_offset) {
 	/* CSP: 
 	 * We need to refer to the node alternation table when
@@ -1256,7 +1286,8 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	const std::size_t offset = get_offset(addr);
 	
 	// CSPext: Calculate the replication id
-	const argo::node_id_t repl_node = argo_calc_rid(homenode);
+	const argo::node_id_t repl_node = get_replication_node(addr);
+	const std::size_t repl_offset = get_replication_offset(addr);
 
 	// printf("----storepagediff: Node = %d\n", argo_get_nid());
 
@@ -1287,7 +1318,13 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 			if(cnt > 0){
 				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
 				// CSPext: Update page on repl node
-				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
+				if (env::replication_policy() == 0) {
+					MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, repl_offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
+				}
+				else if (env::replication_policy() == 1) {
+					// DO STUFF
+					printf("[PLACEHOLDER] Write from node %d to %d with repl_offset %lu\n", workrank, repl_node, repl_offset);
+				}
 				cnt = 0;
 			}
 		}
@@ -1295,7 +1332,13 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	if(cnt > 0){
 		MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
 		// CSPext: Update page on repl node
-		MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
+		if (env::replication_policy() == 0) {
+			MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, repl_offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
+		}
+		else if (env::replication_policy() == 1) {
+			// DO STUFF
+			printf("[PLACEHOLDER] Write from node %d to %d with repl_offset %lu\n", workrank, repl_node, repl_offset);
+		}
 	}
 	stats.stores++;
 
