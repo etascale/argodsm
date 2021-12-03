@@ -105,6 +105,19 @@ typedef struct argo_statisticsStruct
 		double ssdtime;
 } argo_statistics;
 
+/* CSPext: struct for homenode alternation table */
+/** @brief Node alternation record struct. To be used as array: home_alter_tbl[n_node] */
+typedef struct homenode_alternation_table {
+	/** @brief altered node id. Initialized to the record's home id. */
+	argo::node_id_t alter_id;
+	/** @brief new globalData ptr (address on alter node). Initialized to NULL. */
+	char* alter_globalData;
+	/** @brief new MPI window. Initialized to NULL. Delay assignment to use time. */
+	MPI_Win alter_globalDataWindow;
+	/** @brief flag to create the window. Need this in case of recreating windows. */
+	bool refresh_globalDataWindow;
+} homenode_alternation_table;
+
 /*constants for control values*/
 /** @brief Constant for invalid states */
 static const argo_byte INVALID=0;
@@ -248,6 +261,18 @@ argo::node_id_t argo_get_rid();
  * @return node id of the corresponding replication node
  */
 argo::node_id_t argo_calc_rid(argo::node_id_t n);
+
+/* CSPext: Function to lookup the home_alter_tbl */
+/**
+ * @brief give the altered node id of current node id.
+ * @return n if the node is not altered, else altered node id
+ */
+/* 
+ * CSP TODO： (this function is to delete)
+ * Maybe we don't need this. Just assign the altered node id to tbl[n].
+ * Alter the id again when alternative node goes down.
+ * */
+//argo::node_id_t argo_check_altered_nid(argo::node_id_t n);
 
 /**
  * @brief Gives number of ArgoDSM nodes

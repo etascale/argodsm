@@ -131,7 +131,8 @@ argo_statistics stats;
 /** @brief  Points to start of replication area */
 char* replData;
 /** @brief  Homenode alternation table */
-argo::node_id_t* home_alter_tbl;
+// argo::node_id_t* home_alter_tbl;
+homenode_alternation_table* home_alter_tbl;
 /** @brief  MPI window for updating homenode alternation table */
 MPI_Win* home_alter_tbl_window;
 
@@ -482,9 +483,8 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 	/* CSP: 
 	 * We need to refer to the node alternation table when
 	 * 	loading from a remote node, in case it's a rebuilt node.
-	 * Plus, we need to check the data window. On a rebuilt
-	 * 	node, we can't use the same old globalData area and 
-	 * 	the corresponding window and offsets. (TODO)
+	 * TODO: check carefully if we have added the table checking 
+	 *  at all required locations in this function!
 	 * */
 
 	/* If it's not an ArgoDSM address, do not handle it */
@@ -504,7 +504,9 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 	const std::size_t cache_index = getCacheIndex(aligned_access_offset);
 	const std::size_t start_index = align_backwards(cache_index, CACHELINE);
 	std::size_t end_index = start_index+CACHELINE;
-	const argo::node_id_t load_node = get_homenode(aligned_access_offset);
+	/* CSP ext: look up alter table. Keep home_node for comparison */
+	const argo::node_id_t home_node = get_homenode(aligned_access_offset);
+	const argo::node_id_t load_node = home_alter_tbl[home_node].alter_id;
 	const std::size_t load_offset = get_offset(aligned_access_offset);
 
 	// CSP: Only one thread at a time can make MPI calls
@@ -525,7 +527,13 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 		const std::size_t temp_addr = aligned_access_offset + p*block_size;
 		/* Increase end_index if it is within bounds and on the same node */
 		if(temp_addr < size_of_all && i < cachesize){
-			const argo::node_id_t temp_node = peek_homenode(temp_addr);
+			/* CSPext: this temp_node must be mapped to the new home as well */
+			/* CSP TODO: 
+			 * Should we define the alternative node mapping in peek_homenode, 
+			 *  which goes into the definition of global_ptr? Maybe not...?
+			 * */
+			const argo::node_id_t temp_node 
+					= home_alter_tbl[peek_homenode(temp_addr)].alter_id;
 			const std::size_t temp_offset = peek_offset(temp_addr);
 			if(temp_node == load_node && temp_offset == (load_offset + p*block_size)){
 				end_index+=CACHELINE;
@@ -692,10 +700,39 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 	}
 
 	/* Finally, get the cache data and store it temporarily */
-	MPI_Win_lock(MPI_LOCK_SHARED, load_node , 0, globalDataWindow[load_node]);
-	MPI_Get(temp_data.data(), fetch_size, cacheblock,
-					load_node, load_offset, fetch_size, cacheblock, globalDataWindow[load_node]);
-	MPI_Win_unlock(load_node, globalDataWindow[load_node]);
+	/* CSPext: Add a branch here to check if the home node is down */
+	if (load_node == home_node) {
+		/* CSP: home_node is well, do the normal routine */
+		MPI_Win_lock(MPI_LOCK_SHARED, load_node , 0, globalDataWindow[load_node]);
+		MPI_Get(temp_data.data(), fetch_size, cacheblock,
+				load_node, load_offset, fetch_size, cacheblock, globalDataWindow[load_node]);
+		MPI_Win_unlock(load_node, globalDataWindow[load_node]);
+	} else {
+		/* CSP: load_node points to alternative node, need to use different window */
+		if (home_alter_tbl[home_node].refresh_globalDataWindow) {
+			/* CSP: alternative MPI window needs to be (re-) created */
+			if (home_alter_tbl[home_node].alter_globalDataWindow != MPI_WIN_NULL) {
+				/* CSP: in case of re-creation, needs to free window first */
+				MPI_Win_free(&(home_alter_tbl[home_node].alter_globalDataWindow));
+				home_alter_tbl[home_node].alter_globalDataWindow = MPI_WIN_NULL; 
+			}
+ 			MPI_Win_create(
+				home_alter_tbl[home_node].alter_globalData, 
+				size_of_chunk*sizeof(argo_byte), 
+				1,
+				MPI_INFO_NULL, 
+				MPI_COMM_WORLD, 
+				&(home_alter_tbl[home_node].alter_globalDataWindow)
+			);
+		}
+		/* CSP: Lock, get and unlock on the alternative window */
+		MPI_Win_lock(MPI_LOCK_SHARED, 
+				load_node , 0, home_alter_tbl[home_node].alter_globalDataWindow);
+		MPI_Get(temp_data.data(), fetch_size, cacheblock,
+				load_node, load_offset, fetch_size, 
+				cacheblock, home_alter_tbl[home_node].alter_globalDataWindow);
+		MPI_Win_unlock(load_node, home_alter_tbl[home_node].alter_globalDataWindow);
+	}
 
 	/* Update the cache */
 	for(std::size_t idx = start_index, p = 0; idx < end_index; idx+=CACHELINE, p+=CACHELINE){
@@ -770,6 +807,30 @@ argo::node_id_t argo_calc_rid(argo::node_id_t n){
 		return (n + 1) % argo_get_nodes();
 	}
 }
+
+/* CSPext: Function to lookup the home_alter_tbl */
+/* CSP TODO:
+ * The intention of it was that when an alternative node goes down, we need to 
+ *  assign alternative node id once again. They can easily form a chain, and a
+ *  seeker would search in a loop until it finds the end of the chain 
+ *  (i.e., home_alter_tbl[n].alter_id == n).
+ *
+ * But I realized that will become a headache if an alternative node goes down 
+ *  again, because multiple entries may be chained to the same alternative node,
+ *  which has not enough alter_globalData entry for more than one node.
+ * So I have decided to keep all entries in the table and only change
+ *  the alter_id if the alternative node is down. Let's write and see for now.
+ * */
+//argo::node_id_t argo_check_altered_nid(argo::node_id_t n){
+//	argo::node_id_t new_id = n;
+//	if (n < 0 || argo_get_nodes() <= n) {
+//		return dd:invalid_node_id;
+//	}
+//	while (new_id != home_alter_tbl[new_id].alter_id) {
+//		new_id = home_alter_tbl[new_id].alter_id;
+//	}
+//	return new_id;
+//}
 
 unsigned int argo_get_nodes(){
 	return numtasks;
@@ -918,7 +979,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	globalSharers = static_cast<unsigned long*>(vm::allocate_mappable(pagesize, gwritersize));
 
 	/* CSPext: Initialize home alternation table */
-	home_alter_tbl = static_cast<argo::node_id_t*>(vm::allocate_mappable(pagesize, pagesize));
+	home_alter_tbl = static_cast<homenode_alternation_table*>(vm::allocate_mappable(pagesize, pagesize));
 
 	if (dd::is_first_touch_policy()) {
 		global_owners_dir = static_cast<std::uintptr_t*>(vm::allocate_mappable(pagesize, owners_dir_size_bytes));
@@ -1021,7 +1082,15 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	memset(cacheControl, 0, cachesize*sizeof(control_data));
 	/* CSPext: initialize home_alter_tbl */
 	for (i = 0; i < numtasks; i++) {
-		home_alter_tbl[i] = i;
+		// CSP: alter_id starts with i, meaning no alternation
+		home_alter_tbl[i].alter_id = i;
+		// CSP: initialize globalData immediately when changing alter_id (!= i)
+		home_alter_tbl[i].alter_globalData = NULL;
+		// CSP: delay initialization of globalDataWindow to when it's used
+		// 		because it must be initialized locally
+		home_alter_tbl[i].alter_globalDataWindow = MPI_WIN_NULL;
+		// CSP: a flag to create an globalDataWindow
+		home_alter_tbl[i].refresh_globalDataWindow = false;
 	}
 
 	if (dd::is_first_touch_policy()) {
@@ -1061,6 +1130,11 @@ void argo_finalize(){
 		MPI_Win_free(&replDataWindow[i]);
 		/* CSPext: free home_alter_tbl_window */
 		MPI_Win_free(&home_alter_tbl_window[i]);
+		/* CSPext: free alter_globalDataWindow in home_alter_tbl */
+		if (home_alter_tbl[i].alter_globalDataWindow != MPI_WIN_NULL) {
+			MPI_Win_free(&(home_alter_tbl[i].alter_globalDataWindow));
+			home_alter_tbl[i].alter_globalDataWindow = MPI_WIN_NULL; // CSP: it's useless but I'd like to keep a good manner
+		}
 	}
 	MPI_Win_free(&sharerWindow);
 	MPI_Win_free(&lockWindow);
