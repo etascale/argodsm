@@ -997,14 +997,14 @@ void argo_finalize(){
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	// Free data windows
-	for(auto &win_index : data_windows){
-		for( auto window : win_index){
+	for(auto& win_index : data_windows){
+		for(auto& window : win_index){
 			MPI_Win_free(&window);
 		}
 	}
 	// Free sharer windows
-	for(auto &win_index : sharer_windows){
-		for( auto window : win_index){
+	for(auto& win_index : sharer_windows){
+		for(auto& window : win_index){
 			MPI_Win_free(&window);
 		}
 	}
@@ -1241,7 +1241,7 @@ void argo_reset_stats(){
 	stats.ssd_time = 0;
 
 	// Clear the cache lock statistics
-	for( auto &cache_lock : cache_locks ){
+	for( auto& cache_lock : cache_locks ){
 		cache_lock.reset_stats();
 	}
 
@@ -1334,7 +1334,7 @@ void print_statistics(){
 	 */
 	double cache_lock_time = 0;
 	std::size_t num_cache_locks = 0;
-	for( auto &cache_lock : cache_locks ) {
+	for( const auto& cache_lock : cache_locks ) {
 		cache_lock_time += cache_lock.get_lock_time();
 		num_cache_locks += cache_lock.get_num_locks();
 	}

@@ -81,7 +81,7 @@ class write_buffer
 		 * @brief	Check if the write buffer is empty
 		 * @return	True if empty, else False
 		 */
-		bool empty() {
+		bool empty() const {
 			return _buffer.empty();
 		}
 
@@ -89,7 +89,7 @@ class write_buffer
 		 * @brief	Get the size of the buffer
 		 * @return	The size of the buffer
 		 */
-		size_t size() {
+		size_t size() const {
 			return _buffer.size();
 		}
 
@@ -98,7 +98,7 @@ class write_buffer
 		 * @param	i The requested buffer index
 		 * @return	The element at index i of type T
 		 */
-		T at(std::size_t i){
+		T at(std::size_t i) const {
 			return _buffer.at(i);
 		}
 
@@ -140,7 +140,7 @@ class write_buffer
 		void write_back_index(std::size_t cache_index) {
 			cache_locks[cache_index].lock();
 			assert(cacheControl[cache_index].dirty == DIRTY);
-			std::uintptr_t page_address = cacheControl[cache_index].tag;
+			const std::uintptr_t page_address = cacheControl[cache_index].tag;
 			void* page_ptr = static_cast<char*>(
 				argo::virtual_memory::start_address()) + page_address;
 
