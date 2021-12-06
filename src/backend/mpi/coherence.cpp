@@ -81,7 +81,7 @@ namespace argo {
 			const std::size_t page_misalignment = reinterpret_cast<std::size_t>(addr)%block_size;
 			std::size_t argo_address =
 				((reinterpret_cast<std::size_t>(addr)-start_address)/block_size)*block_size;
-			const std::size_t node_id = argo::backend::node_id();
+			const node_id_t node_id = argo::backend::node_id();
 			const std::size_t node_id_bit = 1 << node_id;
 
 			// Lock relevant mutexes. Start statistics timekeeping
@@ -93,6 +93,16 @@ namespace argo {
 			for(std::size_t page_address = argo_address;
 					page_address < argo_address + page_misalignment + size;
 					page_address += block_size){
+				const node_id_t homenode_id = peek_homenode(page_address);
+				// This page should be skipped in the following cases
+				// 1. The page is node local so no acquire is necessary
+				// 2. The page has not yet been first-touched and trying
+				// to perform an acquire would first-touch the page
+				if(	homenode_id == node_id ||
+					homenode_id == argo::data_distribution::invalid_node_id) {
+					continue;
+				}
+
 				const std::size_t cache_index = getCacheIndex(page_address);
 				const std::size_t classification_index = get_classification_index(page_address);
 
@@ -160,6 +170,7 @@ namespace argo {
 			const std::size_t page_misalignment = reinterpret_cast<std::size_t>(addr)%block_size;
 			std::size_t argo_address =
 				((reinterpret_cast<std::size_t>(addr)-start_address)/block_size)*block_size;
+			const node_id_t node_id = argo::backend::node_id();
 
 			// Lock relevant mutexes. Start statistics timekeeping
 			double t1 = MPI_Wtime();
@@ -170,6 +181,15 @@ namespace argo {
 			for(std::size_t page_address = argo_address;
 					page_address < argo_address + page_misalignment + size;
 					page_address += block_size){
+				const node_id_t homenode_id = peek_homenode(page_address);
+				// selective_release should be skipped in the following cases
+				// 1. The page is node local so no release is necessary
+				// 2. The page has not yet been first-touched and trying
+				// to perform a release would first-touch the page
+				if(	homenode_id == node_id ||
+					homenode_id == argo::data_distribution::invalid_node_id) {
+					continue;
+				}
 				const std::size_t cache_index = getCacheIndex(page_address);
 
 				// If the page is dirty, downgrade it

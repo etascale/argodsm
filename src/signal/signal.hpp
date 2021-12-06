@@ -14,6 +14,30 @@
 
 #include "virtual_memory/virtual_memory.hpp"
 
+#ifdef REG_ERR
+/**
+ * @brief This enum lists page fault error code bits as defined
+ * in the asm/trap_pf.h linux kernel header.
+ *
+ *   bit 0 ==	 0: no page found		1: protection fault
+ *   bit 1 ==	 0: read access			1: write access
+ *   bit 2 ==	 0: kernel-mode access	1: user-mode access
+ *   bit 3 ==							1: use of reserved bit detected
+ *   bit 4 ==							1: fault was an instruction fetch
+ *   bit 5 ==							1: protection keys block access
+ *   bit 15 ==							1: SGX MMU page-fault
+ */
+enum x86_pf_error_code {
+	X86_PF_PROT		=	1 << 0,
+	X86_PF_WRITE	=	1 << 1,
+	X86_PF_USER		=	1 << 2,
+	X86_PF_RSVD		=	1 << 3,
+	X86_PF_INSTR	=	1 << 4,
+	X86_PF_PK		=	1 << 5,
+	X86_PF_SGX		=	1 << 15,
+};
+#endif /* REG_ERR */
+
 namespace {
 	/** @brief typedef for signal handlers */
 	using sig_handler = struct sigaction;
@@ -74,10 +98,10 @@ namespace argo {
 				 * @brief a generic signal handler function
 				 * @param sig the signal number
 				 * @param si additional signal information
-				 * @param unused traditionally unused parameter
+				 * @param context context in use with received signal
 				 * @see check `man sigaction` for additional information
 				 */
-				static void argo_signal_handler(int sig, siginfo_t *si, void *unused) {
+				static void argo_signal_handler(int sig, siginfo_t *si, void *context) {
 					namespace vm = argo::virtual_memory;
 					const auto addr = si->si_addr;
 					const auto start = static_cast<char*>(vm::start_address());
@@ -85,7 +109,7 @@ namespace argo {
 					if (addr < start || addr >= end) {
 						/* application signal */
 						if(application_handler.sa_flags & SA_SIGINFO) {
-							application_handler.sa_sigaction(sig, si, unused);
+							application_handler.sa_sigaction(sig, si, context);
 							return;
 						} else {
 							application_handler.sa_handler(sig);
@@ -93,7 +117,7 @@ namespace argo {
 						}
 					} else {
 						/* internal signal */
-						argo_handler(sig, si, unused);
+						argo_handler(sig, si, context);
 						return;
 					}
 				}

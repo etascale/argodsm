@@ -236,14 +236,27 @@ inline std::size_t align_backwards(std::size_t offset, std::size_t size) {
 	return (offset / size) * size;
 }
 
-void handler(int sig, siginfo_t *si, void *unused){
+void handler(int sig, siginfo_t *si, void *context){
 	UNUSED_PARAM(sig);
-	UNUSED_PARAM(unused);
 	double t1 = MPI_Wtime();
 	unsigned long tag;
 	argo_byte owner,state;
+
 	/* compute offset in distributed memory in bytes, always positive */
 	const std::size_t access_offset = static_cast<char*>(si->si_addr) - static_cast<char*>(startAddr);
+
+
+#ifdef REG_ERR
+	/* On x86, get and decode the error number from the context */
+	const ucontext_t* ctx = static_cast<ucontext_t*>(context);
+	auto err_num = ctx->uc_mcontext.gregs[REG_ERR];
+	assert(err_num & X86_PF_USER);	//Assert signal from user space
+	assert(err_num < X86_PF_RSVD); 	//Assert signal is from read or write access
+	/* This could be further decoded by using X86_PF_PROT to detect
+	 * whether the fault originated from no page found (0) or from
+	 * a protection fault (1), but is not needed for this purpose. */
+	bool write_miss = err_num & X86_PF_WRITE; //True for write, false for read
+#endif /* REG_ERR */
 
 	/* align access offset to cacheline */
 	const std::size_t aligned_access_offset = align_backwards(access_offset, CACHELINE*pagesize);
@@ -280,6 +293,7 @@ void handler(int sig, siginfo_t *si, void *unused){
 		MPI_Win_lock(MPI_LOCK_SHARED, workrank, 0, sharerWindow);
 		unsigned long prevsharer = (globalSharers[classidx])&id;
 		MPI_Win_unlock(workrank, sharerWindow);
+
 		if(prevsharer != id){
 			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
 			sharers = globalSharers[classidx];
@@ -310,6 +324,18 @@ void handler(int sig, siginfo_t *si, void *unused){
 
 		}
 		else{
+#ifdef REG_ERR
+			/**
+			 * On x86-64 we can detect if this is actually a write miss
+			 * or if it is a duplicate read miss. Do not register as
+			 * writer if it is not a write miss.
+			 */
+			if(!write_miss) {
+				sem_post(&ibsem);
+				pthread_mutex_unlock(&cachemutex);
+				return;
+			}
+#endif /* REG_ERR */
 
 			/* get current sharers/writers and then add your own id */
 			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
@@ -353,6 +379,20 @@ void handler(int sig, siginfo_t *si, void *unused){
 	state  = cacheControl[startIndex].state;
 	tag = cacheControl[startIndex].tag;
 
+#ifdef REG_ERR
+	/**
+	 * On x86-64 we can detect if this is actually a write miss or if it
+	 * is a duplicate read miss. If the requested page has a valid state
+	 * and correct tag, the page has already been fetched by another
+	 * thread and we can return if it is not a write miss.
+	 */
+	if(state == VALID && tag == aligned_access_offset && !write_miss){
+		pthread_mutex_unlock(&cachemutex);
+		double t2 = MPI_Wtime();
+		stats.loadtime+=t2-t1;
+		return;
+	}
+#endif /* REG_ERR */
 	if(state == INVALID || (tag != aligned_access_offset && tag != GLOBAL_NULL)) {
 		load_cache_entry(aligned_access_offset);
 		pthread_mutex_unlock(&cachemutex);
@@ -361,6 +401,11 @@ void handler(int sig, siginfo_t *si, void *unused){
 		return;
 	}
 
+#ifdef REG_ERR
+	/* If we reach this far we assume that it is a write miss */
+	assert(write_miss);
+#endif /* REG_ERR */
+
 	unsigned long line = startIndex / CACHELINE;
 	line *= CACHELINE;
 
@@ -368,7 +413,6 @@ void handler(int sig, siginfo_t *si, void *unused){
 		pthread_mutex_unlock(&cachemutex);
 		return;
 	}
-
 
 	touchedcache[line] = 1;
 	cacheControl[line].dirty = DIRTY;

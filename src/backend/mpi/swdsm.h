@@ -131,10 +131,10 @@ constexpr std::size_t page_size = 4096;
  * @brief Catches memory accesses to memory not yet cached in ArgoDSM. Launches remote requests for memory not present.
  * @param sig unused param
  * @param si contains information about faulting instruction such as memory address
- * @param unused is a unused param but needs to be declared
+ * @param context the context used when the signal was received
  * @see signal.h
  */
-void handler(int sig, siginfo_t *si, void *unused);
+void handler(int sig, siginfo_t *si, void *context);
 /**
  * @brief Sets up ArgoDSM's signal handler
  */
