@@ -919,7 +919,9 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 
 	globalData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_chunk));
 	// CSPext: 
-	replData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_replication));
+	if (argo_get_nodes() > 1) {
+		replData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_replication));
+	}
 	cacheData = static_cast<char*>(vm::allocate_mappable(pagesize, cachesize*pagesize));
 	cacheControl = static_cast<control_data*>(vm::allocate_mappable(pagesize, cacheControlSize));
 
@@ -934,7 +936,9 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	globalSharers = static_cast<unsigned long*>(vm::allocate_mappable(pagesize, gwritersize));
 
 	/* CSPext: Initialize home alternation table */
-	home_alter_tbl = static_cast<argo::node_id_t*>(vm::allocate_mappable(pagesize, pagesize));
+	if (argo_get_nodes() > 1) {
+		home_alter_tbl = static_cast<argo::node_id_t*>(vm::allocate_mappable(pagesize, pagesize));
+	}
 
 	if (dd::is_first_touch_policy()) {
 		global_owners_dir = static_cast<std::uintptr_t*>(vm::allocate_mappable(pagesize, owners_dir_size_bytes));
@@ -960,11 +964,16 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	vm::map_memory(tmpcache, size_of_chunk, current_offset, PROT_READ|PROT_WRITE);
 
 	/* CSPext: map the memory in replData area */
-	current_offset += size_of_chunk;
-	tmpcache=replData;
-	vm::map_memory(tmpcache, size_of_replication, current_offset, PROT_READ|PROT_WRITE);
+	if (argo_get_nodes() > 1) {
+		current_offset += size_of_chunk;
+		tmpcache=replData;
+		vm::map_memory(tmpcache, size_of_replication, current_offset, PROT_READ|PROT_WRITE);
+		current_offset += size_of_replication;
+	}
+	else {
+		current_offset += size_of_chunk;
+	}
 
-	current_offset += size_of_replication;
 	tmpcache=globalSharers;
 	vm::map_memory(tmpcache, gwritersize, current_offset, PROT_READ|PROT_WRITE);
 
@@ -973,9 +982,11 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	vm::map_memory(tmpcache, pagesize, current_offset, PROT_READ|PROT_WRITE);
 
 	/* CSPext: map the memory for home node alternation table */
-	current_offset += pagesize;
-	tmpcache=home_alter_tbl;
-	vm::map_memory(tmpcache, page_size, current_offset, PROT_READ|PROT_WRITE);
+	if (argo_get_nodes() > 1) {
+		current_offset += pagesize;
+		tmpcache=home_alter_tbl;
+		vm::map_memory(tmpcache, page_size, current_offset, PROT_READ|PROT_WRITE);
+	}
 
 	if (dd::is_first_touch_policy()) {
 		current_offset += pagesize;
@@ -985,7 +996,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		tmpcache=global_offsets_tbl;
 		vm::map_memory(tmpcache, offsets_tbl_size_bytes, current_offset, PROT_READ|PROT_WRITE);
 	}
-
 
 	sem_init(&ibsem,0,1);
 	sem_init(&globallocksem,0,1);
@@ -998,13 +1008,15 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 									 MPI_INFO_NULL, MPI_COMM_WORLD, &globalDataWindow[i]);
 	}
 
-	/* CSPext: initialize replDataWindow */
-	replDataWindow = (MPI_Win*)malloc(sizeof(MPI_Win)*numtasks);
+	if (argo_get_nodes() > 1) {
+		/* CSPext: initialize replDataWindow */
+		replDataWindow = (MPI_Win*)malloc(sizeof(MPI_Win)*numtasks);
 
-	for(i = 0; i < numtasks; i++){
-		// CSP: Can potentially optimise by specifying the "no locks" key.
- 		MPI_Win_create(replData, size_of_replication*sizeof(argo_byte), 1,
-									MPI_INFO_NULL, MPI_COMM_WORLD, &replDataWindow[i]);
+		for(i = 0; i < numtasks; i++){
+			// CSP: Can potentially optimise by specifying the "no locks" key.
+			MPI_Win_create(replData, size_of_replication*sizeof(argo_byte), 1,
+										MPI_INFO_NULL, MPI_COMM_WORLD, &replDataWindow[i]);
+		}
 	}
 
 	MPI_Win_create(globalSharers, gwritersize, sizeof(unsigned long),
@@ -1012,11 +1024,13 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	MPI_Win_create(lockbuffer, pagesize, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &lockWindow);
 
 	/* CSPext: initialize home_alter_tbl_window */
-	home_alter_tbl_window = (MPI_Win*)malloc(sizeof(MPI_Win)*numtasks);
+	if (argo_get_nodes() > 1) {
+		home_alter_tbl_window = (MPI_Win*)malloc(sizeof(MPI_Win)*numtasks);
 
-	for(i = 0; i < numtasks; i++) {
- 		MPI_Win_create(home_alter_tbl, page_size*sizeof(argo_byte), 1,
-									MPI_INFO_NULL, MPI_COMM_WORLD, &home_alter_tbl_window[i]);
+		for(i = 0; i < numtasks; i++) {
+			MPI_Win_create(home_alter_tbl, page_size*sizeof(argo_byte), 1,
+										MPI_INFO_NULL, MPI_COMM_WORLD, &home_alter_tbl_window[i]);
+		}
 	}
 
 	if (dd::is_first_touch_policy()) {
@@ -1029,15 +1043,19 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	memset(pagecopy, 0, cachesize*pagesize);
 	memset(touchedcache, 0, cachesize);
 	memset(globalData, 0, size_of_chunk*sizeof(argo_byte));
-	/* CSPext: initialize replData to all 0 */
-	memset(replData, 0, size_of_replication*sizeof(argo_byte));
+	if (argo_get_nodes() > 1) {
+		/* CSPext: initialize replData to all 0 */
+		memset(replData, 0, size_of_replication*sizeof(argo_byte));
+	}
 	memset(cacheData, 0, cachesize*pagesize);
 	memset(lockbuffer, 0, pagesize);
 	memset(globalSharers, 0, gwritersize);
 	memset(cacheControl, 0, cachesize*sizeof(control_data));
 	/* CSPext: initialize home_alter_tbl */
-	for (i = 0; i < numtasks; i++) {
-		home_alter_tbl[i] = i;
+	if (argo_get_nodes() > 1) {
+		for (i = 0; i < numtasks; i++) {
+			home_alter_tbl[i] = i;
+		}
 	}
 
 	if (dd::is_first_touch_policy()) {
@@ -1073,10 +1091,12 @@ void argo_finalize(){
 	MPI_Barrier(MPI_COMM_WORLD);
 	for(i=0; i<numtasks; i++){
 		MPI_Win_free(&globalDataWindow[i]);
-		/* CSPext: free replDataWindow */
-		MPI_Win_free(&replDataWindow[i]);
-		/* CSPext: free home_alter_tbl_window */
-		MPI_Win_free(&home_alter_tbl_window[i]);
+		if (argo_get_nodes() > 1) {
+			/* CSPext: free replDataWindow */
+			MPI_Win_free(&replDataWindow[i]);
+			/* CSPext: free home_alter_tbl_window */
+			MPI_Win_free(&home_alter_tbl_window[i]);
+		}
 	}
 	MPI_Win_free(&sharerWindow);
 	MPI_Win_free(&lockWindow);
