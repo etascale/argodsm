@@ -70,7 +70,6 @@ protected:
  * replication
  */
 TEST_F(replicationTest, completeReplicationLocal) {
-	// Test not relevant for single node
 	if (argo_number_of_nodes() == 1) {
 		return;
 	}
@@ -95,7 +94,6 @@ TEST_F(replicationTest, completeReplicationLocal) {
  * @brief Test that a replicated char can be fetched by remote nodes using complete replication
  */
 TEST_F(replicationTest, completeReplicationRemote) {
-	// Test not relevant for single node
 	if (argo_number_of_nodes() == 1) {
 		return;
 	}
@@ -121,7 +119,6 @@ TEST_F(replicationTest, completeReplicationRemote) {
  * replication
  */
 TEST_F(replicationTest, completeReplicationArray) {
-	// Test not relevant for single node
 	if (argo_number_of_nodes() == 1) {
 		return;
 	}
@@ -168,7 +165,6 @@ TEST_F(replicationTest, replicationPolicyChange) {
  * @brief Test that a single char can be rebuilt using erasure coding
  */
 TEST_F(replicationTest, erasureCodingChar) {
-	// Test not relevant for single node
 	if (argo_number_of_nodes() == 1) {
 		return;
 	}
@@ -193,7 +189,6 @@ TEST_F(replicationTest, erasureCodingChar) {
  * @brief Test that a single char can be rebuilt using erasure coding
  */
 TEST_F(replicationTest, rebuilding) {
-	// Test not relevant for single node
 	if (argo_number_of_nodes() == 1) {
 		return;
 	}
