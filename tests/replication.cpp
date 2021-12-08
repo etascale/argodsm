@@ -41,6 +41,15 @@ constexpr unsigned j_const = 2124481224;
 /** @brief A random double constant */
 constexpr double d_const = 1.0 / 3.0 * 3.14159;
 
+void _set_replication_policy(int id) {
+	size_t repl_policy = argo::env::replication_policy();
+	if (!repl_policy || repl_policy == !id) {
+		setenv("ARGO_REPLICATION_POLICY", std::to_string(id).c_str(), 1);
+		argo::env::init();
+		ASSERT_EQ(argo::env::replication_policy(), id);
+	}
+}
+
 /**
  * @brief Class for the gtests fixture tests. Will reset the allocators to a clean state for every test
  */
@@ -55,6 +64,8 @@ protected:
 	}
 };
 
+
+
 /**
  * @brief Simple test that a replicated char can be fetched by its host node using complete 
  * replication
@@ -65,19 +76,14 @@ TEST_F(replicationTest, completeReplicationLocal) {
 		return;
 	}
 
-	size_t repl_policy = argo::env::replication_policy();
-	if (!repl_policy || repl_policy == 1) {
-		putenv((char *) "ARGO_REPLICATION_POLICY=0");
-		argo::env::init();
-		ASSERT_EQ(argo::env::replication_policy(), 0);
-	}
+	_set_replication_policy(0);
 
 	char* val = argo::conew_<char>(c_const);
 
 	if (argo::node_id() == 0) {
 		*val += 1;
 	}
-	argo::barrier(); // Wait until writing is commited
+	argo::barrier();
 
 	char receiver = 'z';
 	if (argo::node_id() == argo_get_replnode(val)) {
@@ -95,12 +101,7 @@ TEST_F(replicationTest, completeReplicationRemote) {
 		return;
 	}
 
-	size_t repl_policy = argo::env::replication_policy();
-	if (!repl_policy || repl_policy == 1) {
-		putenv((char *) "ARGO_REPLICATION_POLICY=0");
-		argo::env::init();
-		ASSERT_EQ(argo::env::replication_policy(), 0);
-	}
+	_set_replication_policy(0);
 
 	char* val = argo::conew_<char>(c_const);
 
@@ -126,12 +127,7 @@ TEST_F(replicationTest, completeReplicationArray) {
 		return;
 	}
 
-	size_t repl_policy = argo::env::replication_policy();
-	if (!repl_policy || repl_policy == 1) {
-		putenv((char *) "ARGO_REPLICATION_POLICY=0");
-		argo::env::init();
-		ASSERT_EQ(argo::env::replication_policy(), 0);
-	}
+	_set_replication_policy(0);
 
 	const std::size_t array_size = 10;
 	int* array = argo::conew_array<int>(array_size);
@@ -160,6 +156,16 @@ TEST_F(replicationTest, completeReplicationArray) {
 }
 
 /**
+ * @brief Test that the replication policy can be changed at runtime
+ */
+TEST_F(replicationTest, replicationPolicyChange) {
+	
+	_set_replication_policy(1);
+	ASSERT_EQ(argo::env::replication_policy(), 1);
+
+}
+
+/**
  * @brief Test that a single char can be rebuilt using erasure coding
  */
 TEST_F(replicationTest, erasureCodingChar) {
@@ -168,12 +174,7 @@ TEST_F(replicationTest, erasureCodingChar) {
 		return;
 	}
 
-	size_t repl_policy = argo::env::replication_policy();
-	if (!repl_policy || repl_policy == 0) {
-		putenv((char *) "ARGO_REPLICATION_POLICY=1");
-		argo::env::init();
-		ASSERT_EQ(argo::env::replication_policy(), 1);
-	}
+	_set_replication_policy(1);
 
 	char* val = argo::conew_<char>(c_const);
 
