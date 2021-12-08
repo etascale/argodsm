@@ -157,7 +157,7 @@ TEST_F(replicationTest, completeReplicationArray) {
 TEST_F(replicationTest, replicationPolicyChange) {
 	
 	_set_replication_policy(1);
-	ASSERT_EQ(argo::env::replication_policy(), 1);
+	ASSERT_EQ(argo::env::replication_policy(), (std::size_t)1);
 
 }
 
