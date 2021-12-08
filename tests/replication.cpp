@@ -63,8 +63,6 @@ protected:
 	}
 };
 
-
-
 /**
  * @brief Simple test that a replicated char can be fetched by its host node using complete 
  * replication
