@@ -8,6 +8,7 @@
 #include <random>
 
 #include "argo.hpp"
+#include "env/env.hpp"
 #include "data_distribution/global_ptr.hpp"
 
 #include "gtest/gtest.h"
@@ -40,6 +41,14 @@ constexpr unsigned j_const = 2124481224;
 /** @brief A random double constant */
 constexpr double d_const = 1.0 / 3.0 * 3.14159;
 
+void _set_replication_policy(int id) {
+	size_t repl_policy = argo::env::replication_policy();
+	if (!repl_policy || repl_policy == !id) {
+		setenv("ARGO_REPLICATION_POLICY", std::to_string(id).c_str(), 1);
+		argo::env::init();
+	}
+}
+
 /**
  * @brief Class for the gtests fixture tests. Will reset the allocators to a clean state for every test
  */
@@ -54,42 +63,44 @@ protected:
 	}
 };
 
+
+
 /**
- * @brief Simple test that a replicated char can be fetched by its host node
+ * @brief Simple test that a replicated char can be fetched by its host node using complete 
+ * replication
  */
 TEST_F(replicationTest, completeReplicationLocal) {
 	// Test not relevant for single node
 	if (argo_number_of_nodes() == 1) {
-		ASSERT_TRUE(true);
 		return;
 	}
+
+	_set_replication_policy(0);
 
 	char* val = argo::conew_<char>(c_const);
 
 	if (argo::node_id() == 0) {
 		*val += 1;
 	}
-	argo::barrier(); // Wait until writing is commited
+	argo::barrier();
 
 	char receiver = 'z';
 	if (argo::node_id() == argo_get_replnode(val)) {
 		argo::backend::get_repl_data(val, (void *)(&receiver), 1);
 		ASSERT_EQ(*val, receiver);
-	} else {
-		// Not target node; automatically passing
-		ASSERT_TRUE(true);
 	}
 }
 
 /**
- * @brief Test that a replicated char can be fetched by remote nodes
+ * @brief Test that a replicated char can be fetched by remote nodes using complete replication
  */
 TEST_F(replicationTest, completeReplicationRemote) {
 	// Test not relevant for single node
 	if (argo_number_of_nodes() == 1) {
-		ASSERT_TRUE(true);
 		return;
 	}
+
+	_set_replication_policy(0);
 
 	char* val = argo::conew_<char>(c_const);
 
@@ -102,20 +113,20 @@ TEST_F(replicationTest, completeReplicationRemote) {
 	if (argo::node_id() != argo_get_replnode(val)) {
 		argo::backend::get_repl_data(val, (void *)&receiver, 1);
 		ASSERT_EQ(*val, receiver);
-	} else {
-		ASSERT_TRUE(true);
 	}
 }
 
 /**
- * @brief Test that a replicated array can be fetched locally and remotely
+ * @brief Test that a replicated array can be fetched locally and remotely using complete 
+ * replication
  */
 TEST_F(replicationTest, completeReplicationArray) {
 	// Test not relevant for single node
 	if (argo_number_of_nodes() == 1) {
-		ASSERT_TRUE(true);
 		return;
 	}
+
+	_set_replication_policy(0);
 
 	const std::size_t array_size = 10;
 	int* array = argo::conew_array<int>(array_size);
@@ -141,6 +152,58 @@ TEST_F(replicationTest, completeReplicationArray) {
 
 	delete [] receiver;
 	argo::codelete_array(array);
+}
+
+/**
+ * @brief Test that the replication policy can be changed at runtime
+ */
+TEST_F(replicationTest, replicationPolicyChange) {
+	
+	_set_replication_policy(1);
+	ASSERT_EQ(argo::env::replication_policy(), (std::size_t)1);
+
+}
+
+/**
+ * @brief Test that a single char can be rebuilt using erasure coding
+ */
+TEST_F(replicationTest, erasureCodingChar) {
+	// Test not relevant for single node
+	if (argo_number_of_nodes() == 1) {
+		return;
+	}
+
+	_set_replication_policy(1);
+
+	char* val = argo::conew_<char>(c_const);
+
+	if (argo::node_id() == 0) {
+		*val += 1;
+	}
+	argo::barrier();
+
+	char receiver = 'z';
+	if (argo::node_id() != argo_get_replnode(val)) {
+		argo::backend::get_repl_data(val, (void *)&receiver, 1);
+		ASSERT_EQ(*val, receiver);
+	}
+}
+
+/**
+ * @brief Test that a single char can be rebuilt using erasure coding
+ */
+TEST_F(replicationTest, rebuilding) {
+	// Test not relevant for single node
+	if (argo_number_of_nodes() == 1) {
+		return;
+	}
+
+	/** Pseudo code: 
+	 * define global char
+	 * increment by 1 on node 0 (the home node for the char)
+	 * kill node 0 directly after barrier
+	 * on node 1, check that it is now the new home node for this char
+	*/
 }
 
 /**
