@@ -46,7 +46,6 @@ void _set_replication_policy(int id) {
 	if (!repl_policy || repl_policy == !id) {
 		setenv("ARGO_REPLICATION_POLICY", std::to_string(id).c_str(), 1);
 		argo::env::init();
-		ASSERT_EQ(argo::env::replication_policy(), id);
 	}
 }
 
