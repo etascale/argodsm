@@ -484,6 +484,20 @@ std::size_t peek_offset(std::size_t addr) {
 	return gptr.peek_offset();
 }
 
+//CSPext:
+
+argo::node_id_t get_replication_node(std::size_t addr) {
+	dd::global_ptr<char> gptr(reinterpret_cast<char*>(
+			addr + reinterpret_cast<unsigned long>(startAddr)), false, false);
+	return gptr.get_replication_node();
+}
+
+std::size_t get_replication_offset(std::size_t addr) {
+	dd::global_ptr<char> gptr(reinterpret_cast<char*>(
+			addr + reinterpret_cast<unsigned long>(startAddr)), false, false);
+	return gptr.get_replication_offset();
+}
+
 void load_cache_entry(std::size_t aligned_access_offset) {
 	/* CSP: 
 	 * We need to refer to the node alternation table when
@@ -899,6 +913,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		// erasure coding (n-1, 1)
 		printf("EASURE CODING\n");
 		size_of_replication = size_of_chunk / (numtasks - 1);
+		size_of_replication = ((size_of_replication / pagesize) + 1) * pagesize; // align with pagesize
 	}
 	sig::signal_handler<SIGSEGV>::install_argo_handler(&handler);
 
@@ -985,7 +1000,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	if (argo_get_nodes() > 1) {
 		current_offset += pagesize;
 		tmpcache=home_alter_tbl;
-		vm::map_memory(tmpcache, page_size, current_offset, PROT_READ|PROT_WRITE);
+		vm::map_memory(tmpcache, pagesize, current_offset, PROT_READ|PROT_WRITE);
 	}
 
 	if (dd::is_first_touch_policy()) {
@@ -1028,7 +1043,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		home_alter_tbl_window = (MPI_Win*)malloc(sizeof(MPI_Win)*numtasks);
 
 		for(i = 0; i < numtasks; i++) {
-			MPI_Win_create(home_alter_tbl, page_size*sizeof(argo_byte), 1,
+			MPI_Win_create(home_alter_tbl, pagesize*sizeof(argo_byte), 1,
 										MPI_INFO_NULL, MPI_COMM_WORLD, &home_alter_tbl_window[i]);
 		}
 	}
@@ -1276,7 +1291,8 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	const std::size_t offset = get_offset(addr);
 	
 	// CSPext: Calculate the replication id
-	const argo::node_id_t repl_node = argo_calc_rid(homenode);
+	const argo::node_id_t repl_node = get_replication_node(addr);
+	const std::size_t repl_offset = get_replication_offset(addr);
 
 	// printf("----storepagediff: Node = %d\n", argo_get_nid());
 
@@ -1307,7 +1323,12 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 			if(cnt > 0){
 				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
 				// CSPext: Update page on repl node
-				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
+				if (env::replication_policy() == 0) {
+					MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, repl_offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
+				}
+				else if (env::replication_policy() == 1) {
+					MPI_Accumulate(&real[i-cnt], cnt, MPI_BYTE, repl_node, repl_offset+(i-cnt), cnt, MPI_BYTE, MPI_BXOR, replDataWindow[repl_node]);
+				}
 				cnt = 0;
 			}
 		}
@@ -1315,7 +1336,12 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	if(cnt > 0){
 		MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
 		// CSPext: Update page on repl node
-		MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
+		if (env::replication_policy() == 0) {
+			MPI_Put(&real[i-cnt], cnt, MPI_BYTE, repl_node, repl_offset+(i-cnt), cnt, MPI_BYTE, replDataWindow[repl_node]);
+		}
+		else if (env::replication_policy() == 1) {
+			MPI_Accumulate(&real[i-cnt], cnt, MPI_BYTE, repl_node, repl_offset+(i-cnt), cnt, MPI_BYTE, MPI_BXOR, replDataWindow[repl_node]);
+		}
 	}
 	stats.stores++;
 
@@ -1361,8 +1387,8 @@ bool _is_cached(std::size_t addr) {
 /* CSPext: A function to copy data from the input pointer's repl node */
 void get_replicated_data(dd::global_ptr<char> ptr, void* container, unsigned int len) {
 	const argo::node_id_t h = ptr.peek_node();
-	const argo::node_id_t r = argo_calc_rid(h);	// repl node id
-	const std::size_t offset = ptr.offset();
+	const argo::node_id_t r = ptr.get_replication_node();	// repl node id
+	const std::size_t offset = ptr.get_replication_offset();
 
 	// printf("----get repl data: Node %d: array[0] = %d, container[0] = %d\n", getID(), ((int *) (replData + ptr.offset()))[0], ((int *) container)[0]);
 	// printf("----get repl data: ptr %p container %p\n", ptr.get(), container);
@@ -1373,7 +1399,7 @@ void get_replicated_data(dd::global_ptr<char> ptr, void* container, unsigned int
 		return;
 	}
 	if (getID() == r) {
-		memcpy(container, replData + ptr.offset(), len);
+		memcpy(container, replData + offset, len);
 		return;
 	} else {
 		// Lock needed? (Probably)

@@ -41,14 +41,6 @@ constexpr unsigned j_const = 2124481224;
 /** @brief A random double constant */
 constexpr double d_const = 1.0 / 3.0 * 3.14159;
 
-void _set_replication_policy(int id) {
-	size_t repl_policy = argo::env::replication_policy();
-	if (!repl_policy || repl_policy == !id) {
-		setenv("ARGO_REPLICATION_POLICY", std::to_string(id).c_str(), 1);
-		argo::env::init();
-	}
-}
-
 /**
  * @brief Class for the gtests fixture tests. Will reset the allocators to a clean state for every test
  */
@@ -63,20 +55,15 @@ protected:
 	}
 };
 
-
-
 /**
  * @brief Simple test that a replicated char can be fetched by its host node using complete 
  * replication
  */
-TEST_F(replicationTest, completeReplicationLocal) {
-	// Test not relevant for single node
-	if (argo_number_of_nodes() == 1) {
+TEST_F(replicationTest, localCharCR) {
+	if (argo_number_of_nodes() == 1 || argo::env::replication_policy() != 0) {
 		return;
 	}
-
-	_set_replication_policy(0);
-
+	
 	char* val = argo::conew_<char>(c_const);
 
 	if (argo::node_id() == 0) {
@@ -94,13 +81,10 @@ TEST_F(replicationTest, completeReplicationLocal) {
 /**
  * @brief Test that a replicated char can be fetched by remote nodes using complete replication
  */
-TEST_F(replicationTest, completeReplicationRemote) {
-	// Test not relevant for single node
-	if (argo_number_of_nodes() == 1) {
+TEST_F(replicationTest, remoteCharCR) {
+	if (argo_number_of_nodes() == 1 || argo::env::replication_policy() != 0) {
 		return;
 	}
-
-	_set_replication_policy(0);
 
 	char* val = argo::conew_<char>(c_const);
 
@@ -120,13 +104,10 @@ TEST_F(replicationTest, completeReplicationRemote) {
  * @brief Test that a replicated array can be fetched locally and remotely using complete 
  * replication
  */
-TEST_F(replicationTest, completeReplicationArray) {
-	// Test not relevant for single node
-	if (argo_number_of_nodes() == 1) {
+TEST_F(replicationTest, arrayCR) {
+	if (argo_number_of_nodes() == 1 || argo::env::replication_policy() != 0) {
 		return;
 	}
-
-	_set_replication_policy(0);
 
 	const std::size_t array_size = 10;
 	int* array = argo::conew_array<int>(array_size);
@@ -154,26 +135,34 @@ TEST_F(replicationTest, completeReplicationArray) {
 	argo::codelete_array(array);
 }
 
-/**
- * @brief Test that the replication policy can be changed at runtime
- */
-TEST_F(replicationTest, replicationPolicyChange) {
-	
-	_set_replication_policy(1);
-	ASSERT_EQ(argo::env::replication_policy(), (std::size_t)1);
-
-}
-
-/**
- * @brief Test that a single char can be rebuilt using erasure coding
- */
-TEST_F(replicationTest, erasureCodingChar) {
-	// Test not relevant for single node
-	if (argo_number_of_nodes() == 1) {
+TEST_F(replicationTest, charEC) {
+	if (argo_number_of_nodes() == 1 || argo::env::replication_policy() != 1) {
 		return;
 	}
 
-	_set_replication_policy(1);
+	char* val = argo::conew_<char>(c_const);
+
+	char prev_repl_val = 'z';
+	argo::backend::get_repl_data(val, (void *)(&prev_repl_val), 1);
+	argo::barrier();
+
+	if (argo::node_id() == 0) {
+		*val += 1;
+	}
+	argo::barrier();
+
+	char receiver = 'z';
+	argo::backend::get_repl_data(val, (void *)(&receiver), 1);
+	ASSERT_EQ(*val^prev_repl_val, receiver);
+}
+
+/**
+ * @brief Test that the system can recover from a node going down using complete replication
+ */
+TEST_F(replicationTest, nodeKillRebuildCR) {
+	if (argo_number_of_nodes() == 1 || argo::env::replication_policy() != 0) {
+		return;
+	}
 
 	char* val = argo::conew_<char>(c_const);
 
@@ -182,28 +171,16 @@ TEST_F(replicationTest, erasureCodingChar) {
 	}
 	argo::barrier();
 
-	char receiver = 'z';
-	if (argo::node_id() != argo_get_replnode(val)) {
-		argo::backend::get_repl_data(val, (void *)&receiver, 1);
-		ASSERT_EQ(*val, receiver);
-	}
-}
+	char copy = *val;
 
-/**
- * @brief Test that a single char can be rebuilt using erasure coding
- */
-TEST_F(replicationTest, rebuilding) {
-	// Test not relevant for single node
-	if (argo_number_of_nodes() == 1) {
-		return;
-	}
+	// kill_node(argo_get_homenode(val));
+	// OR:
+	// update_alteration_table(argo_get_homenode(val));
+	// Note: The killed node will still run all the code here since it doesn't actually crash
 
-	/** Pseudo code: 
-	 * define global char
-	 * increment by 1 on node 0 (the home node for the char)
-	 * kill node 0 directly after barrier
-	 * on node 1, check that it is now the new home node for this char
-	*/
+	if (argo_get_homenode(val) == argo::node_id()) {
+		ASSERT_EQ(copy, *val); // val should point to the replicated node now
+	}
 }
 
 /**

@@ -55,19 +55,39 @@ namespace argo {
 				// CSPext:
 
 				virtual node_id_t parity_node(char* const ptr) {
+					// replication == home node if nodes == 1
 					std::size_t nodes = base_distribution<instance>::nodes;
-					std::size_t local_page_number = local_offset(ptr) / data_distribution::granularity;
-					std::size_t cyclical_page_number = homenode(ptr) + (local_page_number * nodes);
-					std::size_t data_blocks = nodes - 1;
-					return (((cyclical_page_number / data_blocks) + 1) * data_blocks) % nodes;
+					if (nodes == 1) {
+						return 0;
+					}
 
+					if (env::replication_policy() == 0) {
+						return (peek_homenode(ptr) + 1) % nodes;
+					}
+					else if (env::replication_policy() == 1) {
+						std::size_t local_page_number = local_offset(ptr) / data_distribution::granularity;
+						std::size_t cyclical_page_number = homenode(ptr) + (local_page_number * nodes);
+						std::size_t data_blocks = nodes - 1;
+						return (((cyclical_page_number / data_blocks) + 1) * data_blocks) % nodes;
+					}
+					return invalid_node_id;
 				}
 
 				// CSPext:
 
 				virtual std::size_t parity_offset(char* const ptr) {
-					std::size_t parity_page_number = local_offset(ptr) / (data_distribution::granularity * (base_distribution<instance>::nodes - 1));
-					return parity_page_number * data_distribution::granularity;
+					std::size_t nodes = base_distribution<instance>::nodes;
+					if (nodes == 1) {
+						return local_offset(ptr);
+					}
+					if (env::replication_policy() == 0) {
+						return local_offset(ptr);
+					}
+					else if (env::replication_policy() == 1) {
+						std::size_t parity_page_number = local_offset(ptr) / (data_distribution::granularity * (base_distribution<instance>::nodes - 1));
+						return parity_page_number * data_distribution::granularity;
+					}
+					return invalid_offset;
 				}
 
 
