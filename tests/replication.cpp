@@ -155,12 +155,12 @@ TEST_F(replicationTest, completeReplicationArray) {
 TEST_F(replicationTest, replicationPolicyChange) {
 	
 	_set_replication_policy(1);
-	ASSERT_EQ(argo::env::replication_policy(), (std::size_t)1);
+	ASSERT_EQ(argo::env::replication_policy(), (std::size_t) 1);
 
 }
 
 /**
- * @brief Test that a single char can be rebuilt using erasure coding
+ * @brief Test that a char can be rebuilt using erasure coding
  */
 TEST_F(replicationTest, erasureCodingChar) {
 	if (argo_number_of_nodes() == 1) {
@@ -177,27 +177,80 @@ TEST_F(replicationTest, erasureCodingChar) {
 	argo::barrier();
 
 	char receiver = 'z';
-	if (argo::node_id() != argo_get_replnode(val)) {
-		argo::backend::get_repl_data(val, (void *)&receiver, 1);
-		ASSERT_EQ(*val, receiver);
-	}
+	argo::backend::get_repl_data(val, (void *)&receiver, 1);
+	ASSERT_EQ(*val, receiver);
 }
 
-/**
- * @brief Test that a single char can be rebuilt using erasure coding
- */
-TEST_F(replicationTest, rebuilding) {
-	if (argo_number_of_nodes() == 1) {
-		return;
-	}
+// /**
+//  * @brief Test that the system can recover from a node going down using complete replication
+//  */
+// TEST_F(replicationTest, nodeKillRebuildCR) {
+// 	if (argo_number_of_nodes() == 1) {
+// 		return;
+// 	}
 
-	/** Pseudo code: 
-	 * define global char
-	 * increment by 1 on node 0 (the home node for the char)
-	 * kill node 0 directly after barrier
-	 * on node 1, check that it is now the new home node for this char
-	*/
-}
+// 	_set_replication_policy(0);
+
+// 	char* val = argo::conew_<char>(c_const);
+
+// 	if (argo::node_id() == 0) {
+// 		*val += 1;
+// 	}
+// 	argo::barrier();
+
+// 	char copy = *val;
+
+// 	// kill_node(argo_get_homenode(val));
+// 	// OR:
+// 	// update_alteration_table(argo_get_homenode(val));
+// 	// Note: The killed node will still run all the code here since it doesn't actually crash
+
+// 	if (argo_get_homenode(val) == argo::node_id()) {
+// 		ASSERT_EQ(copy, *val); // val should point to the replicated node now
+// 	}
+// }
+
+// /**
+//  * @brief Test that the system can recover from a node going down using erasure coding
+//  */
+// TEST_F(replicationTest, nodeKillRebuildEC) {
+// 	if (argo_number_of_nodes() == 1) {
+// 		return;
+// 	}
+
+// 	_set_replication_policy(0);
+
+// 	char* val = argo::conew_<char>(c_const);
+
+// 	if (argo::node_id() == 0) {
+// 		*val += 1;
+// 	}
+// 	argo::barrier();
+
+// 	char copy = *val;
+
+// 	// kill_node(argo_get_homenode(val));
+// 	// OR:
+// 	// update_alteration_table(argo_get_homenode(val));
+// 	// Note: The killed node will still run all the code here since it doesn't actually crash
+
+// 	if (argo_get_homenode(val) == argo::node_id()) {
+// 		ASSERT_EQ(copy, *val); // val should point to the replicated node now
+// 	}
+// }
+
+// /**
+//  * @brief Test that the system can recover from a node going down
+//  */
+// TEST_F(replicationTest, latencyCompleteReplication) {
+// 	if (argo_number_of_nodes() == 1) {
+// 		return;
+// 	}
+
+// 	_set_replication_policy(0);
+
+	
+// }
 
 /**
  * @brief The main function that runs the tests
