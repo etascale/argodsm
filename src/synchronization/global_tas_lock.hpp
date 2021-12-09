@@ -9,6 +9,7 @@
 
 #include "../backend/backend.hpp"
 #include "../data_distribution/global_ptr.hpp"
+#include <atomic>
 #include <chrono>
 #include <thread>
 
