@@ -63,7 +63,7 @@ TEST_F(replicationTest, localCharCR) {
 	if (argo_number_of_nodes() == 1 || argo::env::replication_policy() != 0) {
 		return;
 	}
-
+	
 	char* val = argo::conew_<char>(c_const);
 
 	if (argo::node_id() == 0) {
@@ -133,6 +133,27 @@ TEST_F(replicationTest, arrayCR) {
 
 	delete [] receiver;
 	argo::codelete_array(array);
+}
+
+TEST_F(replicationTest, charEC) {
+	if (argo_number_of_nodes() == 1 || argo::env::replication_policy() != 1) {
+		return;
+	}
+
+	char* val = argo::conew_<char>(c_const);
+
+	char prev_repl_val = 'z';
+	argo::backend::get_repl_data(val, (void *)(&prev_repl_val), 1);
+	argo::barrier();
+
+	if (argo::node_id() == 0) {
+		*val += 1;
+	}
+	argo::barrier();
+
+	char receiver = 'z';
+	argo::backend::get_repl_data(val, (void *)(&receiver), 1);
+	ASSERT_EQ(*val^prev_repl_val, receiver);
 }
 
 /**
