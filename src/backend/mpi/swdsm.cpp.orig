@@ -271,13 +271,16 @@ void handler(int sig, siginfo_t *si, void *unused){
 	/* Get homenode and offset, protect with ibsem if first touch */
 	/* CSP: First touch not important for now */
 	argo::node_id_t homenode;
+	//std::size_t offset;
 	if(dd::is_first_touch_policy()){
 		std::lock_guard<std::mutex> lock(spin_mutex);
 		sem_wait(&ibsem);
 		homenode = get_homenode(aligned_access_offset);
+		//offset = get_offset(aligned_access_offset);
 		sem_post(&ibsem);
 	}else{
 		homenode = get_homenode(aligned_access_offset);
+		//offset = get_offset(aligned_access_offset);
 	}
 
 	unsigned long id = 1 << getID();
@@ -1048,7 +1051,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		for(i = 0; i < numtasks; i++){
 			// CSP: Can potentially optimise by specifying the "no locks" key.
 			MPI_Win_create(replData, size_of_replication*sizeof(argo_byte), 1,
-									MPI_INFO_NULL, MPI_COMM_WORLD, &replDataWindow[i]);
+										MPI_INFO_NULL, MPI_COMM_WORLD, &replDataWindow[i]);
 		}
 	}
 
@@ -1056,12 +1059,19 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 								 MPI_INFO_NULL, MPI_COMM_WORLD, &sharerWindow);
 	MPI_Win_create(lockbuffer, pagesize, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &lockWindow);
 
-	/* CSPext: initialize node_alter_tbl_window */
+<<<<<<< Updated upstream
+	/* CSPext: initialize home_alter_tbl_window */
 	if (argo_get_nodes() > 1) {
 		node_alter_tbl_window = (MPI_Win*)malloc(sizeof(MPI_Win)*numtasks);
 
 		for(i = 0; i < numtasks; i++) {
-			MPI_Win_create(node_alter_tbl, pagesize*sizeof(argo_byte), 1,
+			MPI_Win_create(node_alter_tbl, page_size*sizeof(argo_byte), 1,
+=======
+	/* CSPext: initialize node_alter_tbl_window */
+	node_alter_tbl_window = (MPI_Win*)malloc(sizeof(MPI_Win)*numtasks);
+	for(i = 0; i < numtasks; i++) {
+ 		MPI_Win_create(node_alter_tbl, page_size*sizeof(argo_byte), 1,
+>>>>>>> Stashed changes
 									MPI_INFO_NULL, MPI_COMM_WORLD, &node_alter_tbl_window[i]);
 		}
 	}
@@ -1084,11 +1094,12 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	memset(lockbuffer, 0, pagesize);
 	memset(globalSharers, 0, gwritersize);
 	memset(cacheControl, 0, cachesize*sizeof(control_data));
+<<<<<<< Updated upstream
 	/* CSPext: initialize home_alter_tbl */
 	if (argo_get_nodes() > 1) {
 		for (i = 0; i < numtasks; i++) {
 			// CSP: alter_id starts with i, meaning no alternation
-			node_alter_tbl[i].alter_home_id = i;
+			node_alter_tbl[i].alter_id = i;
 			// CSP: initialize globalData immediately when changing alter_id (!= i)
 			node_alter_tbl[i].alter_globalData = NULL;
 			// CSP: delay initialization of globalDataWindow to when it's used
@@ -1096,16 +1107,33 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 			node_alter_tbl[i].alter_globalDataWindow = MPI_WIN_NULL;
 			// CSP: a flag to create an globalDataWindow
 			node_alter_tbl[i].refresh_globalDataWindow = false;
-
 			// CSP: same things to replData
-			node_alter_tbl[i].alter_repl_id = i;
 			node_alter_tbl[i].alter_replData = NULL;
 			node_alter_tbl[i].alter_replDataWindow = MPI_WIN_NULL;
 			node_alter_tbl[i].refresh_replDataWindow = false;
-
-			// CSP: initialize rebuilding blocker lock
-			node_alter_tbl[i].rebuilding = false;
 		}
+=======
+	/* CSPext: initialize node_alter_tbl */
+	for (i = 0; i < numtasks; i++) {
+		// CSP: alter_id starts with i, meaning no alternation
+		node_alter_tbl[i].alter_home_id = i;
+		// CSP: initialize globalData immediately when changing alter_id (!= i)
+		node_alter_tbl[i].alter_globalData = NULL;
+		// CSP: delay initialization of globalDataWindow to when it's used
+		// 		because it must be initialized locally
+		node_alter_tbl[i].alter_globalDataWindow = MPI_WIN_NULL;
+		// CSP: a flag to create an globalDataWindow
+		node_alter_tbl[i].refresh_globalDataWindow = false;
+
+		// CSP: same things to replData
+		node_alter_tbl[i].alter_repl_id = i;
+		node_alter_tbl[i].alter_replData = NULL;
+		node_alter_tbl[i].alter_replDataWindow = MPI_WIN_NULL;
+		node_alter_tbl[i].refresh_replDataWindow = false;
+
+		// CSP: initialize rebuilding blocker lock
+		node_alter_tbl[i].rebuilding = false;
+>>>>>>> Stashed changes
 	}
 
 	if (dd::is_first_touch_policy()) {
@@ -1333,11 +1361,22 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	unsigned int i,j;
 	int cnt = 0;
 	const argo::node_id_t homenode = get_homenode(addr);
+<<<<<<< Updated upstream
 	const std::size_t offset = get_offset(addr);
 	
 	// CSPext: Calculate the replication id
 	const argo::node_id_t repl_node = get_replication_node(addr);
 	const std::size_t repl_offset = get_replication_offset(addr);
+=======
+	/* CSPext: Check node alter table */
+	const argo::node_id_t alter_homenode = node_alter_tbl[homenode].alter_home_id;
+	const std::size_t offset = get_offset(addr);
+	
+	// CSPext: Calculate the replication id
+	const argo::node_id_t repl_node = argo_calc_rid(homenode);
+	/* CSPext: Check node alter table */
+	const argo::node_id_t alter_replnode = node_alter_tbl[repl_node].alter_repl_id;
+>>>>>>> Stashed changes
 
 	// printf("----storepagediff: Node = %d\n", argo_get_nid());
 
@@ -1346,10 +1385,10 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 	size_t drf_unit = sizeof(char);
 
 	/* CSPext: Pointer to actually used MPI windows */
-	MPI_Win real_globalDataWindow = globalDataWindow[homenode];
-	MPI_Win real_replDataWindow = replDataWindow[repl_node];
-	argo::node_id_t real_home_id = node_alter_tbl[homenode].alter_home_id;
-	argo::node_id_t real_repl_id = node_alter_tbl[repl_node].alter_repl_id;
+	MPI_Win real_globalDataWindow = globalDataWindow;
+	MPI_Win read_replDataWindow = replDataWindow;
+	node_id_t real_home_id = node_alter_tbl[homenode].alter_id;
+	node_id_t real_repl_id = node_alter_tbl[repl_node].alter_id;
 
 	/* CSPext: Check if the target node is down */
 	if (real_home_id != homenode) {
@@ -1388,7 +1427,8 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 				// CSPext: Update page on repl node
 				if (env::replication_policy() == 0) {
 					MPI_Put(&real[i-cnt], cnt, MPI_BYTE, real_repl_id, repl_offset+(i-cnt), cnt, MPI_BYTE, real_replDataWindow);
-				} else if (env::replication_policy() == 1) {
+				}
+				else if (env::replication_policy() == 1) {
 					MPI_Accumulate(&real[i-cnt], cnt, MPI_BYTE, real_repl_id, repl_offset+(i-cnt), cnt, MPI_BYTE, MPI_BXOR, real_replDataWindow);
 				}
 				cnt = 0;
@@ -1400,7 +1440,8 @@ void storepageDIFF(unsigned long index, unsigned long addr){
 		// CSPext: Update page on repl node
 		if (env::replication_policy() == 0) {
 			MPI_Put(&real[i-cnt], cnt, MPI_BYTE, real_repl_id, repl_offset+(i-cnt), cnt, MPI_BYTE, real_replDataWindow);
-		} else if (env::replication_policy() == 1) {
+		}
+		else if (env::replication_policy() == 1) {
 			MPI_Accumulate(&real[i-cnt], cnt, MPI_BYTE, real_repl_id, repl_offset+(i-cnt), cnt, MPI_BYTE, MPI_BXOR, real_replDataWindow);
 		}
 	}

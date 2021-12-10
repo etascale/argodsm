@@ -109,20 +109,24 @@ typedef struct argo_statisticsStruct
 /** @brief Node alternation record struct. To be used as array: node_alter_tbl[n_node] */
 typedef struct node_alternation_table {
 	/** @brief altered node id. Initialized to the record's home id. */
-	argo::node_id_t alter_id;
+	argo::node_id_t alter_home_id;
 	/** @brief new globalData ptr (address on alter node). Initialized to NULL. */
 	char* alter_globalData;
 	/** @brief new MPI window. Initialized to NULL. Delay assignment to use time. */
 	MPI_Win alter_globalDataWindow;
 	/** @brief flag to create the window. Need this in case of recreating windows. */
 	bool refresh_globalDataWindow;
+	/** @brief altered replicated node id. Initialized to the record's home id. */
+	argo::node_id_t alter_repl_id;
 	/** @brief new replData ptr (address on alter node). Initialized to NULL. */
 	char* alter_replData;
 	/** @brief new repl MPI window. Initialized to NULL. Delay assignment to use time. */
 	MPI_Win alter_replDataWindow;
 	/** @brief flag to create the repl window. Need this in case of recreating windows. */
 	bool refresh_replDataWindow;
-} homenode_alternation_table;
+	/** @brief flag to block others from rebuilding this node's home node. */
+	bool rebuilding;
+} node_alternation_table;
 
 /*constants for control values*/
 /** @brief Constant for invalid states */
@@ -268,18 +272,6 @@ argo::node_id_t argo_get_rid();
  */
 argo::node_id_t argo_calc_rid(argo::node_id_t n);
 
-/* CSPext: Function to lookup the home_alter_tbl */
-/**
- * @brief give the altered node id of current node id.
- * @return n if the node is not altered, else altered node id
- */
-/* 
- * CSP TODO： (this function is to delete)
- * Maybe we don't need this. Just assign the altered node id to tbl[n].
- * Alter the id again when alternative node goes down.
- * */
-//argo::node_id_t argo_check_altered_nid(argo::node_id_t n);
-
 /**
  * @brief Gives number of ArgoDSM nodes
  * @return Number of ArgoDSM nodes
@@ -398,6 +390,9 @@ unsigned long get_classification_index(uint64_t addr);
  * @todo this should be moved in to a dedicated cache class
  */
 bool _is_cached(std::size_t addr);
+
+/* CSPext: Node rebuild function */
+void redundancy_rebuild(argo::node_id_t node);
 
 /* CSPext: Create or re-create globalDataWindow */
 /**

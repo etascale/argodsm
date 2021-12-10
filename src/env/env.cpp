@@ -51,6 +51,14 @@ namespace {
 	 */
 	const std::size_t default_allocation_block_size = 1ul<<4; // default: 16
 
+	// CSPext
+
+	/**
+	 * @brief default requested replication policy (if environment variable is unset)
+	 * @see @ref ARGO_REPLICATION_POLICY
+	 */
+	const std::size_t default_replication_policy = 0;
+
 	/**
 	 * @brief default requested load size (if environment variable is unset)
 	 * @see @ref ARGO_LOAD_SIZE
@@ -92,6 +100,14 @@ namespace {
 	 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
 	 */
 	const std::string env_allocation_block_size = "ARGO_ALLOCATION_BLOCK_SIZE";
+
+	// CSPext
+
+	/**
+	 * @brief environment variable used for requesting replication policy
+	 * @see @ref ARGO_REPLICATION_POLICY
+	 */
+	const std::string env_replication_policy = "ARGO_REPLICATION_POLICY";
 
 	/**
 	 * @brief environment variable used for requesting load size
@@ -136,6 +152,13 @@ namespace {
 	 * @brief allocation block size requested through the environment variable @ref ARGO_ALLOCATION_BLOCK_SIZE
 	 */
 	std::size_t value_allocation_block_size;
+
+	// CSPext
+
+	/**
+	 * @brief replication policy requested through the environment variable @ref ARGO_REPLICATION_POLICY
+	 */
+	std::size_t value_replication_policy;
 
 	/**
 	 * @brief load size requested through the environment variable @ref ARGO_LOAD_SIZE
@@ -205,6 +228,8 @@ namespace argo {
 
 			value_allocation_policy = parse_env<std::size_t>(env_allocation_policy, default_allocation_policy).second;
 			value_allocation_block_size = parse_env<std::size_t>(env_allocation_block_size, default_allocation_block_size).second;
+			// CSPext
+			value_replication_policy = parse_env<std::size_t>(env_replication_policy, default_replication_policy).second;
 			value_load_size = parse_env<std::size_t>(env_load_size, default_load_size).second;
 
 			is_initialized = true;
@@ -238,6 +263,13 @@ namespace argo {
 		std::size_t allocation_block_size() {
 			assert_initialized();
 			return value_allocation_block_size;
+		}
+
+		// CSPext
+
+		std::size_t replication_policy() {
+			assert_initialized();
+			return value_replication_policy;
 		}
 
 		std::size_t load_size() {
