@@ -238,6 +238,9 @@ inline std::size_t align_backwards(std::size_t offset, std::size_t size) {
 
 void handler(int sig, siginfo_t *si, void *context){
 	UNUSED_PARAM(sig);
+#ifndef REG_ERR
+	UNUSED_PARAM(context);
+#endif /* REG_ERR */
 	double t1 = MPI_Wtime();
 	unsigned long tag;
 	argo_byte owner,state;
@@ -245,7 +248,8 @@ void handler(int sig, siginfo_t *si, void *context){
 	/* compute offset in distributed memory in bytes, always positive */
 	const std::size_t access_offset = static_cast<char*>(si->si_addr) - static_cast<char*>(startAddr);
 
-
+	/* The type of miss triggering the handler is unknown */
+	sig::access_type miss_type = sig::access_type::undefined;
 #ifdef REG_ERR
 	/* On x86, get and decode the error number from the context */
 	const ucontext_t* ctx = static_cast<ucontext_t*>(context);
@@ -255,7 +259,8 @@ void handler(int sig, siginfo_t *si, void *context){
 	/* This could be further decoded by using X86_PF_PROT to detect
 	 * whether the fault originated from no page found (0) or from
 	 * a protection fault (1), but is not needed for this purpose. */
-	bool write_miss = err_num & X86_PF_WRITE; //True for write, false for read
+	/* Assign correct type to the miss */
+	miss_type = (err_num & X86_PF_WRITE) ? sig::access_type::write : sig::access_type::read;
 #endif /* REG_ERR */
 
 	/* align access offset to cacheline */
@@ -324,18 +329,12 @@ void handler(int sig, siginfo_t *si, void *context){
 
 		}
 		else{
-#ifdef REG_ERR
-			/**
-			 * On x86-64 we can detect if this is actually a write miss
-			 * or if it is a duplicate read miss. Do not register as
-			 * writer if it is not a write miss.
-			 */
-			if(!write_miss) {
+			/* Do not register as writer if this is a confirmed read miss */
+			if(miss_type == sig::access_type::read) {
 				sem_post(&ibsem);
 				pthread_mutex_unlock(&cachemutex);
 				return;
 			}
-#endif /* REG_ERR */
 
 			/* get current sharers/writers and then add your own id */
 			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
@@ -379,32 +378,32 @@ void handler(int sig, siginfo_t *si, void *context){
 	state  = cacheControl[startIndex].state;
 	tag = cacheControl[startIndex].tag;
 
-#ifdef REG_ERR
-	/**
-	 * On x86-64 we can detect if this is actually a write miss or if it
-	 * is a duplicate read miss. If the requested page has a valid state
-	 * and correct tag, the page has already been fetched by another
-	 * thread and we can return if it is not a write miss.
-	 */
-	if(state == VALID && tag == aligned_access_offset && !write_miss){
-		pthread_mutex_unlock(&cachemutex);
-		double t2 = MPI_Wtime();
-		stats.loadtime+=t2-t1;
-		return;
-	}
-#endif /* REG_ERR */
+
+	/* Fetch the correct page if necessary */
 	if(state == INVALID || (tag != aligned_access_offset && tag != GLOBAL_NULL)) {
 		load_cache_entry(aligned_access_offset);
+		/* If miss is not known to be a write access, exit here */
+		if(miss_type != sig::access_type::write) {
+			pthread_mutex_unlock(&cachemutex);
+			double t2 = MPI_Wtime();
+			stats.loadtime+=t2-t1;
+			return;
+		}
+	}
+
+	/* If miss is known to originate from a read access,
+	 * exit here as the page is already fetched */
+	if(miss_type == sig::access_type::read) {
+		assert(cacheControl[startIndex].state == VALID);
+		assert(cacheControl[startIndex].tag == aligned_access_offset);
 		pthread_mutex_unlock(&cachemutex);
 		double t2 = MPI_Wtime();
 		stats.loadtime+=t2-t1;
 		return;
 	}
 
-#ifdef REG_ERR
-	/* If we reach this far we assume that it is a write miss */
-	assert(write_miss);
-#endif /* REG_ERR */
+	/* If we reach this far we assume that it is not a known read access */
+	assert(miss_type != sig::access_type::read);
 
 	unsigned long line = startIndex / CACHELINE;
 	line *= CACHELINE;
