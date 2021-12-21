@@ -377,23 +377,19 @@ void handler(int sig, siginfo_t *si, void *context){
 
 	state  = cacheControl[startIndex].state;
 	tag = cacheControl[startIndex].tag;
-
+	bool performed_load = false;
 
 	/* Fetch the correct page if necessary */
 	if(state == INVALID || (tag != aligned_access_offset && tag != GLOBAL_NULL)) {
 		load_cache_entry(aligned_access_offset);
-		/* If miss is not known to be a write access, exit here */
-		if(miss_type != sig::access_type::write) {
-			pthread_mutex_unlock(&cachemutex);
-			double t2 = MPI_Wtime();
-			stats.loadtime+=t2-t1;
-			return;
-		}
+		performed_load = true;
 	}
 
-	/* If miss is known to originate from a read access,
-	 * exit here as the page is already fetched */
-	if(miss_type == sig::access_type::read) {
+	/* If miss is known to originate from a read access, or if the
+	 * access type is unknown but a load has already been performed
+	 * in this handler, exit here to avoid false write misses */
+	if(miss_type == sig::access_type::read ||
+		(miss_type == sig::access_type::undefined && performed_load)) {
 		assert(cacheControl[startIndex].state == VALID);
 		assert(cacheControl[startIndex].tag == aligned_access_offset);
 		pthread_mutex_unlock(&cachemutex);
@@ -401,9 +397,6 @@ void handler(int sig, siginfo_t *si, void *context){
 		stats.loadtime+=t2-t1;
 		return;
 	}
-
-	/* If we reach this far we assume that it is not a known read access */
-	assert(miss_type != sig::access_type::read);
 
 	unsigned long line = startIndex / CACHELINE;
 	line *= CACHELINE;
