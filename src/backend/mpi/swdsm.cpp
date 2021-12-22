@@ -285,7 +285,7 @@ void handler(int sig, siginfo_t *si, void *context){
 		offset = get_offset(aligned_access_offset);
 	}
 
-	unsigned long id = 1 << getID();
+	unsigned long id = static_cast<unsigned long>(1) << getID();
 	unsigned long invid = ~id;
 
 	pthread_mutex_lock(&cachemutex);
@@ -308,7 +308,7 @@ void handler(int sig, siginfo_t *si, void *context){
 				unsigned long ownid = sharers&invid;
 				unsigned long owner = workrank;
 				for(n=0; n<numtasks; n++){
-					if((unsigned long)(1<<n)==ownid){
+					if((static_cast<unsigned long>(1)<<n)==ownid){
 						owner = n; //just get rank...
 						break;
 					}
@@ -347,7 +347,7 @@ void handler(int sig, siginfo_t *si, void *context){
 			if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
 				int n;
 				for(n=0; n<numtasks; n++){
-					if(((unsigned long)(1<<n))==(writers&invid)){
+					if((static_cast<unsigned long>(1)<<n)==(writers&invid)){
 						owner = n; //just get rank...
 						break;
 					}
@@ -359,7 +359,7 @@ void handler(int sig, siginfo_t *si, void *context){
 			else if(writers == id || writers == 0){
 				int n;
 				for(n=0; n<numtasks; n++){
-					if(n != workrank && ((1<<n)&sharers) != 0){
+					if(n != workrank && ((static_cast<unsigned long>(1)<<n)&sharers) != 0){
 						MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
 						MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
 						MPI_Win_unlock(n, sharerWindow);
@@ -437,7 +437,7 @@ void handler(int sig, siginfo_t *si, void *context){
 		if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
 			int n;
 			for(n=0; n<numtasks; n++){
-				if(((unsigned long)(1<<n))==(writers&invid)){
+				if((static_cast<unsigned long>(1)<<n)==(writers&invid)){
 					owner = n; //just get rank...
 					break;
 				}
@@ -449,7 +449,7 @@ void handler(int sig, siginfo_t *si, void *context){
 		else if(writers==id || writers==0){
 			int n;
 			for(n=0; n<numtasks; n++){
-				if(n != workrank && ((1<<n)&sharers) != 0){
+				if(n != workrank && ((static_cast<unsigned long>(1)<<n)&sharers) != 0){
 					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
 					MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
 					MPI_Win_unlock(n, sharerWindow);
@@ -505,7 +505,7 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 	assert((aligned_access_offset % block_size) == 0);
 
 	/* Assign node bit IDs */
-	const std::uintptr_t node_id_bit = 1 << getID();
+	const std::uintptr_t node_id_bit = static_cast<std::uintptr_t>(1) << getID();
 	const std::uintptr_t node_id_inv_bit = ~node_id_bit;
 
 	/* Calculate start values and store some parameters */
@@ -668,7 +668,7 @@ void load_cache_entry(std::size_t aligned_access_offset) {
 			if(isPowerOf2(owner_id_bit) && owner_id_bit != 0 && local_sharers[i] == 0){
 				std::uintptr_t owner = invalid_node; // initialize to failsafe value
 				for(int n = 0; n < numtasks; n++) {
-					if(1ul<<n==owner_id_bit) {
+					if((static_cast<std::uintptr_t>(1)<<n)==owner_id_bit) {
 						owner = n; //just get rank...
 						break;
 					}
@@ -1022,7 +1022,7 @@ void self_invalidation(){
 	unsigned long i;
 	double t1,t2;
 	int flushed = 0;
-	unsigned long id = 1 << getID();
+	unsigned long id = static_cast<unsigned long>(1) << getID();
 
 	t1 = MPI_Wtime();
 	for(i = 0; i < cachesize; i+=CACHELINE){

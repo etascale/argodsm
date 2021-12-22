@@ -82,7 +82,7 @@ namespace argo {
 			std::size_t argo_address =
 				((reinterpret_cast<std::size_t>(addr)-start_address)/block_size)*block_size;
 			const node_id_t node_id = argo::backend::node_id();
-			const std::size_t node_id_bit = 1 << node_id;
+			const std::size_t node_id_bit = static_cast<std::size_t>(1) << node_id;
 
 			// Lock relevant mutexes. Start statistics timekeeping
 			double t1 = MPI_Wtime();
