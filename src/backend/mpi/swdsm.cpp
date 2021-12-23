@@ -600,8 +600,8 @@ void handler(int sig, siginfo_t *si, void *context){
 		else{
 			/* Do not register as writer if this is a confirmed read miss */
 			if(miss_type == sig::access_type::read) {
-				sem_post(&ibsem);
-				pthread_mutex_unlock(&cachemutex);
+				cache_locks[startIndex].unlock();
+				pthread_rwlock_unlock(&sync_lock);
 				return;
 			}
 
@@ -666,8 +666,7 @@ void handler(int sig, siginfo_t *si, void *context){
 		(miss_type == sig::access_type::undefined && performed_load)) {
 		assert(cacheControl[startIndex].state == VALID);
 		assert(cacheControl[startIndex].tag == aligned_access_offset);
-		//pthread_mutex_unlock(&cachemutex);
-		//sync_mutex.unlock_shared();
+		cache_locks[startIndex].unlock();
 		pthread_rwlock_unlock(&sync_lock);
 		double t2 = MPI_Wtime();
 		std::lock_guard<std::mutex> load_lock(stats.load_time_mutex);
