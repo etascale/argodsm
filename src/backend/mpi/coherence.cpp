@@ -19,7 +19,7 @@ extern control_data *cacheControl;
  * @brief globalSharers is needed to access and modify the pyxis directory
  * @deprecated Should eventually be handled by a cache module
  */
-extern unsigned long *globalSharers;
+extern std::uint64_t *globalSharers;
 /**
  * @brief A cache mutex protects all operations on cacheControl
  * @deprecated Should eventually be handled by a cache module

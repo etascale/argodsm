@@ -66,7 +66,7 @@ typedef struct myControlData //global cache control data / directory
 		/** @brief Tracks if page is dirty or clean */
 		argo_byte dirty;   //Is this locally dirty?  
 		/** @brief Tracks address of page */
-		unsigned long tag;   //addres of global page in distr mem
+		std::uintptr_t tag;   //addres of global page in distr mem
 } control_data;
 
 /** @brief Struct containing statistics */
@@ -87,13 +87,13 @@ typedef struct argo_statisticsStruct
 		/** @brief Time spent in global barrier */
 		double barriertime; 
 		/** @brief Number of stores */
-		unsigned long stores; 
+		std::size_t stores;
 		/** @brief Number of loads */
-		unsigned long loads; 
+		std::size_t loads;
 		/** @brief Number of barriers executed */
-		unsigned long barriers; 
+		std::size_t barriers;
 		/** @brief Number of writebacks from (full) writebuffer */
-		unsigned long writebacks; 
+		std::size_t writebacks;
 		/** @brief Number of locks */
 		int locks;
 		/** @brief Time spent performing selective acquire */
@@ -184,7 +184,7 @@ void argo_acq_rel();
  * @param index index in local page cache
  * @param addr address to page in global address space
  */
-void storepageDIFF(unsigned long index, unsigned long addr);
+void storepageDIFF(std::size_t index, std::uintptr_t addr);
 
 /*Statistics*/
 /**
@@ -283,19 +283,19 @@ void init_mpi_cacheblock(void);
  * @param x a non-negative integer
  * @return 1 if x is 0 or a power of 2, otherwise return 0
  */
-unsigned long isPowerOf2(unsigned long x);
+std::size_t isPowerOf2(std::size_t x);
 /**
  * @brief Gets cacheindex for a given address
  * @param addr Address in the global address space
  * @return cacheindex where addr should map to in the ArgoDSM page cache
  */
-unsigned long getCacheIndex(unsigned long addr);
+std::size_t getCacheIndex(std::uintptr_t addr);
 /**
  * @brief Gives homenode for a given address
  * @param addr Address in the global address space
  * @return Process ID of the node backing the memory containing addr
  */
-argo::node_id_t get_homenode(std::size_t addr);
+argo::node_id_t get_homenode(std::uintptr_t addr);
 /**
  * @brief Gives homenode for a given address
  * @param addr Address in the global address space
@@ -304,13 +304,13 @@ argo::node_id_t get_homenode(std::size_t addr);
  * @note This version does not invoke a first-touch call if an
  * address has not been first-touched
  */
-argo::node_id_t peek_homenode(std::size_t addr);
+argo::node_id_t peek_homenode(std::uintptr_t addr);
 /**
  * @brief Gets the offset of an address on the local nodes part of the global memory
  * @param addr Address in the global address space
  * @return addr-(start address of local process part of global memory)
  */
-std::size_t get_offset(std::size_t addr);
+std::size_t get_offset(std::uintptr_t addr);
 /**
  * @brief Gets the offset of an address on the local nodes part of the global memory
  * @param addr Address in the global address space
@@ -319,13 +319,13 @@ std::size_t get_offset(std::size_t addr);
  * @note This version does not invoke a first-touch call if an
  * address has not been first-touched
  */
-std::size_t peek_offset(std::size_t addr);
+std::size_t peek_offset(std::uintptr_t addr);
 /**
  * @brief Gives an index to the sharer/writer vector depending on the address
  * @param addr Address in the global address space
  * @return index for sharer vector for the page
  */
-unsigned long get_classification_index(uint64_t addr);
+std::size_t get_classification_index(std::uintptr_t addr);
 /**
  * @brief Check whether a page is either cached on the node or
  * locally backed.
@@ -334,6 +334,6 @@ unsigned long get_classification_index(uint64_t addr);
  * @warning This is strictly meant for testing prefetching
  * @todo This should be moved in to a dedicated cache class
  */
-bool _is_cached(std::size_t addr);
+bool _is_cached(std::uintptr_t addr);
 #endif /* argo_swdsm_h */
 

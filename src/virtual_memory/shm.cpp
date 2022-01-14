@@ -52,7 +52,7 @@ namespace argo {
 			struct statvfs b;
 			statvfs("/dev/shm", &b);
 			avail = b.f_bavail * b.f_bsize;
-			if(avail > static_cast<unsigned long>(ARGO_SIZE_LIMIT)) {
+			if(avail > static_cast<std::size_t>(ARGO_SIZE_LIMIT)) {
 				avail = ARGO_SIZE_LIMIT;
 			}
 			std::string filename = "/argocache" + std::to_string(getpid());
