@@ -34,9 +34,6 @@
 
 #include "argo.h"
 
-/** @brief Granularity of coherence unit / pagesize  */
-#define GRAN 4096L //page size.
-
 #ifndef CACHELINE
 /** @brief Size of a ArgoDSM cacheline in number of pages */
 #define CACHELINE 1L
@@ -153,14 +150,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size);
  */
 void argo_finalize();
 
-/*Global alloc*/
-/**
- * @brief Allocates memory in global address space
- * @param size amount of memory to allocate
- * @return pointer to allocated memory or NULL if failed.
- */
-void * argo_gmalloc(unsigned long size);
-
 /*Synchronization*/
 
 /**
@@ -202,12 +191,6 @@ void storepageDIFF(unsigned long index, unsigned long addr);
  * @brief Clears out all statistics
  */
 void clearStatistics();
-
-/**
- * @brief wrapper for MPI_Wtime();
- * @return Wall time
- */
-double argo_wtime();
 
 /**
  * @brief Prints collected statistics

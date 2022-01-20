@@ -65,8 +65,6 @@ MPI_Group workgroup;
 MPI_Comm workcomm;
 /** @brief MPI window for communicating pyxis directory*/
 MPI_Win sharerWindow;
-/** @brief MPI window for communicating global locks*/
-MPI_Win lockWindow;
 /** @brief MPI windows for reading and writing data in global address space */
 MPI_Win *globalDataWindow;
 /** @brief MPI data structure for sending cache control data*/
@@ -92,20 +90,6 @@ sem_t ibsem;
  * @pre aligned_access_offset must be aligned as CACHELINE*pagesize
  */
 void load_cache_entry(std::size_t aligned_access_offset);
-
-/*Global lock*/
-/** @brief  Local flags we spin on for the global lock*/
-unsigned long * lockbuffer;
-/** @brief  Protects the global lock so only 1 thread can have a global lock at a time */
-sem_t globallocksem;
-/** @brief  Keeps track of what local flag we should spin on per lock*/
-int locknumber=0;
-
-/*Global allocation*/
-/** @brief  Keeps track of allocated memory in the global address space*/
-unsigned long *allocationOffset;
-/** @brief  Protects access to global allocator*/
-pthread_mutex_t gmallocmutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*Common*/
 /** @brief  Points to start of global address space*/
@@ -767,43 +751,6 @@ unsigned int getThreadCount(){
 	return NUM_THREADS;
 }
 
-//My sort of allocatefunction now since parmacs macros had this design
-void * argo_gmalloc(unsigned long size){
-	if(argo_get_nodes()==1){return malloc(size);}
-
-	pthread_mutex_lock(&gmallocmutex);
-	MPI_Barrier(workcomm);
-
-	unsigned long roundedUp; //round up to number of pages to use.
-	unsigned long currPage; //what pages has been allocated previously
-	unsigned long alignment = pagesize*CACHELINE;
-
-	roundedUp = size/(alignment);
-	roundedUp = (alignment)*(roundedUp+1);
-
-	currPage = (*allocationOffset)/(alignment);
-	currPage = (alignment) *(currPage);
-
-	if((*allocationOffset) +size > size_of_all){
-		pthread_mutex_unlock(&gmallocmutex);
-		return NULL;
-	}
-
-	void *ptrtmp = (char*)startAddr+*allocationOffset;
-	*allocationOffset = (*allocationOffset) + roundedUp;
-
-	if(ptrtmp == NULL){
-		pthread_mutex_unlock(&gmallocmutex);
-		exit(EXIT_FAILURE);
-	}
-	else{
-		memset(ptrtmp,0,roundedUp);
-	}
-	swdsm_argo_barrier(1);
-	pthread_mutex_unlock(&gmallocmutex);
-	return ptrtmp;
-}
-
 /**
  * @brief aligns an offset (into a memory region) to the beginning of its
  * subsequent size block if it is not already aligned to a size block.
@@ -899,7 +846,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		exit(EXIT_FAILURE);
 	}
 
-	lockbuffer = static_cast<unsigned long*>(vm::allocate_mappable(pagesize, pagesize));
 	pagecopy = static_cast<char*>(vm::allocate_mappable(pagesize, cachesize*pagesize));
 	globalSharers = static_cast<unsigned long*>(vm::allocate_mappable(pagesize, gwritersize));
 
@@ -930,12 +876,8 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	tmpcache=globalSharers;
 	vm::map_memory(tmpcache, gwritersize, current_offset, PROT_READ|PROT_WRITE);
 
-	current_offset += gwritersize;
-	tmpcache=lockbuffer;
-	vm::map_memory(tmpcache, pagesize, current_offset, PROT_READ|PROT_WRITE);
-
 	if (dd::is_first_touch_policy()) {
-		current_offset += pagesize;
+		current_offset += gwritersize;
 		tmpcache=global_owners_dir;
 		vm::map_memory(tmpcache, owners_dir_size_bytes, current_offset, PROT_READ|PROT_WRITE);
 		current_offset += owners_dir_size_bytes;
@@ -944,9 +886,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	}
 
 	sem_init(&ibsem,0,1);
-	sem_init(&globallocksem,0,1);
 
-	allocationOffset = (unsigned long *)calloc(1,sizeof(unsigned long));
 	globalDataWindow = (MPI_Win*)malloc(sizeof(MPI_Win)*numtasks);
 
 	for(i = 0; i < numtasks; i++){
@@ -956,7 +896,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 
 	MPI_Win_create(globalSharers, gwritersize, sizeof(unsigned long),
 								 MPI_INFO_NULL, MPI_COMM_WORLD, &sharerWindow);
-	MPI_Win_create(lockbuffer, pagesize, 1, MPI_INFO_NULL, MPI_COMM_WORLD, &lockWindow);
 
 	if (dd::is_first_touch_policy()) {
 		MPI_Win_create(global_owners_dir, owners_dir_size_bytes, sizeof(std::uintptr_t),
@@ -969,7 +908,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	memset(touchedcache, 0, cachesize);
 	memset(globalData, 0, size_of_chunk*sizeof(argo_byte));
 	memset(cacheData, 0, cachesize*pagesize);
-	memset(lockbuffer, 0, pagesize);
 	memset(globalSharers, 0, gwritersize);
 	memset(cacheControl, 0, cachesize*sizeof(control_data));
 
@@ -1008,7 +946,6 @@ void argo_finalize(){
 		MPI_Win_free(&globalDataWindow[i]);
 	}
 	MPI_Win_free(&sharerWindow);
-	MPI_Win_free(&lockWindow);
 	if (dd::is_first_touch_policy()) {
 		MPI_Win_free(&owners_dir_window);
 		MPI_Win_free(&offsets_tbl_window);
@@ -1155,10 +1092,6 @@ void argo_release(){
 void argo_acq_rel(){
 	argo_acquire();
 	argo_release();
-}
-
-double argo_wtime(){
-	return MPI_Wtime();
 }
 
 void clearStatistics(){
