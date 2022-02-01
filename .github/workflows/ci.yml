@@ -1,0 +1,19 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  Build-and-Test-ArgoDSM:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install packages
+        run: sudo apt-get install -y doxygen graphviz libnuma-dev libopenmpi-dev
+      - name: Before install
+        run: ./.github/scripts/get_gtest.sh
+        shell: bash
+      - name: Build
+        run: ./.github/scripts/make_argo.sh
+        shell: bash
+      - name: Test
+        run: cd build && make test
