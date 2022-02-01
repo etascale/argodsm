@@ -289,7 +289,7 @@ void handler(int sig, siginfo_t *si, void *context){
 			if(sharers != 0 && sharers != id && isPowerOf2(sharers)){
 				std::uint64_t ownid = sharers&invid;
 				argo::node_id_t owner = workrank;
-				for(argo::node_id_t n=0; n<numtasks; n++){
+				for(argo::node_id_t n = 0; n < numtasks; n++){
 					if((static_cast<std::uint64_t>(1)<<n)==ownid){
 						owner = n; //just get rank...
 						break;
@@ -327,7 +327,7 @@ void handler(int sig, siginfo_t *si, void *context){
 
 			/* remote single writer */
 			if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
-				for(argo::node_id_t n=0; n<numtasks; n++){
+				for(argo::node_id_t n = 0; n < numtasks; n++){
 					if((static_cast<std::uint64_t>(1)<<n)==(writers&invid)){
 						owner = n; //just get rank...
 						break;
@@ -338,7 +338,7 @@ void handler(int sig, siginfo_t *si, void *context){
 				MPI_Win_unlock(owner, sharerWindow);
 			}
 			else if(writers == id || writers == 0){
-				for(argo::node_id_t n=0; n<numtasks; n++){
+				for(argo::node_id_t n = 0; n < numtasks; n++){
 					if(n != workrank && ((static_cast<std::uint64_t>(1)<<n)&sharers) != 0){
 						MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
 						MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
@@ -415,7 +415,7 @@ void handler(int sig, siginfo_t *si, void *context){
 
 		/* check if we need to update */
 		if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
-			for(argo::node_id_t n=0; n<numtasks; n++){
+			for(argo::node_id_t n = 0; n < numtasks; n++){
 				if((static_cast<std::uint64_t>(1)<<n)==(writers&invid)){
 					owner = n; //just get rank...
 					break;
@@ -426,7 +426,7 @@ void handler(int sig, siginfo_t *si, void *context){
 			MPI_Win_unlock(owner, sharerWindow);
 		}
 		else if(writers==id || writers==0){
-			for(argo::node_id_t n=0; n<numtasks; n++){
+			for(argo::node_id_t n = 0; n < numtasks; n++){
 				if(n != workrank && ((static_cast<std::uint64_t>(1)<<n)&sharers) != 0){
 					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
 					MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
@@ -563,7 +563,7 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 			/* If the page is dirty, write it back */
 			if(cacheControl[idx].dirty == DIRTY){
 				mprotect(old_ptr,block_size,PROT_READ);
-				for(std::size_t j=0; j < CACHELINE; j++){
+				for(std::size_t j = 0; j < CACHELINE; j++){
 					storepageDIFF(idx+j,pagesize*j+(cacheControl[idx].tag));
 				}
 				argo_write_buffer->erase(idx);
@@ -908,7 +908,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		memset(global_offsets_tbl, 0, offsets_tbl_size_bytes);
 	}
 
-	for(std::size_t i=0; i<cachesize; i++){
+	for(std::size_t i = 0; i < cachesize; i++){
 		cacheControl[i].tag = GLOBAL_NULL;
 		cacheControl[i].state = INVALID;
 		cacheControl[i].dirty = CLEAN;
@@ -927,14 +927,14 @@ void argo_finalize(){
 	mprotect(startAddr,size_of_all,PROT_WRITE|PROT_READ);
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	for(i=0; i <numtasks;i++){
+	for(i = 0; i < numtasks;i++){
 		if(i==workrank){
 			printStatistics();
 		}
 	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
-	for(i=0; i<numtasks; i++){
+	for(i = 0; i < numtasks; i++){
 		MPI_Win_free(&globalDataWindow[i]);
 	}
 	MPI_Win_free(&sharerWindow);
@@ -1117,7 +1117,7 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr){
 	std::size_t i;
 	for(i = 0; i < pagesize; i+=drf_unit){
 		int branchval;
-		for(std::size_t j=i; j < i+drf_unit; j++){
+		for(std::size_t j = i; j < i+drf_unit; j++){
 			branchval = real[j] != copy[j];
 			if(branchval != 0){
 				break;
