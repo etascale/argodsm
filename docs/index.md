@@ -36,9 +36,9 @@ Note: adjust the below commands to your needs, especially `CMAKE_INSTALL_PREFIX`
 git clone https://github.com/etascale/argodsm.git
 cd argodsm
 cd tests
-wget https://github.com/google/googletest/archive/release-1.7.0.zip
-unzip release-1.10.0.zip
-mv googletest-release-1.10.0 googletest
+wget https://github.com/google/googletest/archive/release-1.11.0.zip
+unzip release-1.11.0.zip
+mv googletest-release-1.11.0 googletest
 cd ..
 mkdir build
 cd build
