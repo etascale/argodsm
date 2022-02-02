@@ -1,6 +1,6 @@
 # ArgoDSM
 
-[![Build Status](https://travis-ci.org/etascale/argodsm.svg?branch=master)](https://travis-ci.org/etascale/argodsm)
+[![Build Status](https://github.com/etascale/argodsm/workflows/CI/badge.svg)](https://github.com/etascale/argodsm/actions)
 
 [ArgoDSM](https://www.it.uu.se/research/project/argo) is a software distributed
 shared memory system which aims to provide great performance with a simplified
@@ -11,4 +11,3 @@ There is also a [quickstart guide](https://etascale.github.io/argodsm/) and a
 [tutorial](https://etascale.github.io/argodsm/tutorial.html).
 
 Please contact us at [contact@argodsm.com](mailto:contact@argodsm.com)
-
