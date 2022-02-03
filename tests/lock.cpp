@@ -152,7 +152,6 @@ TEST_F(LockTest,TAS_lock_custom_barrier) {
  *@param lock The lock to test
  *@param counter The counter to increment
  *@tparam LockType The type of the lock being tested
- *@return Unused variable
  */
 template <typename LockType>
 void increment_counter(LockType* lock, int* counter) {
@@ -171,7 +170,6 @@ void increment_counter(LockType* lock, int* counter) {
  *@param l2 The lock to test
  *@param counter The counter to increment
  *@tparam LockType The type of the lock being tested
- *@return Unused variable
  */
 template <typename LockType>
 void increment_counter2(LockType* l1, LockType* l2, int* counter) {
