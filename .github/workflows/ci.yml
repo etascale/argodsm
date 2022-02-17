@@ -21,7 +21,5 @@ jobs:
         run: ./.github/scripts/get_gtest.sh
       - name: Build
         run: ./.github/scripts/make_argo.sh
-        with:
-          debug: ${{ matrix.dbg }}
       - name: Test
         run: cd build && make test
