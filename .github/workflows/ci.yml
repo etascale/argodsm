@@ -19,9 +19,9 @@ jobs:
         run: sudo apt-get install -y doxygen graphviz libnuma-dev libopenmpi-dev
       - name: Before install
         run: ./.github/scripts/get_gtest.sh
-        shell: bash
       - name: Build
         run: ./.github/scripts/make_argo.sh
-        shell: bash
+        with:
+          debug: ${{ matrix.dbg }}
       - name: Test
         run: cd build && make test
