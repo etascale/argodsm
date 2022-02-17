@@ -9,6 +9,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         dbg: [OFF, ON]
+    name: ${{ matrix.os }} DEBUG=${{ matrix.dbg }}
     runs-on: ${{ matrix.os }}
     env:
       ARGO_DBG: ${{ matrix.dbg }}
