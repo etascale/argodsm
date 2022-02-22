@@ -501,7 +501,10 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 			touchedcache[idx] = 1;
 			cacheControl[idx].state = VALID;
 			cacheControl[idx].dirty = CLEAN;
-			cache_locks[idx].unlock();
+			/* Unlock every lock but that for start_index */
+			if(idx != start_index) {
+				cache_locks[idx].unlock();
+			}
 		}
 	}
 }
