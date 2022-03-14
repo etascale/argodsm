@@ -4,7 +4,10 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
+#include <algorithm>
 #include <chrono>
+#include <mpi.h>
+#include <numeric>
 #include <random>
 
 #include "argo.hpp"
@@ -515,6 +518,339 @@ TEST_F(backendTest, selectiveUnaligned) {
 		count += array[i];
 	}
 	ASSERT_EQ(count, expected);
+
+	// Clean up
+	argo::codelete_array(array);
+}
+
+/**
+ * @brief Test coherence of writes on a randomly accessed global array with
+ *        a node-wide barrier
+ */
+TEST_F(backendTest, randAccessesBarrierArray) {
+	// Allocate global array
+	constexpr std::size_t array_size{1048576};
+	int*const array = argo::conew_array<int>(array_size);
+
+	// Allocate indices array and populate it
+	std::vector<int> rand_index(array_size);
+	std::iota(rand_index.begin(), rand_index.end(), 0);
+
+	// Randomly shuffle the values of indices array
+	constexpr unsigned seed{0};
+	std::shuffle(rand_index.begin(), rand_index.end(), std::default_random_engine(seed));
+
+	// Fetch node id and number of nodes
+	const std::size_t rank = argo::node_id();
+	const std::size_t nodes = argo::number_of_nodes();
+
+	// Calculate the workload for each node
+	const std::size_t chunk = array_size / nodes;
+	const std::size_t beg = rank * chunk;
+	const std::size_t end = (rank != nodes - 1) ? rank * chunk + chunk : array_size;
+
+	// Compute node chunk
+	for (std::size_t i = beg; i < end; ++i) {
+		array[rand_index[i]] = rand_index[i];
+	}
+	// Barrier to synchronize and view latest values
+	argo::barrier();
+
+	// Calculate actual sum
+	std::size_t sum{0};
+	for (std::size_t i = 0; i < array_size; ++i) {
+		sum += array[i];
+	}
+	// Calculate expected sum
+	constexpr std::size_t expected = array_size * (array_size - 1) / 2;
+	ASSERT_EQ(expected, sum);
+
+	// Clean up
+	argo::codelete_array(array);
+}
+
+/**
+ * @brief Test coherence of writes on a randomly accessed global array with
+ *        one bulky selective_release and an acquire
+ */
+TEST_F(backendTest, randAccessesBulkySelectiveReleaseAcquireArray) {
+	// Allocate global array
+	constexpr std::size_t array_size{1048576};
+	int*const array = argo::conew_array<int>(array_size);
+
+	// Allocate indices array and populate it
+	std::vector<int> rand_index(array_size);
+	std::iota(rand_index.begin(), rand_index.end(), 0);
+
+	// Randomly shuffle the values of indices array
+	constexpr unsigned seed{0};
+	std::shuffle(rand_index.begin(), rand_index.end(), std::default_random_engine(seed));
+
+	// Fetch node id and number of nodes
+	const std::size_t rank = argo::node_id();
+	const std::size_t nodes = argo::number_of_nodes();
+
+	// Calculate the workload for each node
+	const std::size_t chunk = array_size / nodes;
+	const std::size_t beg = rank * chunk;
+	const std::size_t end = (rank != nodes - 1) ? rank * chunk + chunk : array_size;
+
+	// Compute node chunk
+	for (std::size_t i = beg; i < end; ++i) {
+		array[rand_index[i]] = rand_index[i];
+	}
+	// Release and wait for all to release
+	argo::backend::selective_release(array, array_size * sizeof(int));
+	if (nodes > 1) {
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
+
+	// Acquire to view latest values
+	argo::backend::acquire();
+
+	// Calculate actual sum
+	std::size_t sum{0};
+	for (std::size_t i = 0; i < array_size; ++i) {
+		sum += array[i];
+	}
+	// Calculate expected sum
+	constexpr std::size_t expected = array_size * (array_size - 1) / 2;
+	ASSERT_EQ(expected, sum);
+
+	// Clean up
+	argo::codelete_array(array);
+}
+
+/**
+ * @brief Test coherence of writes on a randomly accessed global array with
+ *        periodic selective_release and an acquire
+ */
+TEST_F(backendTest, randAccessesPeriodicSelectiveReleaseAcquireArray) {
+	// Allocate global array
+	constexpr std::size_t array_size{1048576};
+	int*const array = argo::conew_array<int>(array_size);
+
+	// Allocate indices array and populate it
+	std::vector<int> rand_index(array_size);
+	std::iota(rand_index.begin(), rand_index.end(), 0);
+
+	// Randomly shuffle the values of indices array
+	constexpr unsigned seed{0};
+	std::shuffle(rand_index.begin(), rand_index.end(), std::default_random_engine(seed));
+
+	// Fetch node id and number of nodes
+	const std::size_t rank = argo::node_id();
+	const std::size_t nodes = argo::number_of_nodes();
+
+	// Calculate the workload for each node
+	const std::size_t chunk = array_size / nodes;
+	const std::size_t beg = rank * chunk;
+	const std::size_t end = (rank != nodes - 1) ? rank * chunk + chunk : array_size;
+
+	// Compute node chunk
+	for (std::size_t i = beg; i < end; ++i) {
+		array[rand_index[i]] = rand_index[i];
+		argo::backend::selective_release(&array[rand_index[i]], sizeof(int));
+	}
+	// Wait for all to compute and release
+	if (nodes > 1) {
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
+
+	// Acquire to view latest values
+	argo::backend::acquire();
+
+	// Calculate actual sum
+	std::size_t sum{0};
+	for (std::size_t i = 0; i < array_size; ++i) {
+		sum += array[i];
+	}
+	// Calculate expected sum
+	constexpr std::size_t expected = array_size * (array_size - 1) / 2;
+	ASSERT_EQ(expected, sum);
+
+	// Clean up
+	argo::codelete_array(array);
+}
+
+/**
+ * @brief Test coherence of writes on a randomly accessed global page with
+ *        a node-wide barrier
+ */
+TEST_F(backendTest, randAccessesBarrierPage) {
+	// Allocate global page
+	constexpr std::size_t array_size = 4096 / sizeof(unsigned char);
+	unsigned char*const array = argo::conew_array<unsigned char>(array_size);
+
+	// Allocate indices array and populate it
+	std::vector<int> rand_index(array_size);
+	std::iota(rand_index.begin(), rand_index.end(), 0);
+
+	// Fetch node id and number of nodes
+	const std::size_t rank = argo::node_id();
+	const std::size_t nodes = argo::number_of_nodes();
+
+	// Calculate the workload for each node
+	const std::size_t chunk = array_size / nodes;
+	const std::size_t beg = rank * chunk;
+	const std::size_t end = (rank != nodes - 1) ? rank * chunk + chunk : array_size;
+
+	// Set iterations and value per iteration
+	constexpr int iters{4};
+	constexpr int bytes[iters]{0x04, 0x08, 0x0C, 0xFF};
+
+	// For `iters` iterations do...
+	for (int it = 0; it < iters; ++it) {
+		// Randomly shuffle the values of indices array
+		std::shuffle(rand_index.begin(), rand_index.end(), std::default_random_engine(it));
+
+		// Compute node chunk
+		for (std::size_t i = beg; i < end; ++i) {
+			array[rand_index[i]] = bytes[it];
+		}
+		// Barrier to synchronize and view latest values
+		argo::barrier();
+
+		// Calculate actual sum
+		std::size_t sum{0};
+		for (std::size_t i = 0; i < array_size; ++i) {
+			sum += array[i];
+		}
+		// Calculate expected sum
+		const std::size_t expected = array_size * bytes[it];
+		ASSERT_EQ(sum, expected);
+
+		// Wait for all to verify
+		if (nodes > 1) {
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+	}
+
+	// Clean up
+	argo::codelete_array(array);
+}
+
+/**
+ * @brief Test coherence of writes on a randomly accessed global page with
+ *        one bulky selective_release and an acquire
+ */
+TEST_F(backendTest, randAccessesBulkySelectiveReleaseAcquirePage) {
+	// Allocate global page
+	constexpr std::size_t array_size = 4096 / sizeof(unsigned char);
+	unsigned char*const array = argo::conew_array<unsigned char>(array_size);
+
+	// Allocate indices array and populate it
+	std::vector<int> rand_index(array_size);
+	std::iota(rand_index.begin(), rand_index.end(), 0);
+
+	// Fetch node id and number of nodes
+	const std::size_t rank = argo::node_id();
+	const std::size_t nodes = argo::number_of_nodes();
+
+	// Calculate the workload for each node
+	const std::size_t chunk = array_size / nodes;
+	const std::size_t beg = rank * chunk;
+	const std::size_t end = (rank != nodes - 1) ? rank * chunk + chunk : array_size;
+
+	// Set iterations and value per iteration
+	constexpr int iters{4};
+	constexpr int bytes[iters]{0x04, 0x08, 0x0C, 0xFF};
+
+	// For `iters` iterations do...
+	for (int it = 0; it < iters; ++it) {
+		// Randomly shuffle the values of indices array
+		std::shuffle(rand_index.begin(), rand_index.end(), std::default_random_engine(it));
+
+		// Compute node chunk
+		for (std::size_t i = beg; i < end; ++i) {
+			array[rand_index[i]] = bytes[it];
+		}
+		// Release and wait for all to release
+		argo::backend::selective_release(array, array_size * sizeof(unsigned char));
+		if (nodes > 1) {
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+
+		// Acquire to view latest values
+		argo::backend::acquire();
+
+		// Calculate actual sum
+		std::size_t sum{0};
+		for (std::size_t i = 0; i < array_size; ++i) {
+			sum += array[i];
+		}
+		// Calculate expected sum
+		const std::size_t expected = array_size * bytes[it];
+		ASSERT_EQ(sum, expected);
+
+		// Wait for all to verify
+		if (nodes > 1) {
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+	}
+
+	// Clean up
+	argo::codelete_array(array);
+}
+
+/**
+ * @brief Test coherence of writes on a randomly accessed global page with
+ *        periodic selective_release and an acquire
+ */
+TEST_F(backendTest, randAccessesPeriodicSelectiveReleaseAcquirePage) {
+	// Allocate global page
+	constexpr std::size_t array_size = 4096 / sizeof(unsigned char);
+	unsigned char*const array = argo::conew_array<unsigned char>(array_size);
+
+	// Allocate indices array and populate it
+	std::vector<int> rand_index(array_size);
+	std::iota(rand_index.begin(), rand_index.end(), 0);
+
+	// Fetch node id and number of nodes
+	const std::size_t rank = argo::node_id();
+	const std::size_t nodes = argo::number_of_nodes();
+
+	// Calculate the workload for each node
+	const std::size_t chunk = array_size / nodes;
+	const std::size_t beg = rank * chunk;
+	const std::size_t end = (rank != nodes - 1) ? rank * chunk + chunk : array_size;
+
+	// Set iterations and value per iteration
+	constexpr int iters{4};
+	constexpr int bytes[iters]{0x04, 0x08, 0x0C, 0xFF};
+
+	// For `iters` iterations do...
+	for (int it = 0; it < iters; ++it) {
+		// Randomly shuffle the values of indices array
+		std::shuffle(rand_index.begin(), rand_index.end(), std::default_random_engine(it));
+
+		// Compute node chunk
+		for (std::size_t i = beg; i < end; ++i) {
+			array[rand_index[i]] = bytes[it];
+			argo::backend::selective_release(&array[rand_index[i]], sizeof(unsigned char));
+		}
+		// Wait for all to compute and release
+		if (nodes > 1) {
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+
+		// Acquire to view latest values
+		argo::backend::acquire();
+
+		// Calculate actual sum
+		std::size_t sum{0};
+		for (std::size_t i = 0; i < array_size; ++i) {
+			sum += array[i];
+		}
+		// Calculate expected sum
+		const std::size_t expected = array_size * bytes[it];
+		ASSERT_EQ(sum, expected);
+
+		// Wait for all to verify
+		if (nodes > 1) {
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+	}
 
 	// Clean up
 	argo::codelete_array(array);
