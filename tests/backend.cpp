@@ -27,9 +27,11 @@ using global_uint = typename argo::data_distribution::global_ptr<unsigned>;
 using global_intptr = typename argo::data_distribution::global_ptr<int*>;
 
 /** @brief ArgoDSM memory size */
-constexpr std::size_t size = 1<<24; // 16MB
+constexpr std::size_t size = 1<<24; // 16M
 /** @brief ArgoDSM cache size */
 constexpr std::size_t cache_size = size;
+/** @brief ArgoDSM array size */
+constexpr std::size_t array_size = 1<<19;
 
 /** @brief Time to wait before assuming a deadlock has occured */
 constexpr std::chrono::minutes deadlock_threshold{1}; // Choosen for no reason
@@ -409,8 +411,8 @@ TEST_F(backendTest, selectiveSpin) {
  * @brief Test selective coherence on multiple pages
  */
 TEST_F(backendTest, selectiveArray) {
-	const std::size_t array_size = 2097152;
 	unsigned int* flag(argo::conew_<unsigned>(0));
+	// Allocate global array of 2MB size
 	int* array = argo::conew_array<int>(array_size);
 	std::chrono::system_clock::time_point max_time =
 		std::chrono::system_clock::now() + deadlock_threshold;
@@ -465,8 +467,8 @@ TEST_F(backendTest, selectiveArray) {
  * @brief Test selective coherence on unaligned acquires and releases
  */
 TEST_F(backendTest, selectiveUnaligned) {
-	const std::size_t array_size = 2097152;
 	const std::size_t ua_chunk_size = 256;
+	// Allocate global array of 2MB size
 	int* array = argo::conew_array<int>(array_size);
 	unsigned int* flag(argo::conew_<unsigned>(0));
 	std::chrono::system_clock::time_point max_time =
@@ -483,10 +485,10 @@ TEST_F(backendTest, selectiveUnaligned) {
 	// Set array elements on node 0, then set flag
 	if(argo::node_id() == 0){
 		// Write an unaligned chunk crossing a (remote node) boundary
-		for(std::size_t i=ua_chunk_size*7231; i<ua_chunk_size*7233; i++){
+		for(std::size_t i=ua_chunk_size*1807; i<ua_chunk_size*1809; i++){
 			array[i] = i_const;
 		}
-		argo::backend::selective_release(&array[ua_chunk_size*7231],
+		argo::backend::selective_release(&array[ua_chunk_size*1807],
 				(ua_chunk_size*2)*sizeof(int));
 
 		*flag = 1;
@@ -497,7 +499,7 @@ TEST_F(backendTest, selectiveUnaligned) {
 	else{
 		int tmp = 0;
 		const int max_total = i_const*ua_chunk_size*2;
-		for(std::size_t i=ua_chunk_size*7231; i<ua_chunk_size*7233; i++){
+		for(std::size_t i=ua_chunk_size*1807; i<ua_chunk_size*1809; i++){
 			tmp = array[i];
 		}
 		ASSERT_LE(tmp, max_total);
@@ -510,7 +512,7 @@ TEST_F(backendTest, selectiveUnaligned) {
 	}
 
 	// Check the set array values on every node
-	argo::backend::selective_acquire(&array[ua_chunk_size*7231],
+	argo::backend::selective_acquire(&array[ua_chunk_size*1807],
 			(ua_chunk_size*2)*sizeof(int));
 	int count = 0;
 	const int expected = i_const*ua_chunk_size*2;
@@ -528,8 +530,7 @@ TEST_F(backendTest, selectiveUnaligned) {
  *        a node-wide barrier
  */
 TEST_F(backendTest, randAccessesBarrierArray) {
-	// Allocate global array
-	constexpr std::size_t array_size{1048576};
+	// Allocate global array of 2MB size
 	int*const array = argo::conew_array<int>(array_size);
 
 	// Allocate indices array and populate it
@@ -574,8 +575,7 @@ TEST_F(backendTest, randAccessesBarrierArray) {
  *        one bulky selective_release and an acquire
  */
 TEST_F(backendTest, randAccessesBulkySelectiveReleaseAcquireArray) {
-	// Allocate global array
-	constexpr std::size_t array_size{1048576};
+	// Allocate global array of 2MB size
 	int*const array = argo::conew_array<int>(array_size);
 
 	// Allocate indices array and populate it
@@ -626,8 +626,7 @@ TEST_F(backendTest, randAccessesBulkySelectiveReleaseAcquireArray) {
  *        periodic selective_release and an acquire
  */
 TEST_F(backendTest, randAccessesPeriodicSelectiveReleaseAcquireArray) {
-	// Allocate global array
-	constexpr std::size_t array_size{1048576};
+	// Allocate global array of 2MB size
 	int*const array = argo::conew_array<int>(array_size);
 
 	// Allocate indices array and populate it
@@ -860,19 +859,19 @@ TEST_F(backendTest, randAccessesPeriodicSelectiveReleaseAcquirePage) {
  * @brief Test write buffer under load with random access patterns
  */
 TEST_F(backendTest, writeBufferLoad) {
-	const std::size_t array_size = 4000000; // Just under max size 16Mb
-	const std::size_t num_writes = array_size/20; // Not too many random writes
-	int* array = argo::conew_array<int>(array_size);
+	const std::size_t num_ints = 4000000; // 4M ints for just under total memory size
+	const std::size_t num_writes = num_ints/20; // Not too many random writes
+	int* array = argo::conew_array<int>(num_ints);
 
 	// Random device to ensure accesses are irregular in order to expose
 	// random ordering between writebacks to different nodes
 	std::random_device rd;
 	std::mt19937 rng(rd());
-	std::uniform_int_distribution<int> dist(0,array_size-1);
+	std::uniform_int_distribution<int> dist(0,num_ints-1);
 
 	// Initialize write buffer
 	if(argo::node_id() == 0){
-		for(std::size_t i=0; i<array_size; i++){
+		for(std::size_t i=0; i<num_ints; i++){
 			array[i] = 0;
 		}
 	}
@@ -892,7 +891,7 @@ TEST_F(backendTest, writeBufferLoad) {
 	if(argo::node_id() == 0){
 		int count = 0;
 		int expected = num_writes*argo::number_of_nodes();
-		for(std::size_t i=0; i<array_size; i++){
+		for(std::size_t i=0; i<num_ints; i++){
 			count += array[i];
 		}
 		ASSERT_EQ(count, expected);
