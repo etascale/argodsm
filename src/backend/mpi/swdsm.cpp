@@ -51,8 +51,6 @@ argo_byte * touchedcache;
 char* cacheData;
 /** @brief Copy of the local cache to keep twinpages for later being able to DIFF stores */
 char * pagecopy;
-/** @brief The number of pages protected by an MPI Window */
-std::size_t win_granularity;
 /** @brief Pointer to locks protecting the page cache */
 std::vector<cache_lock> cache_locks;
 /** @brief Mutex ensuring that only one thread can perform sync */
@@ -71,14 +69,12 @@ MPI_Group startgroup;
 MPI_Group workgroup;
 /** @brief Communicator can be replaced with MPI_COMM_WORLD*/
 MPI_Comm workcomm;
+/** @brief The number of mpi windows per remote node */
+std::size_t mpi_windows;
 /** @brief MPI window for communicating pyxis directory*/
 std::vector<std::vector<MPI_Win>> sharer_windows;
-/** @brief The number of sharer windows (first dimension) */
-std::size_t num_sharer_windows;
 /** @brief MPI windows for reading and writing data in global address space */
 std::vector<std::vector<MPI_Win>> data_windows;
-/** @brief The number of data windows (first dimension) */
-std::size_t num_data_windows;
 /**
  * @brief Mutex to protect concurrent access to same window from within node
  * @note  First index corresponds to window, second to remote node
@@ -837,9 +833,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	cachesize /= pagesize;
 	cache_locks.resize(cachesize);
 
-	win_granularity = env::mpi_win_granularity();
-
-
 	classificationSize = 2*(argo_size/pagesize);
 	argo_write_buffer = new write_buffer<std::size_t>();
 
@@ -929,38 +922,34 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		vm::map_memory(tmpcache, offsets_tbl_size_bytes, current_offset, PROT_READ|PROT_WRITE);
 	}
 
-	num_data_windows = std::ceil(size_of_chunk/static_cast<double>(pagesize*CACHELINE*win_granularity));
+	mpi_windows = env::mpi_windows();
+
 	// Create one data_window per page chunk
 	// TODO: Do we need the double dimensions or can each window be reused for another node?
-	data_windows.resize(num_data_windows, std::vector<MPI_Win>(numtasks));
-	for(std::size_t i = 0; i < num_data_windows; i++){
-		std::size_t data_offset = i*pagesize*win_granularity;
+	data_windows.resize(mpi_windows, std::vector<MPI_Win>(numtasks));
+	for(std::size_t i = 0; i < mpi_windows; i++){
 		for(int j = 0; j < numtasks; j++){
-			MPI_Win_create(&globalData[data_offset], pagesize*win_granularity*sizeof(argo_byte),
-					1, MPI_INFO_NULL, MPI_COMM_WORLD, &data_windows[i][j]);
+			MPI_Win_create(globalData, size_of_chunk, 1,
+						   MPI_INFO_NULL, MPI_COMM_WORLD, &data_windows[i][j]);
 		}
 	}
 	// Locks to protect the globalData windows from concurrent local access
-	mpi_lock_data = new mpi_lock*[num_data_windows];
-	for(std::size_t i = 0; i < num_data_windows; i++){
+	mpi_lock_data = new mpi_lock*[mpi_windows];
+	for(std::size_t i = 0; i < mpi_windows; i++){
 		mpi_lock_data[i] = new mpi_lock[numtasks];
 	}
 
 	// Create one sharer_window per page chunk
-	num_sharer_windows = std::ceil((classificationSize/2)/static_cast<double>(win_granularity));
-	sharer_windows.resize(num_sharer_windows, std::vector<MPI_Win>(numtasks));
-	for(std::size_t i = 0; i < num_sharer_windows; i++){
-		std::size_t sharer_offset = i*2*win_granularity;
+	sharer_windows.resize(mpi_windows, std::vector<MPI_Win>(numtasks));
+	for(std::size_t i = 0; i < mpi_windows; i++){
 		for(int j = 0; j < numtasks; j++){
-			MPI_Win_create(&globalSharers[sharer_offset],
-					2*win_granularity*sizeof(unsigned long),
-					sizeof(unsigned long), MPI_INFO_NULL,
-					MPI_COMM_WORLD, &sharer_windows[i][j]);
+			MPI_Win_create(globalSharers, gwritersize, sizeof(unsigned long),
+						   MPI_INFO_NULL, MPI_COMM_WORLD, &sharer_windows[i][j]);
 		}
 	}
 	// Locks to protect the sharer windows from concurrent local access
-	mpi_lock_sharer = new mpi_lock*[num_sharer_windows];
-	for(std::size_t i = 0; i < num_sharer_windows; i++){
+	mpi_lock_sharer = new mpi_lock*[mpi_windows];
+	for(std::size_t i = 0; i < mpi_windows; i++){
 		mpi_lock_sharer[i] = new mpi_lock[numtasks];
 	}
 
@@ -1015,12 +1004,12 @@ void argo_finalize(){
 		MPI_Win_free(&offsets_tbl_window);
 	}
 
-	for(std::size_t i = 0; i < num_sharer_windows; i++){
+	for(std::size_t i = 0; i < mpi_windows; i++){
 		delete[] mpi_lock_sharer[i];
 	}
 	delete[] mpi_lock_sharer;
 
-	for(std::size_t i = 0; i < num_data_windows; i++){
+	for(std::size_t i = 0; i < mpi_windows; i++){
 		delete[] mpi_lock_data[i];
 	}
 	delete[] mpi_lock_data;
@@ -1165,9 +1154,9 @@ void argo_reset_coherence(){
 		cacheControl[i].dirty = CLEAN;
 	}
 
-	for(std::size_t i=0; i<classificationSize; i+=win_granularity){
+	for(std::size_t i=0; i<classificationSize; i+=(load_size*2)){
 		sharer_op(MPI_LOCK_EXCLUSIVE, workrank, i, [&](std::size_t){
-				for(j = i; j < i+win_granularity; j++){
+				for(j = i; j < i+(load_size*2); j++){
 					globalSharers[j] = 0;
 				}
 			});
@@ -1248,14 +1237,14 @@ void argo_reset_stats(){
 	}
 
 	// Clear the sharer lock statistics
-	for( std::size_t i = 0; i < num_sharer_windows; i++ ) {
+	for( std::size_t i = 0; i < mpi_windows; i++ ) {
 		for( int j = 0; j < numtasks; j++ ) {
 			mpi_lock_sharer[i][j].reset_stats();
 		}
 	}
 
 	// Clear the data lock statistics
-	for( std::size_t i = 0; i < num_data_windows; i++ ) {
+	for( std::size_t i = 0; i < mpi_windows; i++ ) {
 		for( int j = 0; j < numtasks; j++ ) {
 			mpi_lock_data[i][j].reset_stats();
 		}
@@ -1353,7 +1342,7 @@ void print_statistics(){
 	double data_mpi_unlock_time(0), data_mpi_avg_unlock_time(0), data_mpi_max_unlock_time(0);
 	double data_mpi_hold_time(0), data_mpi_avg_hold_time(0), data_mpi_max_hold_time(0);
 
-	for(std::size_t i=0; i<num_data_windows; i++){
+	for(std::size_t i = 0; i < mpi_windows; i++){
 		for(int j=0; j<numtasks; j++){
 			/* Get number of locks */
 			data_num_locks += mpi_lock_data[i][j].get_num_locks();
@@ -1401,7 +1390,7 @@ void print_statistics(){
 	double sharer_mpi_unlock_time(0), sharer_mpi_avg_unlock_time(0), sharer_mpi_max_unlock_time(0);
 	double sharer_mpi_hold_time(0), sharer_mpi_avg_hold_time(0), sharer_mpi_max_hold_time(0);
 
-	for(std::size_t i=0; i<num_sharer_windows; i++){
+	for(std::size_t i = 0; i < mpi_windows; i++){
 		for(int j=0; j<numtasks; j++){
 			/* Get number of locks */
 			sharer_num_locks += mpi_lock_sharer[i][j].get_num_locks();
@@ -1563,17 +1552,21 @@ void sharer_op(int lock_type, int rank, int offset,
 }
 
 std::size_t get_sharer_win_index(int classification_index){
-	return (classification_index/2)/win_granularity;
+	std::size_t granularity = load_size*2; // 2x load size pages per window chunk
+	std::size_t chunk_index = (classification_index/2) / granularity;
+	return (chunk_index + chunk_index/mpi_windows + 1) % mpi_windows;
 }
 
 std::size_t get_sharer_win_offset(int classification_index){
-	return classification_index%(win_granularity*2);
+	return classification_index;
 }
 
 std::size_t get_data_win_index(std::size_t offset){
-	return (offset/(pagesize*CACHELINE))/win_granularity;
+	std::size_t granularity = load_size*2; // 2x load size pages per window chunk
+	std::size_t chunk_index = (offset/(pagesize*CACHELINE)) / granularity;
+	return (chunk_index + chunk_index/mpi_windows + 1) % mpi_windows;
 }
 
 std::size_t get_data_win_offset(std::size_t offset){
-	return offset%(win_granularity*(pagesize*CACHELINE));
+	return offset;
 }

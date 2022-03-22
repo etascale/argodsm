@@ -58,10 +58,10 @@ namespace {
 	const std::size_t default_load_size = 8;
 
 	/**
-	 * @brief default requested cache lock granularity (if environment variable is unset)
-	 * @see @ref ARGO_MPI_WIN_GRANULARITY
+	 * @brief default number of MPI windows (if environment variable is unset)
+	 * @see @ref ARGO_MPI_WINDOWS
 	 */
-	const std::size_t default_mpi_win_granularity = 64;
+	const std::size_t default_mpi_windows = 4;
 
 	/**
 	 * @brief default requested statistics level (if environment variable is unset)
@@ -112,10 +112,10 @@ namespace {
 	const std::string env_load_size = "ARGO_LOAD_SIZE";
 
 	/**
-	 * @brief environment variable used for requesting cache lock granularity
-	 * @see @ref ARGO_MPI_WIN_GRANULARITY
+	 * @brief environment variable used for requesting the number of MPI windows
+	 * @see @ref ARGO_MPI_WINDOWS
 	 */
-	const std::string env_mpi_win_granularity = "ARGO_MPI_WIN_GRANULARITY";
+	const std::string env_mpi_windows = "ARGO_MPI_WINDOWS";
 
 	/**
 	 * @brief environment variable used for requesting statistics level
@@ -167,9 +167,9 @@ namespace {
 	std::size_t value_load_size;
 
 	/**
-	 * @brief cache lock granularity requested through the environment variable @ref ARGO_MPI_WIN_GRANULARITY
+	 * @brief number of MPI windows requested through the environment variable @ref ARGO_MPI_WINDOWS
 	 */
-	std::size_t value_mpi_win_granularity;
+	std::size_t value_mpi_windows;
 
 	/**
 	 * @brief statistics output level requested through the environment variable @ref ARGO_PRINT_STATISTICS
@@ -240,8 +240,8 @@ namespace argo {
 			value_allocation_policy = parse_env<std::size_t>(env_allocation_policy, default_allocation_policy).second;
 			value_allocation_block_size = parse_env<std::size_t>(env_allocation_block_size, default_allocation_block_size).second;
 			value_load_size = parse_env<std::size_t>(env_load_size, default_load_size).second;
-			value_mpi_win_granularity = parse_env<std::size_t>(env_mpi_win_granularity,
-					default_mpi_win_granularity).second;
+			value_mpi_windows = parse_env<std::size_t>(env_mpi_windows,
+					default_mpi_windows).second;
 			value_print_statistics = parse_env<std::size_t>(env_print_statistics, default_print_statistics).second;
 
 			is_initialized = true;
@@ -282,9 +282,9 @@ namespace argo {
 			return value_load_size;
 		}
 
-		std::size_t mpi_win_granularity() {
+		std::size_t mpi_windows() {
 			assert_initialized();
-			return value_mpi_win_granularity;
+			return value_mpi_windows;
 		}
 
 		std::size_t print_statistics() {

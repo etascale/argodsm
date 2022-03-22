@@ -60,10 +60,10 @@ namespace argo {
 				"Invalid load size (must be a number bigger than 0)");
 		}
 
-		std::size_t requested_argo_mpi_win_granularity = env::mpi_win_granularity();
-		if(requested_argo_mpi_win_granularity == 0) {
+		std::size_t requested_argo_mpi_windows = env::mpi_windows();
+		if(requested_argo_mpi_windows == 0) {
 			throw std::invalid_argument(
-				"Invalid cache block size (must be a number bigger than 0)");
+				"Invalid number of MPI windows (must be a number bigger than 0)");
 		}
 
 		std::size_t requested_argo_print_level = env::print_statistics();

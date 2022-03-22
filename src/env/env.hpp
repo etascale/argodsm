@@ -46,10 +46,11 @@
  * 			are fetched on each remote load operation. It can be accessed through
  *          @ref argo::env::load_size() after argo::env::init() has been called.
  *
- * @envvar{ARGO_MPI_WIN_GRANULARITY} request a specific number of pages per MPI Window
- * @details This environment variable determines the amount of DSM pages that are
- * 			are protected by a single MPI Window. It can be accessed through
- *          @ref argo::env::mpi_win_granularity() after argo::env::init() has been called.
+ * @envvar{ARGO_MPI_WINDOWS} request a specific number of MPI Windows
+ * @details This environment variable determines the amount of MPI windows that are
+ * 			used to protect the global data and pyxis data structures. It can be
+ * 			accessed through @ref argo::env::mpi_windows() after argo::env::init()
+ * 			has been called.
  *
  * @envvar{ARGO_PRINT_STATISTICS} control the detail of statistics printed at end
  * @details This environment variable determines the amount of statistics printed at once
@@ -124,11 +125,11 @@ namespace argo {
 		std::size_t load_size();
 
 		/**
-		 * @brief get the number of pages protected by an MPI Window
+		 * @brief get the number of MPI windows per global data structure requested
 		 * @return the number of pages
-		 * @see @ref ARGO_MPI_WIN_GRANULARITY
+		 * @see @ref ARGO_MPI_WINDOWS
 		 */
-		std::size_t mpi_win_granularity();
+		std::size_t mpi_windows();
 
 		/**
 		 * @brief Get the level of statistics print
