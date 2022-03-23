@@ -1135,6 +1135,8 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr){
 }
 
 void printStatistics(){
+	stats.flushtime = argo_write_buffer->get_flush_time();
+	stats.writebacktime = argo_write_buffer->get_write_back_time();
 	printf("#####################STATISTICS#########################\n");
 	printf("# PROCESS ID %d \n",workrank);
 	printf("cachesize:%ld,CACHELINE:%ld wbsize:%ld\n",cachesize,CACHELINE,

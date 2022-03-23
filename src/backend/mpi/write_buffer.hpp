@@ -11,12 +11,14 @@
 #include <iterator>
 #include <algorithm>
 #include <mutex>
+#include <atomic>
 #include <mpi.h>
 
 #include "backend/backend.hpp"
 #include "env/env.hpp"
 #include "virtual_memory/virtual_memory.hpp"
 #include "swdsm.h"
+#include "qd.hpp"
 
 /**
  * @brief		Argo statistics struct
@@ -66,8 +68,23 @@ class write_buffer
 		 */
 		std::size_t _write_back_size;
 
-		/** @brief	Mutex to protect the write buffer from simultaneous accesses */
-		mutable std::mutex _buffer_mutex;
+		/** @brief QD lock ensuring atomicity of updates */
+		qdlock _qd_lock;
+
+		/** @brief Mutex to protect reading/writing to the statistics */
+		mutable std::mutex _stat_mutex;
+
+		/** @brief Number of pages added to the write buffer */
+		std::size_t _page_count{0};
+		/** @brief Number of times partially flushed (when full) */
+		std::size_t _partial_flush_count{0};
+
+		/** @brief Time spent flushing the write buffer */
+		double _flush_time{0};
+		/** @brief Time spent writing back pages from full write buffer */
+		double _write_back_time{0};
+		/** @brief Time spent attempting to lock the write buffer */
+		double _buffer_lock_time{0};
 
 		/**
 		 * @brief	Check if the write buffer is empty
@@ -152,6 +169,7 @@ class write_buffer
 		 * @pre		Require write_buffer_mutex to be held
 		 */
 		void flush_partial() {
+			double t_start = MPI_Wtime();
 			// Sort the first _write_back_size elements
 			sort_first();
 
@@ -170,16 +188,135 @@ class write_buffer
 				for(int i=0; i < CACHELINE; i++){
 					storepageDIFF(cache_index+i,page_size*i+page_address);
 				}
-			}
-
-			// Close any windows used to write back data
-			// This should be replaced with an API call
-			for(int i = 0; i < argo::backend::number_of_nodes(); i++){
-				if(barwindowsused[i] == 1){
-					MPI_Win_unlock(i, globalDataWindow[i]);
-					barwindowsused[i] = 0;
+				// Close any windows used to write back data
+				// This should be replaced with an API call
+				for(int i = 0; i < argo::backend::number_of_nodes(); i++){
+					if(barwindowsused[i] == 1){
+						MPI_Win_unlock(i, globalDataWindow[i]);
+						barwindowsused[i] = 0;
+					}
 				}
 			}
+			double t_end = MPI_Wtime();
+
+			// Update timer statistics
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			_write_back_time += t_end - t_start;
+			_partial_flush_count++;
+		}
+
+		/**
+		 * @brief	Helper function to call _add
+		 * @param	buf Pointer to a write_buffer object
+		 * @param	val Value to add to buf
+		 */
+		static void _add_helper(write_buffer* buf, T val) {
+			buf->_add(val);
+		}
+
+		/**
+		 * @brief	Internal function to add an element to the write buffer
+		 * @param	val The value of type T to add to the buffer
+		 */
+		void _add(T val) {
+			// If already present in the buffer, do nothing
+			if(has(val)){
+				return;
+			}
+
+			// If the buffer is full, write back _write_back_size indices
+			if(size() >= _max_size){
+				flush_partial();
+			}
+
+			// Add val to the back of the buffer
+			emplace_back(val);
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			_page_count++;
+		}
+
+		/**
+		 * @brief	Helper function to call _erase
+		 * @param	buf Pointer to a write_buffer object
+		 * @param	val Value to erase from buf
+		 */
+		static void _erase_helper(write_buffer* buf, T val) {
+			buf->_erase(val);
+		}
+
+		/**
+		 * @brief	Internal implementation of erase
+		 * @param	val The value of type T to erase
+		 * @pre		_qd_lock must be taken
+		 */
+		void _erase(T val) {
+			// Attempt to get iterator to element equal to val
+			typename std::deque<T>::iterator it =
+				std::find(_buffer.begin(),_buffer.end(), val);
+			// If found, erase it
+			if(it != _buffer.end()){
+				_buffer.erase(it);
+			}
+		}
+
+		/**
+		 * @brief	Helper function to call _flush
+		 * @param	buf Pointer to a write_buffer object
+		 * @param	flag Flag to signal when _flush is done
+		 */
+		static void _flush_helper(write_buffer* buf, std::atomic<bool>* flag) {
+			buf->_flush(flag);
+		}
+
+		/**
+		 * @brief	Internal implementation of flush
+		 * @param	w_flag Flag to signal when flush is done
+		 * @pre		_qd_lock must be taken
+		 */
+		void _flush(std::atomic<bool>* w_flag) {
+			double t_start = MPI_Wtime();
+
+			// If it's empty we don't need to do anything
+			if(empty()){
+				double t_stop = MPI_Wtime();
+				// Signal that flush is done
+				w_flag->store(true, std::memory_order_release);
+				std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+				_flush_time += t_stop-t_start;
+				return;
+			}
+			// Otherwise, sort the buffer
+			sort();
+
+			// Continue until the buffer is empty
+			while(!empty()) {
+				std::size_t cache_index = pop();
+				const std::uintptr_t page_address = cacheControl[cache_index].tag;
+				void* page_ptr = static_cast<char*>(
+					argo::virtual_memory::start_address()) + page_address;
+
+				// Write back the page and clean up cache
+				mprotect(page_ptr, block_size, PROT_READ);
+				cacheControl[cache_index].dirty=CLEAN;
+				for(int i=0; i < CACHELINE; i++){
+					storepageDIFF(cache_index+i,page_size*i+page_address);
+				}
+				// The windows must be unlocked for concurrency
+				for(int i = 0; i < argo::backend::number_of_nodes(); i++){
+					if(barwindowsused[i] == 1){
+						MPI_Win_unlock(i, globalDataWindow[i]);
+						barwindowsused[i] = 0;
+					}
+				}
+			}
+			double t_stop = MPI_Wtime();
+
+			// Signal that flush is done
+			w_flag->store(true, std::memory_order_release);
+
+			// Update timer statistics
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			_flush_time += t_stop-t_start;
 		}
 
 	public:
@@ -196,11 +333,17 @@ class write_buffer
 		 */
 		write_buffer(const write_buffer & other) {
 			// Ensure protection of data
-			std::lock_guard<std::mutex> lock_other(other._buffer_mutex);
+			std::lock_guard<qdlock> lk(_qd_lock);
+
 			// Copy data
 			_buffer = other._buffer;
 			_max_size = other._max_size;
 			_write_back_size = other._write_back_size;
+			_flush_time = other._flush_time;
+			_write_back_time = other._write_back_time;
+			_buffer_lock_time = other._buffer_lock_time;
+			_page_count = other._page_count;
+			_partial_flush_count = other._partial_flush_count;
 		}
 
 		/**
@@ -211,13 +354,61 @@ class write_buffer
 		write_buffer& operator=(const write_buffer & other) {
 			if(&other != this) {
 				// Ensure protection of data
-				std::unique_lock<std::mutex> lock_this(_buffer_mutex, std::defer_lock);
-				std::unique_lock<std::mutex> lock_other(other._buffer_mutex, std::defer_lock);
+				std::unique_lock<qdlock> lock_this(_qd_lock, std::defer_lock);
+				std::unique_lock<qdlock> lock_other(other._qd_lock, std::defer_lock);
 				std::lock(lock_this, lock_other);
 				// Copy data
 				_buffer = other._buffer;
 				_max_size = other._max_size;
 				_write_back_size = other._write_back_size;
+				_flush_time = other._flush_time;
+				_write_back_time = other._write_back_time;
+				_buffer_lock_time = other._buffer_lock_time;
+				_page_count = other._page_count;
+				_partial_flush_count = other._partial_flush_count;
+			}
+			return *this;
+		}
+
+		/**
+		 * @brief	Move constructor
+		 * @param	other the write_buffer object to move from
+		 */
+		write_buffer(write_buffer && other) {
+			// Ensure protection of data
+			std::lock_guard<qdlock> lock_other(other._qd_lock);
+
+			// Copy data
+			_buffer = std::move(other._buffer);
+			_max_size = std::move(other._max_size);
+			_write_back_size = std::move(other._write_back_size);
+			_flush_time = std::move(other._flush_time);
+			_write_back_time = std::move(other._write_back_time);
+			_buffer_lock_time = std::move(other._buffer_lock_time);
+			_page_count = std::move(other._page_count);
+			_partial_flush_count = std::move(other._partial_flush_count);
+		}
+
+		/**
+		 * @brief	Move assignment operator
+		 * @param	other the write_buffer object to move assign from
+		 * @return	reference to the moved object
+		 */
+		write_buffer& operator=(write_buffer && other) {
+			if (&other != this) {
+				// Ensure protection of data
+				std::unique_lock<qdlock> lock_this(_qd_lock, std::defer_lock);
+				std::unique_lock<qdlock> lock_other(other._qd_lock, std::defer_lock);
+				std::lock(lock_this, lock_other);
+
+				_buffer = std::move(other._buffer);
+				_max_size = std::move(other._max_size);
+				_write_back_size = std::move(other._write_back_size);
+				_flush_time = std::move(other._flush_time);
+				_write_back_time = std::move(other._write_back_time);
+				_buffer_lock_time = std::move(other._buffer_lock_time);
+				_page_count = std::move(other._page_count);
+				_partial_flush_count = std::move(other._partial_flush_count);
 			}
 			return *this;
 		}
@@ -227,13 +418,13 @@ class write_buffer
 		 * @param	val The value of type T to erase
 		 */
 		void erase(T val) {
-			std::lock_guard<std::mutex> lock(_buffer_mutex);
+			double t_start = MPI_Wtime();
+			// Delegate erasing to lock holder (can be self)
+			_qd_lock.DELEGATE_N(&write_buffer::_erase_helper, this, val);
+			double t_end = MPI_Wtime();
 
-			typename std::deque<T>::iterator it = std::find(_buffer.begin(),
-					_buffer.end(), val);
-			if(it != _buffer.end()){
-				_buffer.erase(it);
-			}
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			_buffer_lock_time += t_end - t_start;
 		}
 
 		/**
@@ -241,43 +432,19 @@ class write_buffer
 		 * @pre		Require ibsem to be taken until parallel MPI
 		 */
 		void flush() {
+			// Use an atomic flag to detect when flush is done
+			std::atomic<bool> w_flag;
+			w_flag.store(false,std::memory_order_release);
+
 			double t_start = MPI_Wtime();
-			std::lock_guard<std::mutex> lock(_buffer_mutex);
+			// Delegate flushing to lock holder (can be self)
+			_qd_lock.DELEGATE_N(&write_buffer::_flush_helper, this, &w_flag);
+			double t_end = MPI_Wtime();
 
-			// Sort the write buffer if needed
-			if(!empty()) {
-				sort();
-			}
-
-			// For each element, handle the corresponding ArgoDSM page
-			while(!empty()) {
-				// The code below should be replaced with a cache API
-				// call to write back a cached page
-				std::size_t cache_index = pop();
-				std::uintptr_t page_address = cacheControl[cache_index].tag;
-				void* page_ptr = static_cast<char*>(
-						argo::virtual_memory::start_address()) + page_address;
-
-				// Write back the page
-				mprotect(page_ptr, block_size, PROT_READ);
-				cacheControl[cache_index].dirty=CLEAN;
-				for(int i=0; i < CACHELINE; i++){
-					storepageDIFF(cache_index+i,page_size*i+page_address);
-				}
-			}
-
-			// Close any windows used to write back data
-			// This should be replaced with an API call
-			for(int i = 0; i < argo::backend::number_of_nodes(); i++){
-				if(barwindowsused[i] == 1){
-					MPI_Win_unlock(i, globalDataWindow[i]);
-					barwindowsused[i] = 0;
-				}
-			}
-
-			// Update timer statistics
-			double t_stop = MPI_Wtime();
-			stats.flushtime = t_stop-t_start;
+			// Wait until flush is completed
+			while(!w_flag.load(std::memory_order_acquire));
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			_buffer_lock_time += t_end - t_start;
 		}
 
 		/**
@@ -286,24 +453,80 @@ class write_buffer
 		 * @pre		Require ibsem to be taken until parallel MPI
 		 */
 		void add(T val) {
-			std::lock_guard<std::mutex> lock(_buffer_mutex);
+			double t_start = MPI_Wtime();
+			// Delegate adding to lock holder (can be self)
+			_qd_lock.DELEGATE_N(&write_buffer::_add_helper, this, val);
+			double t_end = MPI_Wtime();
 
-			// If already present in the buffer, do nothing
-			if(has(val)){
-				return;
-			}
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			_buffer_lock_time += t_end - t_start;
+		}
 
-			// If the buffer is full, write back _write_back_size indices
-			if(size() >= _max_size){
-				double t_start = MPI_Wtime();
-				flush_partial();
-				double t_end = MPI_Wtime();
-				stats.writebacks+=CACHELINE;
-				stats.writebacktime+=t_end-t_start;
-			}
+		/**
+		 * @brief	Get the time spent flushing the write buffer
+		 * @return	The time in seconds
+		 */
+		double get_flush_time() const {
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			return _flush_time;
+		}
 
-			// Add val to the back of the buffer
-			emplace_back(val);
+		/**
+		 * @brief	Get the time spent partially flushing the write buffer
+		 * @return	The time in seconds
+		 */
+		double get_write_back_time() const {
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			return _write_back_time;
+		}
+
+		/**
+		 * @brief	Get the time spent waiting for the write buffer lock
+		 * @return	The time in seconds
+		 */
+		double get_buffer_lock_time() const {
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			return _buffer_lock_time;
+		}
+
+		/**
+		 * @brief	get buffer size
+		 * @return	the size
+		 */
+		std::size_t get_size() const {
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			return _buffer.size();
+		}
+
+		/**
+		 * @brief	get total number of pages added
+		 * @return	number of pages added
+		 */
+		std::size_t get_page_count() const {
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			return _page_count;
+		}
+
+		/**
+		 * @brief	get the number of times partially flushed
+		 * @return	number of times partially flushed
+		 */
+		std::size_t get_partial_flush_count() const {
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			return _partial_flush_count;
+		}
+
+		/**
+		 * @brief	reset all statistics
+		 * @note	this does not reset the actual write buffer
+		 */
+		void reset_stats() {
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			_flush_time = 0;
+			_write_back_time = 0;
+			_buffer_lock_time = 0;
+			_page_count = 0;
+			_partial_flush_count = 0;
 		}
 
 }; //class
