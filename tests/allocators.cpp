@@ -48,7 +48,7 @@ class AllocatorTest : public testing::Test {
  * @brief Unittest that checks that the global address space is at least as large as requested
  */
 TEST_F(AllocatorTest, InitialSize) {
-	ASSERT_GE(default_global_mempool->available(),size - mem::global_memory_pool<>::reserved);
+	ASSERT_GE(default_global_mempool->available(), size);
 }
 
 /**
@@ -87,8 +87,8 @@ TEST_F(AllocatorTest, Collective200MBTwiceAlloc) {
  * @brief Unittest that checks that allocating the whole requested memory space collectively - also checks that the remaining memory is non-negative
  */
 TEST_F(AllocatorTest, CollectiveAllocRequestedSize) {
-	ASSERT_NO_THROW(collective_alloc(size - mem::global_memory_pool<>::reserved));
-	ASSERT_GE(default_global_mempool->available(),std::size_t{0});
+	ASSERT_NO_THROW(collective_alloc(size));
+	ASSERT_GE(default_global_mempool->available(), std::size_t{0});
 }
 
 /**
@@ -168,7 +168,7 @@ TEST_F(AllocatorTest, DynamicCommonAlloc) {
  */
 TEST_F(AllocatorTest, DynamicAllocRequestedSize) {
 	if(argo::node_id() == 0){
-		ASSERT_NO_THROW(dynamic_alloc(size - mem::global_memory_pool<>::reserved));
+		ASSERT_NO_THROW(dynamic_alloc(size));
 	}
 	argo::barrier();
 	ASSERT_GE(default_global_mempool->available(),std::size_t{0});

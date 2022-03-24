@@ -33,8 +33,6 @@ namespace argo {
 			requested_argo_size = env::memory_size();
 		}
 		using mp = mem::global_memory_pool<>;
-		/* add some space for internal use, see issue #22 */
-		requested_argo_size += mp::reserved;
 
 		std::size_t requested_cache_size = cache_size;
 		if(requested_cache_size == 0) {

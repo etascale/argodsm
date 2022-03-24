@@ -14,10 +14,11 @@ constexpr int PAGESIZE = 4096;
 #include "../synchronization/global_tas_lock.hpp"
 #include "../data_distribution/global_ptr.hpp"
 
-#include <sys/mman.h>
-#include <memory>
 #include <iostream>
+#include <memory>
+#include <mpi.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 
 namespace argo {
 	namespace mempools {
@@ -33,17 +34,15 @@ namespace argo {
 				/** @brief current size of the memory pool */
 				std::size_t max_size;
 
+				/** @brief dedicated MPI window for the amount of pool memory */
+				MPI_Win offset_win;
+
 				/** @brief amount of memory in pool that is already allocated */
 				std::ptrdiff_t* offset;
-
-				/** @todo Documentation */
-				argo::globallock::global_tas_lock *global_tas_lock;
 			public:
 				/** type of allocation failures within this memory pool */
 				using bad_alloc = std::bad_alloc;
 
-				/** reserved space for internal use */
-				static const std::size_t reserved = 4096;
 				/**
 				 * @brief Default constructor: initializes memory on heap and sets offset to 0
 				 */
@@ -51,26 +50,25 @@ namespace argo {
 					auto nodes = backend::number_of_nodes();
 					memory = backend::global_base();
 					max_size = backend::global_size();
-					offset = new (&memory[0]) ptrdiff_t;
+
+					MPI_Alloc_mem(sizeof(std::ptrdiff_t), MPI_INFO_NULL, &offset);
+					MPI_Win_create(offset, sizeof(std::ptrdiff_t), sizeof(std::ptrdiff_t), MPI_INFO_NULL, MPI_COMM_WORLD, &offset_win);
+
 					/**@todo this initialization should move to tools::init() land */
 					using namespace data_distribution;
 					base_distribution<0>::set_memory_space(nodes, memory, max_size);
-					using tas_lock = argo::globallock::global_tas_lock;
-					tas_lock::internal_field_type* field = new (&memory[sizeof(std::size_t)]) tas_lock::internal_field_type;
-					global_tas_lock = new tas_lock(field);
-					global_ptr<char> gptr(&memory[0]);
 
-					// The home node of &memory[0] pads offset
-					if(backend::node_id()==gptr.node()){
-						/**@todo if needed - pad offset to be page or pagecache size and make sure offset and flag fits */
-						*offset = static_cast<std::ptrdiff_t>(reserved);
-					}
+					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, backend::node_id(), 0, offset_win);
+					*offset = 0;
+					MPI_Win_unlock(backend::node_id(), offset_win);
+
 					backend::barrier();
 				}
 
 				/** @todo Documentation */
 				~global_memory_pool(){
-					delete global_tas_lock;
+					MPI_Win_free(&offset_win);
+
 					backend::finalize();
 				};
 
@@ -83,14 +81,11 @@ namespace argo {
 					backend::barrier();
 					memory = backend::global_base();
 					max_size = backend::global_size();
-					using namespace data_distribution;
-					global_ptr<char> gptr(&memory[0]);
 
-					// The home node of &memory[0] pads offset
-					if(backend::node_id()==gptr.node()){
-						/**@todo if needed - pad offset to be page or pagecache size and make sure offset and flag fits */
-						*offset = static_cast<std::ptrdiff_t>(reserved);
-					}
+					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, backend::node_id(), 0, offset_win);
+					*offset = 0;
+					MPI_Win_unlock(backend::node_id(), offset_win);
+
 					backend::barrier();
 				}
 
@@ -102,14 +97,18 @@ namespace argo {
 				 */
 				char* reserve(std::size_t size) {
 					char* ptr;
-					global_tas_lock->lock();
+
+					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 0, 0, offset_win);
+					MPI_Get(offset, 1, MPI_LONG, 0, 0, 1, MPI_LONG, offset_win);
+					MPI_Win_flush(0, offset_win); // needed?
 					if(*offset+size > max_size) {
-						global_tas_lock->unlock();
+						MPI_Win_unlock(0, offset_win);
 						throw bad_alloc();
 					}
 					ptr = &memory[*offset];
-					*offset += size;
-					global_tas_lock->unlock();
+					MPI_Accumulate(&size, 1, MPI_LONG, 0, 0, 1, MPI_LONG, MPI_SUM, offset_win);
+					MPI_Win_unlock(0, offset_win);
+
 					return ptr;
 				}
 
@@ -129,9 +128,13 @@ namespace argo {
 				 */
 				std::size_t available() {
 					std::size_t avail;
-					global_tas_lock->lock();
+
+					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 0, 0, offset_win);
+					MPI_Get(offset, 1, MPI_LONG, 0, 0, 1, MPI_LONG, offset_win);
+					MPI_Win_flush(0, offset_win); // needed?
 					avail = max_size - *offset;
-					global_tas_lock->unlock();
+					MPI_Win_unlock(0, offset_win);
+
 					return avail;
 				}
 		};
