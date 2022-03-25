@@ -896,18 +896,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 									 MPI_INFO_NULL, MPI_COMM_WORLD, &offsets_tbl_window);
 	}
 
-	memset(pagecopy, 0, cachesize*pagesize);
-	memset(touchedcache, 0, cachesize);
-	memset(globalData, 0, size_of_chunk*sizeof(argo_byte));
-	memset(cacheData, 0, cachesize*pagesize);
-	memset(globalSharers, 0, gwritersize);
-	memset(cacheControl, 0, cachesize*sizeof(control_data));
-
-	if (dd::is_first_touch_policy()) {
-		memset(global_owners_dir, 0, owners_dir_size_bytes);
-		memset(global_offsets_tbl, 0, offsets_tbl_size_bytes);
-	}
-
 	for(std::size_t i = 0; i < cachesize; i++){
 		cacheControl[i].tag = GLOBAL_NULL;
 		cacheControl[i].state = INVALID;
