@@ -7,6 +7,7 @@
 #ifndef argo_argo_h
 #define argo_argo_h argo_argo_h
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #include "allocators/allocators.h"
