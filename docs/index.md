@@ -25,7 +25,7 @@ should contact your system administrator if you are uncertain about it.
 Additionally, ArgoDSM requires `libnuma` to detect whether it is running on top
 of NUMA systems, and if so how they are structured internally.
 
-Finally, C and C++ compilers that support the C11 and C++11 standards
+Finally, C and C++ compilers that support the C17 and C++17 standards
 respectively are required.
 
 ### Building ArgoDSM
