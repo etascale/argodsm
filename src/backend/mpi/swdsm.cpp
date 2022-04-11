@@ -902,7 +902,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		cacheControl[i].dirty = CLEAN;
 	}
 
-	argo_reset_coherence(1);
+	argo_reset_coherence();
 }
 
 void argo_finalize(){
@@ -1009,10 +1009,16 @@ void swdsm_argo_barrier(int n){ //BARRIER
 	}
 }
 
-void argo_reset_coherence(int n){
+void argo_reset_coherence(){
 	stats.writebacks = 0;
 	stats.stores = 0;
+
 	memset(touchedcache, 0, cachesize);
+	for(std::size_t i = 0; i < cachesize; i++){
+		cacheControl[i].tag = GLOBAL_NULL;
+		cacheControl[i].state = INVALID;
+		cacheControl[i].dirty = CLEAN;
+	}
 
 	sem_wait(&ibsem);
 	MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
@@ -1038,10 +1044,11 @@ void argo_reset_coherence(int n){
 		}
 		MPI_Win_unlock(workrank, offsets_tbl_window);
 	}
+
 	sem_post(&ibsem);
-	swdsm_argo_barrier(n);
+	swdsm_argo_barrier(1);
 	mprotect(startAddr,size_of_all,PROT_NONE);
-	swdsm_argo_barrier(n);
+	swdsm_argo_barrier(1);
 	clearStatistics();
 }
 

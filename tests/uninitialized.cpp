@@ -23,8 +23,7 @@ class UninitializedAccessTest : public testing::Test {
 
 	protected:
 		UninitializedAccessTest() {
-			argo_reset();
-			argo::barrier();
+			argo::reset();
 		}
 
 		~UninitializedAccessTest() {

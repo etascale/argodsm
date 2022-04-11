@@ -41,8 +41,7 @@ class PrefetchTest : public testing::Test {
 
 	protected:
 		PrefetchTest() {
-			argo_reset();
-			argo::barrier();
+			argo::reset();
 		}
 
 		~PrefetchTest() {

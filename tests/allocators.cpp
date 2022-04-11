@@ -32,8 +32,7 @@ class AllocatorTest : public testing::Test {
 
 	protected:
 		AllocatorTest() {
-			argo_reset();
-			argo::barrier();
+			argo::reset();
 		}
 
 		~AllocatorTest() {

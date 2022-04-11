@@ -198,10 +198,10 @@ void clearStatistics();
 void printStatistics();
 
 /**
- * @brief Resets current coherence. Collective function called by all threads on all nodes.
- * @param n number of threads currently spawned on each node. 
+ * @brief Resets current ArgoDSM coherence
+ * @note Collective function which should be called only by one thread per node
  */
-void argo_reset_coherence(int n);
+void argo_reset_coherence();
 
 /**
  * @brief Gives the ArgoDSM node id for the local process

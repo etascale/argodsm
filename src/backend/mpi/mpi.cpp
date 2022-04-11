@@ -191,6 +191,10 @@ namespace argo {
 			argo_finalize();
 		}
 
+		void reset_coherence() {
+			argo_reset_coherence();
+		}
+
 		void barrier(std::size_t tc) {
 			swdsm_argo_barrier(tc);
 		}

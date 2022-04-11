@@ -21,10 +21,9 @@ constexpr std::size_t cache_size = size/8;
 class cppTest : public testing::Test {
 	protected:
 		cppTest()  {
-			argo_reset();
-			argo::barrier();
-
+			argo::reset();
 		}
+
 		~cppTest() {
 			argo::barrier();
 		}

@@ -8,9 +8,10 @@
 
 #include "allocators/collective_allocator.hpp"
 #include "allocators/dynamic_allocator.hpp"
+#include "backend/backend.hpp"
+#include "data_distribution/data_distribution.hpp"
 #include "env/env.hpp"
 #include "virtual_memory/virtual_memory.hpp"
-#include "data_distribution/data_distribution.hpp"
 
 namespace vm = argo::virtual_memory;
 namespace mem = argo::mempools;
@@ -56,11 +57,31 @@ namespace argo {
 		/* note: the backend must currently initialize before the mempool can be set */
 		backend::init(requested_argo_size, requested_cache_size);
 		default_global_mempool = new mp();
-		argo_reset();
+		reset();
 	}
 
 	void finalize() {
 		delete default_global_mempool;
+	}
+
+	static void reset_allocators() {
+		default_global_mempool->reset();
+		using namespace alloc;
+		using namespace mem;
+		collective_prepool = dynamic_memory_pool<global_allocator, NODE_ZERO_ONLY>(&default_global_allocator);
+		dynamic_prepool = dynamic_memory_pool<global_allocator, ALWAYS>(&default_global_allocator);
+		default_global_allocator = global_allocator<char>();
+		default_dynamic_allocator = default_dynamic_allocator_t();
+		default_collective_allocator = collective_allocator();
+		default_global_allocator.set_mempool(default_global_mempool);
+		default_dynamic_allocator.set_mempool(&dynamic_prepool);
+		default_collective_allocator.set_mempool(&collective_prepool);
+	}
+
+	void reset() {
+		argo::backend::reset_coherence();
+		reset_allocators();
+		backend::barrier();
 	}
 
 	int node_id() {
@@ -86,17 +107,7 @@ extern "C" {
 	}
 
 	void argo_reset() {
-		default_global_mempool->reset();
-		using namespace alloc;
-		using namespace mem;
-		collective_prepool = dynamic_memory_pool<global_allocator, NODE_ZERO_ONLY>(&default_global_allocator);
-		dynamic_prepool = dynamic_memory_pool<global_allocator, ALWAYS>(&default_global_allocator);
-		default_global_allocator = global_allocator<char>();
-		default_dynamic_allocator = default_dynamic_allocator_t();
-		default_collective_allocator = collective_allocator();
-		default_global_allocator.set_mempool(default_global_mempool);
-		default_dynamic_allocator.set_mempool(&dynamic_prepool);
-		default_collective_allocator.set_mempool(&collective_prepool);
+		argo::reset();
 	}
 
 	int argo_node_id() {
