@@ -69,7 +69,7 @@ namespace argo {
 	 * -# If the user has provided constructor arguments, then initialization is
 	 *    performed.
 	 * -# The user can explicitly override these defaults using the appropriate
-	 *    allocation parameters (@ref allocation).
+	 *    allocation parameters (@ref argo::allocation).
 	 * -# Synchronization is performed after initialization.
 	 * -# The user can override the behaviour by using the allocation
 	 *    parameters.
@@ -129,7 +129,7 @@ namespace argo {
 	 *
 	 * -# The destructors are called by default (deinitialization).
 	 * -# If the type is trivially destructible, no destructors are called.
-	 * -# The user can explicilty override this behaviour (see @ref allocation).
+	 * -# The user can explicitly override this behaviour (@ref argo::allocation).
 	 * -# If the destructor is called, the function will also synchronize.
 	 * -# The user can explicitly override this behaviour.
 	 *

@@ -83,14 +83,6 @@ char * barwindowsused;
 /** @todo replace with a (qd?)lock */
 sem_t ibsem;
 
-/*Loading and Prefetching*/
-/**
- * @brief load into cache helper function
- * @param aligned_access_offset memory offset to load into the cache
- * @pre aligned_access_offset must be aligned as CACHELINE*pagesize
- */
-void load_cache_entry(std::size_t aligned_access_offset);
-
 /*Common*/
 /** @brief  Points to start of global address space*/
 void* startAddr;
@@ -219,233 +211,6 @@ inline std::size_t align_backwards(std::size_t offset, std::size_t size) {
 	return (offset / size) * size;
 }
 
-void handler(int sig, siginfo_t *si, void *context){
-	UNUSED_PARAM(sig);
-#ifndef REG_ERR
-	UNUSED_PARAM(context);
-#endif /* REG_ERR */
-	double t1 = MPI_Wtime();
-	std::uintptr_t tag;
-	argo_byte owner,state;
-
-	/* compute offset in distributed memory in bytes, always positive */
-	const std::size_t access_offset = static_cast<char*>(si->si_addr) - static_cast<char*>(startAddr);
-
-	/* The type of miss triggering the handler is unknown */
-	sig::access_type miss_type = sig::access_type::undefined;
-#ifdef REG_ERR
-	/* On x86, get and decode the error number from the context */
-	const ucontext_t* ctx = static_cast<ucontext_t*>(context);
-	auto err_num = ctx->uc_mcontext.gregs[REG_ERR];
-	assert(err_num & X86_PF_USER);	//Assert signal from user space
-	assert(err_num < X86_PF_RSVD); 	//Assert signal is from read or write access
-	/* This could be further decoded by using X86_PF_PROT to detect
-	 * whether the fault originated from no page found (0) or from
-	 * a protection fault (1), but is not needed for this purpose. */
-	/* Assign correct type to the miss */
-	miss_type = (err_num & X86_PF_WRITE) ? sig::access_type::write : sig::access_type::read;
-#endif /* REG_ERR */
-
-	/* align access offset to cacheline */
-	const std::size_t aligned_access_offset = align_backwards(access_offset, CACHELINE*pagesize);
-	std::size_t classidx = get_classification_index(aligned_access_offset);
-
-	/* compute start pointer of cacheline. char* has byte-wise arithmetics */
-	char* const aligned_access_ptr = static_cast<char*>(startAddr) + aligned_access_offset;
-	std::size_t startIndex = getCacheIndex(aligned_access_offset);
-
-	/* Get homenode and offset, protect with ibsem if first touch */
-	argo::node_id_t homenode;
-	std::size_t offset;
-	if(dd::is_first_touch_policy()){
-		std::lock_guard<std::mutex> lock(spin_mutex);
-		sem_wait(&ibsem);
-		homenode = get_homenode(aligned_access_offset);
-		offset = get_offset(aligned_access_offset);
-		sem_post(&ibsem);
-	}else{
-		homenode = get_homenode(aligned_access_offset);
-		offset = get_offset(aligned_access_offset);
-	}
-
-	std::uint64_t id = static_cast<std::uint64_t>(1) << getID();
-	std::uint64_t invid = ~id;
-
-	pthread_mutex_lock(&cachemutex);
-
-	/* page is local */
-	if(homenode == (getID())){
-		sem_wait(&ibsem);
-		std::uint64_t sharers;
-		MPI_Win_lock(MPI_LOCK_SHARED, workrank, 0, sharerWindow);
-		std::uint64_t prevsharer = (globalSharers[classidx])&id;
-		MPI_Win_unlock(workrank, sharerWindow);
-
-		if(prevsharer != id){
-			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
-			sharers = globalSharers[classidx];
-			globalSharers[classidx] |= id;
-			MPI_Win_unlock(workrank, sharerWindow);
-			if(sharers != 0 && sharers != id && isPowerOf2(sharers)){
-				std::uint64_t ownid = sharers&invid;
-				argo::node_id_t owner = workrank;
-				for(argo::node_id_t n = 0; n < numtasks; n++){
-					if((static_cast<std::uint64_t>(1)<<n)==ownid){
-						owner = n; //just get rank...
-						break;
-					}
-				}
-				if(owner==workrank){
-					throw "bad owner in local access";
-				}
-				else{
-					/* update remote private holder to shared */
-					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
-					MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx,1,MPI_LONG,MPI_BOR,sharerWindow);
-					MPI_Win_unlock(owner, sharerWindow);
-				}
-			}
-			/* set page to permit reads and map it to the page cache */
-			/** @todo Set cache offset to a variable instead of calculating it here */
-			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ);
-
-		}
-		else{
-			/* Do not register as writer if this is a confirmed read miss */
-			if(miss_type == sig::access_type::read) {
-				sem_post(&ibsem);
-				pthread_mutex_unlock(&cachemutex);
-				return;
-			}
-
-			/* get current sharers/writers and then add your own id */
-			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
-			std::uint64_t sharers = globalSharers[classidx];
-			std::uint64_t writers = globalSharers[classidx+1];
-			globalSharers[classidx+1] |= id;
-			MPI_Win_unlock(workrank, sharerWindow);
-
-			/* remote single writer */
-			if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
-				for(argo::node_id_t n = 0; n < numtasks; n++){
-					if((static_cast<std::uint64_t>(1)<<n)==(writers&invid)){
-						owner = n; //just get rank...
-						break;
-					}
-				}
-				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
-				MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
-				MPI_Win_unlock(owner, sharerWindow);
-			}
-			else if(writers == id || writers == 0){
-				for(argo::node_id_t n = 0; n < numtasks; n++){
-					if(n != workrank && ((static_cast<std::uint64_t>(1)<<n)&sharers) != 0){
-						MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
-						MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
-						MPI_Win_unlock(n, sharerWindow);
-					}
-				}
-			}
-			/* set page to permit read/write and map it to the page cache */
-			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ|PROT_WRITE);
-
-		}
-		sem_post(&ibsem);
-		pthread_mutex_unlock(&cachemutex);
-		return;
-	}
-
-	state  = cacheControl[startIndex].state;
-	tag = cacheControl[startIndex].tag;
-	bool performed_load = false;
-
-	/* Fetch the correct page if necessary */
-	if(state == INVALID || (tag != aligned_access_offset && tag != GLOBAL_NULL)) {
-		load_cache_entry(aligned_access_offset);
-		performed_load = true;
-	}
-
-	/* If miss is known to originate from a read access, or if the
-	 * access type is unknown but a load has already been performed
-	 * in this handler, exit here to avoid false write misses */
-	if(miss_type == sig::access_type::read ||
-		(miss_type == sig::access_type::undefined && performed_load)) {
-		assert(cacheControl[startIndex].state == VALID);
-		assert(cacheControl[startIndex].tag == aligned_access_offset);
-		pthread_mutex_unlock(&cachemutex);
-		double t2 = MPI_Wtime();
-		stats.loadtime+=t2-t1;
-		return;
-	}
-
-	std::uintptr_t line = startIndex / CACHELINE;
-	line *= CACHELINE;
-
-	if(cacheControl[line].dirty == DIRTY){
-		pthread_mutex_unlock(&cachemutex);
-		return;
-	}
-
-	touchedcache[line] = 1;
-	cacheControl[line].dirty = DIRTY;
-
-	sem_wait(&ibsem);
-	MPI_Win_lock(MPI_LOCK_SHARED, workrank, 0, sharerWindow);
-	std::uint64_t writers = globalSharers[classidx+1];
-	std::uint64_t sharers = globalSharers[classidx];
-	MPI_Win_unlock(workrank, sharerWindow);
-	/* Either already registered write - or 1 or 0 other writers already cached */
-	if(writers != id && isPowerOf2(writers)){
-		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
-		globalSharers[classidx+1] |= id; //register locally
-		MPI_Win_unlock(workrank, sharerWindow);
-
-		/* register and get latest sharers / writers */
-		MPI_Win_lock(MPI_LOCK_SHARED, homenode, 0, sharerWindow);
-		MPI_Get_accumulate(&id, 1,MPI_LONG,&writers,1,MPI_LONG,homenode,
-			classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
-		MPI_Get(&sharers,1, MPI_LONG, homenode, classidx, 1,MPI_LONG,sharerWindow);
-		MPI_Win_unlock(homenode, sharerWindow);
-		/* We get result of accumulation before operation so we need to account for that */
-		writers |= id;
-		/* Just add the (potentially) new sharers fetched to local copy */
-		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
-		globalSharers[classidx] |= sharers;
-		MPI_Win_unlock(workrank, sharerWindow);
-
-		/* check if we need to update */
-		if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
-			for(argo::node_id_t n = 0; n < numtasks; n++){
-				if((static_cast<std::uint64_t>(1)<<n)==(writers&invid)){
-					owner = n; //just get rank...
-					break;
-				}
-			}
-			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
-			MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
-			MPI_Win_unlock(owner, sharerWindow);
-		}
-		else if(writers==id || writers==0){
-			for(argo::node_id_t n = 0; n < numtasks; n++){
-				if(n != workrank && ((static_cast<std::uint64_t>(1)<<n)&sharers) != 0){
-					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
-					MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
-					MPI_Win_unlock(n, sharerWindow);
-				}
-			}
-		}
-	}
-	unsigned char* copy = reinterpret_cast<unsigned char*>(pagecopy + line*pagesize);
-	memcpy(copy,aligned_access_ptr,CACHELINE*pagesize);
-	argo_write_buffer->add(startIndex);
-	sem_post(&ibsem);
-	mprotect(aligned_access_ptr, pagesize*CACHELINE,PROT_WRITE|PROT_READ);
-	pthread_mutex_unlock(&cachemutex);
-	double t2 = MPI_Wtime();
-	stats.storetime += t2-t1;
-	return;
-}
-
 
 argo::node_id_t get_homenode(std::uintptr_t addr){
 	dd::global_ptr<char> gptr(reinterpret_cast<char*>(
@@ -471,6 +236,12 @@ std::size_t peek_offset(std::uintptr_t addr) {
 	return gptr.peek_offset();
 }
 
+/*Loading and Prefetching*/
+/**
+ * @brief load into cache helper function
+ * @param aligned_access_offset memory offset to load into the cache
+ * @pre aligned_access_offset must be aligned as CACHELINE*pagesize
+ */
 void load_cache_entry(std::uintptr_t aligned_access_offset) {
 
 	/* If it's not an ArgoDSM address, do not handle it */
@@ -705,6 +476,235 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 	}
 	sem_post(&ibsem);
 }
+
+
+void handler(int sig, siginfo_t *si, void *context){
+	UNUSED_PARAM(sig);
+#ifndef REG_ERR
+	UNUSED_PARAM(context);
+#endif /* REG_ERR */
+	double t1 = MPI_Wtime();
+	std::uintptr_t tag;
+	argo_byte owner,state;
+
+	/* compute offset in distributed memory in bytes, always positive */
+	const std::size_t access_offset = static_cast<char*>(si->si_addr) - static_cast<char*>(startAddr);
+
+	/* The type of miss triggering the handler is unknown */
+	sig::access_type miss_type = sig::access_type::undefined;
+#ifdef REG_ERR
+	/* On x86, get and decode the error number from the context */
+	const ucontext_t* ctx = static_cast<ucontext_t*>(context);
+	auto err_num = ctx->uc_mcontext.gregs[REG_ERR];
+	assert(err_num & X86_PF_USER);	//Assert signal from user space
+	assert(err_num < X86_PF_RSVD); 	//Assert signal is from read or write access
+	/* This could be further decoded by using X86_PF_PROT to detect
+	 * whether the fault originated from no page found (0) or from
+	 * a protection fault (1), but is not needed for this purpose. */
+	/* Assign correct type to the miss */
+	miss_type = (err_num & X86_PF_WRITE) ? sig::access_type::write : sig::access_type::read;
+#endif /* REG_ERR */
+
+	/* align access offset to cacheline */
+	const std::size_t aligned_access_offset = align_backwards(access_offset, CACHELINE*pagesize);
+	std::size_t classidx = get_classification_index(aligned_access_offset);
+
+	/* compute start pointer of cacheline. char* has byte-wise arithmetics */
+	char* const aligned_access_ptr = static_cast<char*>(startAddr) + aligned_access_offset;
+	std::size_t startIndex = getCacheIndex(aligned_access_offset);
+
+	/* Get homenode and offset, protect with ibsem if first touch */
+	argo::node_id_t homenode;
+	std::size_t offset;
+	if(dd::is_first_touch_policy()){
+		std::lock_guard<std::mutex> lock(spin_mutex);
+		sem_wait(&ibsem);
+		homenode = get_homenode(aligned_access_offset);
+		offset = get_offset(aligned_access_offset);
+		sem_post(&ibsem);
+	}else{
+		homenode = get_homenode(aligned_access_offset);
+		offset = get_offset(aligned_access_offset);
+	}
+
+	std::uint64_t id = static_cast<std::uint64_t>(1) << getID();
+	std::uint64_t invid = ~id;
+
+	pthread_mutex_lock(&cachemutex);
+
+	/* page is local */
+	if(homenode == (getID())){
+		sem_wait(&ibsem);
+		std::uint64_t sharers;
+		MPI_Win_lock(MPI_LOCK_SHARED, workrank, 0, sharerWindow);
+		std::uint64_t prevsharer = (globalSharers[classidx])&id;
+		MPI_Win_unlock(workrank, sharerWindow);
+
+		if(prevsharer != id){
+			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
+			sharers = globalSharers[classidx];
+			globalSharers[classidx] |= id;
+			MPI_Win_unlock(workrank, sharerWindow);
+			if(sharers != 0 && sharers != id && isPowerOf2(sharers)){
+				std::uint64_t ownid = sharers&invid;
+				argo::node_id_t owner = workrank;
+				for(argo::node_id_t n = 0; n < numtasks; n++){
+					if((static_cast<std::uint64_t>(1)<<n)==ownid){
+						owner = n; //just get rank...
+						break;
+					}
+				}
+				if(owner==workrank){
+					throw "bad owner in local access";
+				}
+				else{
+					/* update remote private holder to shared */
+					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
+					MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx,1,MPI_LONG,MPI_BOR,sharerWindow);
+					MPI_Win_unlock(owner, sharerWindow);
+				}
+			}
+			/* set page to permit reads and map it to the page cache */
+			/** @todo Set cache offset to a variable instead of calculating it here */
+			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ);
+
+		}
+		else{
+			/* Do not register as writer if this is a confirmed read miss */
+			if(miss_type == sig::access_type::read) {
+				sem_post(&ibsem);
+				pthread_mutex_unlock(&cachemutex);
+				return;
+			}
+
+			/* get current sharers/writers and then add your own id */
+			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
+			std::uint64_t sharers = globalSharers[classidx];
+			std::uint64_t writers = globalSharers[classidx+1];
+			globalSharers[classidx+1] |= id;
+			MPI_Win_unlock(workrank, sharerWindow);
+
+			/* remote single writer */
+			if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
+				for(argo::node_id_t n = 0; n < numtasks; n++){
+					if((static_cast<std::uint64_t>(1)<<n)==(writers&invid)){
+						owner = n; //just get rank...
+						break;
+					}
+				}
+				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
+				MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
+				MPI_Win_unlock(owner, sharerWindow);
+			}
+			else if(writers == id || writers == 0){
+				for(argo::node_id_t n = 0; n < numtasks; n++){
+					if(n != workrank && ((static_cast<std::uint64_t>(1)<<n)&sharers) != 0){
+						MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
+						MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
+						MPI_Win_unlock(n, sharerWindow);
+					}
+				}
+			}
+			/* set page to permit read/write and map it to the page cache */
+			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ|PROT_WRITE);
+
+		}
+		sem_post(&ibsem);
+		pthread_mutex_unlock(&cachemutex);
+		return;
+	}
+
+	state  = cacheControl[startIndex].state;
+	tag = cacheControl[startIndex].tag;
+	bool performed_load = false;
+
+	/* Fetch the correct page if necessary */
+	if(state == INVALID || (tag != aligned_access_offset && tag != GLOBAL_NULL)) {
+		load_cache_entry(aligned_access_offset);
+		performed_load = true;
+	}
+
+	/* If miss is known to originate from a read access, or if the
+	 * access type is unknown but a load has already been performed
+	 * in this handler, exit here to avoid false write misses */
+	if(miss_type == sig::access_type::read ||
+		(miss_type == sig::access_type::undefined && performed_load)) {
+		assert(cacheControl[startIndex].state == VALID);
+		assert(cacheControl[startIndex].tag == aligned_access_offset);
+		pthread_mutex_unlock(&cachemutex);
+		double t2 = MPI_Wtime();
+		stats.loadtime+=t2-t1;
+		return;
+	}
+
+	std::uintptr_t line = startIndex / CACHELINE;
+	line *= CACHELINE;
+
+	if(cacheControl[line].dirty == DIRTY){
+		pthread_mutex_unlock(&cachemutex);
+		return;
+	}
+
+	touchedcache[line] = 1;
+	cacheControl[line].dirty = DIRTY;
+
+	sem_wait(&ibsem);
+	MPI_Win_lock(MPI_LOCK_SHARED, workrank, 0, sharerWindow);
+	std::uint64_t writers = globalSharers[classidx+1];
+	std::uint64_t sharers = globalSharers[classidx];
+	MPI_Win_unlock(workrank, sharerWindow);
+	/* Either already registered write - or 1 or 0 other writers already cached */
+	if(writers != id && isPowerOf2(writers)){
+		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
+		globalSharers[classidx+1] |= id; //register locally
+		MPI_Win_unlock(workrank, sharerWindow);
+
+		/* register and get latest sharers / writers */
+		MPI_Win_lock(MPI_LOCK_SHARED, homenode, 0, sharerWindow);
+		MPI_Get_accumulate(&id, 1,MPI_LONG,&writers,1,MPI_LONG,homenode,
+			classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
+		MPI_Get(&sharers,1, MPI_LONG, homenode, classidx, 1,MPI_LONG,sharerWindow);
+		MPI_Win_unlock(homenode, sharerWindow);
+		/* We get result of accumulation before operation so we need to account for that */
+		writers |= id;
+		/* Just add the (potentially) new sharers fetched to local copy */
+		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
+		globalSharers[classidx] |= sharers;
+		MPI_Win_unlock(workrank, sharerWindow);
+
+		/* check if we need to update */
+		if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
+			for(argo::node_id_t n = 0; n < numtasks; n++){
+				if((static_cast<std::uint64_t>(1)<<n)==(writers&invid)){
+					owner = n; //just get rank...
+					break;
+				}
+			}
+			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
+			MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
+			MPI_Win_unlock(owner, sharerWindow);
+		}
+		else if(writers==id || writers==0){
+			for(argo::node_id_t n = 0; n < numtasks; n++){
+				if(n != workrank && ((static_cast<std::uint64_t>(1)<<n)&sharers) != 0){
+					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
+					MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
+					MPI_Win_unlock(n, sharerWindow);
+				}
+			}
+		}
+	}
+	unsigned char* copy = reinterpret_cast<unsigned char*>(pagecopy + line*pagesize);
+	memcpy(copy,aligned_access_ptr,CACHELINE*pagesize);
+	argo_write_buffer->add(startIndex);
+	sem_post(&ibsem);
+	mprotect(aligned_access_ptr, pagesize*CACHELINE,PROT_WRITE|PROT_READ);
+	pthread_mutex_unlock(&cachemutex);
+	double t2 = MPI_Wtime();
+	stats.storetime += t2-t1;
+	return;
+}
+
 
 
 void initmpi(){
