@@ -25,7 +25,7 @@ should contact your system administrator if you are uncertain about it.
 Additionally, ArgoDSM requires `libnuma` to detect whether it is running on top
 of NUMA systems, and if so how they are structured internally.
 
-Finally, C and C++ compilers that support the C11 and C++11 standards
+Finally, C and C++ compilers that support the C17 and C++17 standards
 respectively are required.
 
 ### Building ArgoDSM
@@ -36,9 +36,10 @@ Note: adjust the below commands to your needs, especially `CMAKE_INSTALL_PREFIX`
 git clone https://github.com/etascale/argodsm.git
 cd argodsm
 cd tests
-wget https://github.com/google/googletest/archive/release-1.7.0.zip
-unzip release-1.7.0.zip
-mv googletest-release-1.7.0 gtest-1.7.0
+wget https://github.com/google/googletest/archive/release-1.11.0.zip
+unzip release-1.11.0.zip
+mv googletest-release-1.11.0 googletest
+rm release-1.11.0.zip
 cd ..
 mkdir build
 cd build
@@ -66,13 +67,13 @@ cd argodsm
 
 If you are planning on building the ArgoDSM tests (recommended), you also need
 the [googletest](https://github.com/google/googletest/) framework. Extract it
-into the `tests` folder, and make sure that its folder is named `gtest-1.7.0`.
+into the `tests` folder, and make sure that its folder is named `googletest`.
 
 ``` bash
 cd tests
-wget https://github.com/google/googletest/archive/release-1.7.0.zip
-unzip release-1.7.0.zip
-mv googletest-release-1.7.0 gtest-1.7.0
+wget https://github.com/google/googletest/archive/release-1.11.0.zip
+unzip release-1.11.0.zip
+mv googletest-release-1.11.0 googletest
 cd ..
 ```
 
