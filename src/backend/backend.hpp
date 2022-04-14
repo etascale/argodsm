@@ -108,8 +108,12 @@ namespace argo {
 		/**
 		 * @brief a simple collective barrier
 		 * @param threadcount number of threads on each node that go into the barrier
+		 * @param upgrade_level controls if the barrier should upgrade pages:
+		 *	- 0 upgrade no pages
+		 * 	- 1 upgrade all pages to at least S
+		 * 	- 2 upgrade all pages to P
 		 */
-		void barrier(std::size_t threadcount=1);
+		void barrier(std::size_t threadcount=1, std::size_t upgrade_level=0);
 
 		/**
 		 * @brief broadcast-style collective synchronization

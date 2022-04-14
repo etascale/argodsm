@@ -158,11 +158,24 @@ void argo_finalize();
 void self_invalidation();
 
 /**
+ * @brief Perform upgrade of page classifications
+ * @param upgrade_level controls what classifications are upgraded
+ * 	- 1 upgrade all pages to at least S
+ * 	- 2 upgrade all pages to P
+ * @pre upgrade_level must be 1 or 2
+ */
+void self_upgrade(std::size_t upgrade_level);
+
+/**
  * @brief Global barrier for ArgoDSM - needs to be called by every thread in the
  *        system that need coherent view of the memory
  * @param n number of local thread participating
+ * @param upgrade_level controls if the barrier should upgrade pages:
+ *	- 0 upgrade no pages
+ * 	- 1 upgrade all pages to at least S
+ * 	- 2 upgrade all pages to P
  */
-void swdsm_argo_barrier(int n);
+void argo_barrier(int n, std::size_t upgrade_level = 0);
 
 /**
  * @brief acquire function for ArgoDSM (Acquire according to Release Consistency)
