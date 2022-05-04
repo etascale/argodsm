@@ -39,8 +39,7 @@ class APITest : public testing::Test {
 
 	protected:
 		APITest() {
-			argo_reset();
-			argo::barrier();
+			argo::reset();
 		}
 
 		~APITest() {

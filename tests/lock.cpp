@@ -54,8 +54,7 @@ protected:
 	int *counter;
 
 	LockTest() {
-		argo_reset();
-		argo::barrier();
+		argo::reset();
 		field = argo::conew_<tas_lock::internal_field_type>();
 		global_tas_lock = new tas_lock(field);
 		argo::barrier();

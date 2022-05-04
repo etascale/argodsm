@@ -38,10 +38,9 @@ int amount = 100000;
 class ompTest : public testing::Test {
 	protected:
 		ompTest()  {
-			argo_reset();
-			argo::barrier();
-
+			argo::reset();
 		}
+
 		~ompTest() {
 			argo::barrier();
 		}

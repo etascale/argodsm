@@ -128,6 +128,26 @@ namespace argo {
 		void finalize() {
 		}
 
+		void reset_coherence() {
+			using namespace data_distribution;
+			/** @note first-touch needs a directory for fetching
+			 *        the homenode and offset for an address */
+			if (is_first_touch_policy()) {
+				/* calculate the directory size and allocate memory */
+				std::size_t owners_dir_size = 3*(memory_size/4096UL);
+				std::size_t owners_dir_size_bytes = owners_dir_size*sizeof(std::size_t);
+				owners_dir_size_bytes = (1 + ((owners_dir_size_bytes-1) / 4096UL))*4096UL;
+				global_owners_dir = static_cast<std::uintptr_t*>(vm::allocate_mappable(4096UL, owners_dir_size_bytes));
+				/* hardcode first-touch directory values so
+				   that we perform only load operations */
+				for(std::size_t j = 0; j < owners_dir_size; j += 3) {
+					global_owners_dir[j] = 0;
+					global_owners_dir[j+1] = j/3 * 4096UL;
+					global_owners_dir[j+2] = 0;
+				}
+			}
+		}
+
 		void barrier(std::size_t threadcount) {
 			/* initially: flag = false */
 			std::unique_lock<std::mutex> barrier_lock(barrier_mutex);

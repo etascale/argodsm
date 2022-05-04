@@ -51,10 +51,9 @@ constexpr double d_const = 1.0/3.0 * 3.14159;
 class backendTest : public testing::Test, public ::testing::WithParamInterface<int> {
 	protected:
 		backendTest()  {
-			argo_reset();
-			argo::barrier();
-
+			argo::reset();
 		}
+
 		~backendTest() {
 			argo::barrier();
 		}

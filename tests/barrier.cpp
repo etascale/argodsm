@@ -24,10 +24,9 @@ constexpr int max_threads = 128;
 class barrierTest : public testing::Test, public ::testing::WithParamInterface<int> {
 	protected:
 		barrierTest()  {
-			argo_reset();
-			argo::barrier();
-
+			argo::reset();
 		}
+
 		~barrierTest() {
 			argo::barrier();
 		}

@@ -60,6 +60,12 @@ namespace argo {
 	void finalize();
 
 	/**
+	 * @brief reset ArgoDSM system
+	 * @warning this is mainly intended for testing, not for public use
+	 */
+	void reset();
+
+	/**
 	 * @brief A unique ArgoDSM node identifier. Counting starts from 0.
 	 * @return The node ID
 	 */

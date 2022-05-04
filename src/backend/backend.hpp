@@ -96,6 +96,12 @@ namespace argo {
 		 */
 		void finalize();
 
+		/**
+		 * @brief Resets current ArgoDSM coherence
+		 * @note Collective function which should be called only by one thread per node
+		 */
+		void reset_coherence();
+
 		/** @brief import global_ptr */
 		using argo::data_distribution::global_ptr;
 
