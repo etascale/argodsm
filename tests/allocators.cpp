@@ -474,6 +474,79 @@ TEST_F(AllocatorTest, NewInitialization) {
 }
 
 /**
+ * @brief Test that checks that memory allocations are aligned to the alignment
+ * of std::max_align_t.
+ */
+TEST_F(AllocatorTest, AllocateAligned) {
+	std::size_t array_size = 10;
+	std::size_t unaligned_padding = 19;
+
+	// Pad with some unaligned number of bytes
+	char* pad = argo::conew_array<char>(unaligned_padding);
+	ASSERT_EQ(reinterpret_cast<std::uintptr_t>(pad) % alignof(std::max_align_t), 0);
+
+	// Test that conew_(array) aligns properly
+	int* i_ptr = argo::conew_<int>();
+	ASSERT_EQ(reinterpret_cast<std::uintptr_t>(i_ptr) % alignof(std::max_align_t), 0);
+	char* conew_arr = argo::conew_array<char>(array_size);
+	ASSERT_EQ(reinterpret_cast<std::uintptr_t>(conew_arr) % alignof(std::max_align_t), 0);
+
+	// Test that collective_alloc aligns properly
+	int* i_ptr2 = static_cast<int*>(collective_alloc(sizeof(int)));
+	ASSERT_EQ(reinterpret_cast<std::uintptr_t>(i_ptr2) % alignof(std::max_align_t), 0);
+
+	// Test that new_(array) aligns properly
+	double* d_ptr = argo::new_<double>();
+	ASSERT_EQ(reinterpret_cast<std::uintptr_t>(d_ptr) % alignof(std::max_align_t), 0);
+	char* new_arr = argo::new_array<char>(array_size);
+	ASSERT_EQ(reinterpret_cast<std::uintptr_t>(new_arr) % alignof(std::max_align_t), 0);
+
+	// Test that dynamic_alloc aligns properly
+	double* d_ptr2 = static_cast<double*>(dynamic_alloc(sizeof(double)));
+	ASSERT_EQ(reinterpret_cast<std::uintptr_t>(d_ptr2) % alignof(std::max_align_t), 0);
+}
+
+/**
+ * @brief Test that checks that the freelist works as expected by re-allocating
+ * de-allocated memory
+ */
+TEST_F(AllocatorTest, ReAllocate) {
+	std::size_t array_size = 10;
+
+	// Allocate different sizes of data
+	int* i_ptr = argo::conew_<int>();
+	int* i_arr = argo::conew_array<int>(array_size);
+	double* d_ptr = argo::conew_<double>();
+	double* d_arr = argo::conew_array<double>(array_size);
+
+	// Store a pointer to the last allocation
+	std::uintptr_t cut_off_uptr = reinterpret_cast<std::uintptr_t>(d_arr);
+
+	argo::barrier();
+
+	// Deallocate everything besides the cut_off
+	argo::codelete_(i_ptr);
+	argo::codelete_array(i_arr);
+	argo::codelete_(d_ptr);
+	argo::codelete_array(d_arr);
+
+	argo::barrier();
+
+	// Re-allocate the same sizes of data
+	i_ptr = argo::conew_<int>();
+	i_arr = argo::conew_array<int>(array_size);
+	d_ptr = argo::conew_<double>();
+	d_arr = argo::conew_array<double>(array_size);
+
+	// Assert that they all fit in to the previously deallocated space
+	ASSERT_LE(reinterpret_cast<std::uintptr_t>(i_ptr), cut_off_uptr);
+	ASSERT_LE(reinterpret_cast<std::uintptr_t>(i_arr), cut_off_uptr);
+	ASSERT_LE(reinterpret_cast<std::uintptr_t>(d_ptr), cut_off_uptr);
+	ASSERT_LE(reinterpret_cast<std::uintptr_t>(d_arr), cut_off_uptr);
+}
+
+
+/**
  * @brief The main function that runs the tests
  * @param argc Number of command line arguments
  * @param argv Command line arguments
