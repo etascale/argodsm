@@ -171,6 +171,17 @@ namespace argo {
 					freelist[size].push(ptr);
 				}
 
+				/**
+				 * @brief helper function to align a number up to the next alignment
+				 * @param num the number to align
+				 * @param alignment the alignment to align up to
+				 * @return num aligned to the next alignment, or num if already aligned
+				 */
+				static std::size_t align_up(std::size_t num, std::size_t alignment) {
+					return ((num + alignment - 1) / alignment) * alignment;
+				}
+
+
 			public:
 				/**
 				 * @brief the type that is allocated
@@ -208,32 +219,41 @@ namespace argo {
 				T* allocate(size_t n) {
 					/** @todo maybe detect uninitialized mempool in here? */
 
+					// Align the requested memory size in chunks of the alignment specified
+					// by max_align_t to ensure that all allocations are well aligned
+					std::size_t aligned_alloc_size = align_up(n*sizeof(T), alignof(std::max_align_t));
+
+					// Update the number of elements that will actually be allocated after
+					// alignment so that the freelist and allocation_size table are correct
+					std::size_t aligned_n = aligned_alloc_size / sizeof(T);
+
 					lock->lock();
-					if(freelist.count(n) != 0 && !freelist[n].empty()) {
-						T* allocation = freelist[n].top();
-						freelist[n].pop();
+					if(freelist.count(aligned_n) != 0 && !freelist[aligned_n].empty()) {
+						T* allocation = freelist[aligned_n].top();
+						freelist[aligned_n].pop();
 						lock->unlock();
 						return allocation;
 					}
 					T* allocation;
 					try {
-						allocation = static_cast<T*>(mempool->reserve(n*sizeof(T)));
+						allocation = static_cast<T*>(mempool->reserve(aligned_alloc_size));
 					} catch (const typename MemoryPool::bad_alloc&) {
 						auto avail = mempool->available();
 						if(avail > 0) {
 							allocation = static_cast<T*>(mempool->reserve(avail));
 							freelist[avail].push(allocation);
-							allocation_size.insert({{allocation, n}});
+							allocation_size.insert({{allocation, aligned_n}});
 						}
 						try {
-							mempool->grow(n*sizeof(T));
+							mempool->grow(aligned_alloc_size);
 						}catch(const std::bad_alloc&){
 							lock->unlock();
 							throw;
 						}
-						allocation = static_cast<T*>(mempool->reserve(n*sizeof(T)));
+						allocation = static_cast<T*>(mempool->reserve(aligned_alloc_size));
 					}
-					allocation_size.insert({{allocation, n}});
+					allocation_size.insert({{allocation, aligned_n}});
+
 					lock->unlock();
 					return allocation;
 				}
@@ -255,8 +275,10 @@ namespace argo {
 				 * @param n the number of elements of type T to deallocate
 				 */
 				void deallocate(T* ptr, size_t n) {
+					std::size_t aligned_alloc_size = align_up(n*sizeof(T), alignof(std::max_align_t));
+					std::size_t aligned_n = aligned_alloc_size / sizeof(T);
 					lock->lock();
-					deallocate_nosync(ptr, n);
+					deallocate_nosync(ptr, aligned_n);
 					lock->unlock();
 				}
 
