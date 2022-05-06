@@ -64,6 +64,10 @@ namespace argo {
 		delete default_global_mempool;
 	}
 
+	/**
+	 * @brief reset ArgoDSM allocators
+	 * @warning this is mainly intended for testing, not for public use
+	 */
 	static void reset_allocators() {
 		default_global_mempool->reset();
 		using namespace alloc;
