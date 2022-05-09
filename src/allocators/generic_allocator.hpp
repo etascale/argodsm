@@ -221,7 +221,7 @@ namespace argo {
 
 					// Align the requested memory size in chunks of the alignment specified
 					// by max_align_t to ensure that all allocations are well aligned
-					std::size_t aligned_alloc_size = align_up(n*sizeof(T), alignof(std::max_align_t));
+					std::size_t aligned_alloc_size = align_up(n * sizeof(T), alignof(std::max_align_t));
 
 					// Update the number of elements that will actually be allocated after
 					// alignment so that the freelist and allocation_size table are correct
@@ -275,7 +275,7 @@ namespace argo {
 				 * @param n the number of elements of type T to deallocate
 				 */
 				void deallocate(T* ptr, size_t n) {
-					std::size_t aligned_alloc_size = align_up(n*sizeof(T), alignof(std::max_align_t));
+					std::size_t aligned_alloc_size = align_up(n * sizeof(T), alignof(std::max_align_t));
 					std::size_t aligned_n = aligned_alloc_size / sizeof(T);
 					lock->lock();
 					deallocate_nosync(ptr, aligned_n);
