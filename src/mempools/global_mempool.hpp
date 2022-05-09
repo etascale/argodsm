@@ -55,12 +55,14 @@ namespace argo {
 					using namespace data_distribution;
 					base_distribution<0>::set_memory_space(nodes, memory, max_size);
 
-					// Move back one page as the last page is left for internal use
+					// Reset maximum size to the full memory size minus the space reserved for internal use
 					max_size -= reserved;
+					// Attach memory pool offset to the start of the reserved space
 					offset = new (&memory[max_size]) ptrdiff_t;
 
 					using tas_lock = argo::globallock::global_tas_lock;
-					tas_lock::internal_field_type* field = new (&memory[max_size+sizeof(std::size_t)]) tas_lock::internal_field_type;
+					// Attach internal lock field sizeof(ptrdiff_t) bytes after the start of the reserved space
+					tas_lock::internal_field_type* field = new (&memory[max_size+sizeof(std::ptrdiff_t)]) tas_lock::internal_field_type;
 					global_tas_lock = new tas_lock(field);
 
 					// Node0 makes sure that offset points to Argo's starting address

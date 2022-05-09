@@ -115,7 +115,7 @@ TEST_F(PrefetchTest, AccessPrefetched) {
 		 * to be contiguious in both global memory and backing store
 		 */
 		stride = std::min(block_size, load_size);
-		start_page = 0; //first block may already be fetched in init
+		start_page = 0;
 	} else {
 		/*
 		 * For the first touch policiy, at most
@@ -124,7 +124,7 @@ TEST_F(PrefetchTest, AccessPrefetched) {
 		 */
 		stride = (load_size < ((alloc_size/page_size)/num_nodes)) ?
 				load_size : (alloc_size/page_size)/num_nodes - 1;
-		start_page = 0; //First stride may already be fetched in init
+		start_page = 0;
 	}
 	std::size_t end_page = start_page+stride;
 
