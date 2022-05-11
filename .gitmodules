@@ -1,4 +1,4 @@
 [submodule "qd"]
 	path = extern/qd
-	url = ../../davidklaftenegger/qd_library.git
+	url = https://github.com/davidklaftenegger/qd_library.git
 	branch = master
