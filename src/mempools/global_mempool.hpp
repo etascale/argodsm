@@ -65,8 +65,9 @@ namespace argo {
 					tas_lock::internal_field_type* field = new (&memory[max_size+sizeof(std::ptrdiff_t)]) tas_lock::internal_field_type;
 					global_tas_lock = new tas_lock(field);
 
-					// Node0 makes sure that offset points to Argo's starting address
-					if(backend::node_id() == 0){
+					// Home node makes sure that offset points to Argo's starting address
+					global_ptr<char> gptr(&memory[max_size]);
+					if(backend::node_id() == gptr.node()){
 						*offset = static_cast<std::ptrdiff_t>(0);
 					}
 					backend::barrier();
@@ -89,8 +90,10 @@ namespace argo {
 					// Move back one page as the last page is left for internal use
 					max_size = backend::global_size() - reserved;
 
-					// Node0 makes sure that offset points to Argo's starting address
-					if(backend::node_id() == 0){
+					// Home node makes sure that offset points to Argo's starting address
+					using namespace data_distribution;
+					global_ptr<char> gptr(&memory[max_size]);
+					if(backend::node_id() == gptr.node()){
 						*offset = static_cast<std::ptrdiff_t>(0);
 					}
 					backend::barrier();
