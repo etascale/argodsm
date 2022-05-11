@@ -78,25 +78,26 @@ TEST_F(APITest, GetHomeNode) {
 	char* start = argo::backend::global_base();
 	char* end = start + argo::backend::global_size();
 
-	/* Touch an equal number of pages per node */
-	int first_writer = (argo::get_homenode(start)+1) % num_nodes;
-	int my_start = (node_id-first_writer+num_nodes)%num_nodes;
-	for(std::size_t s=page_size*my_start;
+	/* Touch an equal (+/- 1) number of pages per node */
+	for(std::size_t s=page_size*node_id;
 			s<alloc_size-1;
 			s+=page_size*num_nodes) {
 		tmp[s] = c_const;
 	}
 	argo::barrier();
 
-	/* Test that the number of pages owned by each node is equal */
+	/* Test that the number of pages owned by each node is equal (+/- 1) */
 	std::size_t counter = 0;
 	std::vector<std::size_t> node_counters(num_nodes);
 	for(char* c = start; c<end; c+=page_size) {
 		node_counters[argo::get_homenode(c)]++;
 		counter++;
 	}
-	for(std::size_t count : node_counters) {
-		ASSERT_EQ(counter/num_nodes, count);
+	std::size_t pages_per_node = counter/num_nodes;
+	for(std::size_t& count : node_counters) {
+		// The owner of the reserved internal page will own
+		// one more page, some other node will own one less 
+		ASSERT_TRUE((count >= pages_per_node-1) && (count <= pages_per_node+1));
 	}
 }
 

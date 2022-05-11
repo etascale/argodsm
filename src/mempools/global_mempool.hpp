@@ -51,19 +51,24 @@ namespace argo {
 					auto nodes = backend::number_of_nodes();
 					memory = backend::global_base();
 					max_size = backend::global_size();
-					offset = new (&memory[0]) ptrdiff_t;
 					/**@todo this initialization should move to tools::init() land */
 					using namespace data_distribution;
 					base_distribution<0>::set_memory_space(nodes, memory, max_size);
-					using tas_lock = argo::globallock::global_tas_lock;
-					tas_lock::internal_field_type* field = new (&memory[sizeof(std::size_t)]) tas_lock::internal_field_type;
-					global_tas_lock = new tas_lock(field);
-					global_ptr<char> gptr(&memory[0]);
 
-					// The home node of &memory[0] pads offset
-					if(backend::node_id()==gptr.node()){
-						/**@todo if needed - pad offset to be page or pagecache size and make sure offset and flag fits */
-						*offset = static_cast<std::ptrdiff_t>(reserved);
+					// Reset maximum size to the full memory size minus the space reserved for internal use
+					max_size -= reserved;
+					// Attach memory pool offset to the start of the reserved space
+					offset = new (&memory[max_size]) ptrdiff_t;
+
+					using tas_lock = argo::globallock::global_tas_lock;
+					// Attach internal lock field sizeof(ptrdiff_t) bytes after the start of the reserved space
+					tas_lock::internal_field_type* field = new (&memory[max_size+sizeof(std::ptrdiff_t)]) tas_lock::internal_field_type;
+					global_tas_lock = new tas_lock(field);
+
+					// Home node makes sure that offset points to Argo's starting address
+					global_ptr<char> gptr(&memory[max_size]);
+					if(backend::node_id() == gptr.node()){
+						*offset = static_cast<std::ptrdiff_t>(0);
 					}
 					backend::barrier();
 				}
@@ -82,14 +87,14 @@ namespace argo {
 				void reset(){
 					backend::barrier();
 					memory = backend::global_base();
-					max_size = backend::global_size();
-					using namespace data_distribution;
-					global_ptr<char> gptr(&memory[0]);
+					// Move back one page as the last page is left for internal use
+					max_size = backend::global_size() - reserved;
 
-					// The home node of &memory[0] pads offset
-					if(backend::node_id()==gptr.node()){
-						/**@todo if needed - pad offset to be page or pagecache size and make sure offset and flag fits */
-						*offset = static_cast<std::ptrdiff_t>(reserved);
+					// Home node makes sure that offset points to Argo's starting address
+					using namespace data_distribution;
+					global_ptr<char> gptr(&memory[max_size]);
+					if(backend::node_id() == gptr.node()){
+						*offset = static_cast<std::ptrdiff_t>(0);
 					}
 					backend::barrier();
 				}
