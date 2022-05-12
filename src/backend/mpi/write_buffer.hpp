@@ -79,11 +79,13 @@ class write_buffer
 		/** @brief Number of times partially flushed (when full) */
 		std::size_t _partial_flush_count{0};
 
-		/** @brief Time spent flushing the write buffer */
+		/** @brief Statistic of time spent flushing the write buffer */
 		double _flush_time{0};
-		/** @brief Time spent writing back pages from full write buffer */
+		/** @brief Statistic of time spent waiting for the write buffer to be flushed */
+		double _flush_wait_time{0};
+		/** @brief Statistic of time spent writing back pages when adding to a full buffer */
 		double _write_back_time{0};
-		/** @brief Time spent attempting to lock the write buffer */
+		/** @brief Statistic of time spent in the QD lock */
 		double _buffer_lock_time{0};
 
 		/**
@@ -340,6 +342,7 @@ class write_buffer
 			_max_size = other._max_size;
 			_write_back_size = other._write_back_size;
 			_flush_time = other._flush_time;
+			_flush_wait_time = other._flush_wait_time;
 			_write_back_time = other._write_back_time;
 			_buffer_lock_time = other._buffer_lock_time;
 			_page_count = other._page_count;
@@ -362,6 +365,7 @@ class write_buffer
 				_max_size = other._max_size;
 				_write_back_size = other._write_back_size;
 				_flush_time = other._flush_time;
+				_flush_wait_time = other._flush_wait_time;
 				_write_back_time = other._write_back_time;
 				_buffer_lock_time = other._buffer_lock_time;
 				_page_count = other._page_count;
@@ -383,6 +387,7 @@ class write_buffer
 			_max_size = std::move(other._max_size);
 			_write_back_size = std::move(other._write_back_size);
 			_flush_time = std::move(other._flush_time);
+			_flush_wait_time = std::move(other._flush_wait_time);
 			_write_back_time = std::move(other._write_back_time);
 			_buffer_lock_time = std::move(other._buffer_lock_time);
 			_page_count = std::move(other._page_count);
@@ -405,6 +410,7 @@ class write_buffer
 				_max_size = std::move(other._max_size);
 				_write_back_size = std::move(other._write_back_size);
 				_flush_time = std::move(other._flush_time);
+				_flush_wait_time = std::move(other._flush_wait_time);
 				_write_back_time = std::move(other._write_back_time);
 				_buffer_lock_time = std::move(other._buffer_lock_time);
 				_page_count = std::move(other._page_count);
@@ -442,9 +448,13 @@ class write_buffer
 			double t_end = MPI_Wtime();
 
 			// Wait until flush is completed
+			double w_start = MPI_Wtime();
 			while(!w_flag.load(std::memory_order_acquire));
+			double w_end = MPI_Wtime();
+
 			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
 			_buffer_lock_time += t_end - t_start;
+			_flush_wait_time += w_end - w_start;
 		}
 
 		/**
@@ -469,6 +479,15 @@ class write_buffer
 		double get_flush_time() const {
 			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
 			return _flush_time;
+		}
+
+		/**
+		 * @brief	Get the time spent waiting for the buffer to be flushed
+		 * @return	The time in seconds
+		 */
+		double get_flush_wait_time() const {
+			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
+			return _flush_wait_time;
 		}
 
 		/**
@@ -523,6 +542,7 @@ class write_buffer
 		void reset_stats() {
 			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
 			_flush_time = 0;
+			_flush_wait_time = 0;
 			_write_back_time = 0;
 			_buffer_lock_time = 0;
 			_page_count = 0;
