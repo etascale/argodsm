@@ -278,19 +278,12 @@ class write_buffer
 		void _flush(std::atomic<bool>* w_flag) {
 			double t_start = MPI_Wtime();
 
-			// If it's empty we don't need to do anything
-			if(empty()){
-				double t_stop = MPI_Wtime();
-				// Signal that flush is done
-				w_flag->store(true, std::memory_order_release);
-				std::lock_guard<std::mutex> stat_lock(_stat_mutex);
-				_flush_time += t_stop-t_start;
-				return;
+			// If the buffer is not empty, sort it
+			if(!empty()) {
+				sort();
 			}
-			// Otherwise, sort the buffer
-			sort();
 
-			// Continue until the buffer is empty
+			// Write back pagediffs until the buffer is empty
 			while(!empty()) {
 				std::size_t cache_index = pop();
 				const std::uintptr_t page_address = cacheControl[cache_index].tag;
