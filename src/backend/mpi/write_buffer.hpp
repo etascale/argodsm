@@ -74,9 +74,9 @@ class write_buffer
 		/** @brief Mutex to protect reading/writing to the statistics */
 		mutable std::mutex _stat_mutex;
 
-		/** @brief Number of pages added to the write buffer */
+		/** @brief Statistic of the total number of pages added to the write buffer */
 		std::size_t _page_count{0};
-		/** @brief Number of times partially flushed (when full) */
+		/** @brief Statistic of the number of times the write buffer was partially flushed */
 		std::size_t _partial_flush_count{0};
 
 		/** @brief Statistic of time spent flushing the write buffer */
