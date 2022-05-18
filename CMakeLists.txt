@@ -28,6 +28,42 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+# Build with internal RPATH
+set(CMAKE_SKIP_BUILD_RPATH  FALSE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+# Set RPATH for installed libs to point to the lib install dir
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+if("${isSystemDir}" STREQUAL "-1")
+	set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif()
+
+# Attempt to update submodules from Git
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+	# Update submodules as needed
+	option(GIT_SUBMODULE "Check submodules during build" ON)
+	if(GIT_SUBMODULE)
+		message(STATUS "Submodule update")
+		execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive --remote
+			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+			RESULT_VARIABLE GIT_SUBMOD_RESULT)
+		if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+			message(FATAL_ERROR "git submodule update --init --recursive --remote failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+		endif()
+	endif()
+endif()
+
+# Check for presence of QD library submodule
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/qd/CMakeLists.txt")
+	message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
+else()
+	option(QD_TESTS OFF)
+	add_subdirectory(extern/qd)
+	include_directories(extern/qd)
+endif()
+
 include_directories("${PROJECT_SOURCE_DIR}/src")
 add_subdirectory(src)
 
