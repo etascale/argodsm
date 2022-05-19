@@ -980,10 +980,10 @@ void self_invalidation(){
 void self_upgrade(std::size_t upgrade_level) {
 	assert(upgrade_level == 1 || upgrade_level == 2);
 	const std::uint64_t node_id_bit = static_cast<std::uint64_t>(1) << getID();
+	const std::size_t reserved_indices = 2; // The last page is system reserved
 
 	MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
-	// @todo this loop condition should be changed after merging PR#85
-	for(std::size_t i = 2; i < classificationSize; i+=2) {
+	for(std::size_t i = 0; i < classificationSize-reserved_indices; i+=2) {
 		std::size_t page_index = i/2;
 		std::uintptr_t page_addr = page_index*pagesize*CACHELINE;
 		void* global_addr = static_cast<char*>(startAddr) + page_addr;
