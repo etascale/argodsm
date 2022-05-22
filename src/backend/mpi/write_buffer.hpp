@@ -7,12 +7,12 @@
 #ifndef argo_write_buffer_hpp
 #define argo_write_buffer_hpp argo_write_buffer_hpp
 
-#include <deque>
-#include <iterator>
 #include <algorithm>
-#include <mutex>
 #include <atomic>
+#include <iterator>
 #include <mpi.h>
+#include <mutex>
+#include <set>
 
 #include "backend/backend.hpp"
 #include "env/env.hpp"
@@ -56,15 +56,28 @@ template<typename T>
 class write_buffer
 {
 	private:
-		/** @brief This container holds cache indexes that should be written back */
-		std::deque<T> _buffer;
+		/**
+		 * @brief Key comparison function to sort elements by home node id and cache index in
+		 *        ascending order
+		 */
+		static bool comp_key(const T& l, const T& r) {
+			return (get_homenode(l) == get_homenode(r))
+			     ? l < r
+			     : (get_homenode(l)  < get_homenode(r));
+		}
+
+		/** 
+		 * @brief This associative container holds cache indices that should be written back
+		 * @note  Elements in the container are unique
+		 */
+		std::set<T, decltype(comp_key)*> _buffer{comp_key};
 
 		/** @brief The maximum size of the write buffer */
 		std::size_t _max_size;
 
 		/**
 		 * @brief The number of elements to write back once attempting to
-		 * add an element to an already full write buffer.
+		 *        add an element to an already full write buffer.
 		 */
 		std::size_t _write_back_size;
 
@@ -92,7 +105,7 @@ class write_buffer
 		 * @brief	Check if the write buffer is empty
 		 * @return	True if empty, else False
 		 */
-		bool empty() {
+		bool empty() const {
 			return _buffer.empty();
 		}
 
@@ -100,17 +113,8 @@ class write_buffer
 		 * @brief	Get the size of the buffer
 		 * @return	The size of the buffer
 		 */
-		size_t size() {
+		size_t size() const {
 			return _buffer.size();
-		}
-
-		/**
-		 * @brief	Get the buffer element at index i
-		 * @param	i The requested buffer index
-		 * @return	The element at index i of type T
-		 */
-		T at(std::size_t i){
-			return _buffer.at(i);
 		}
 
 		/**
@@ -118,19 +122,17 @@ class write_buffer
 		 * @param	val The value to check for
 		 * @return	True if val exists in the buffer, else False
 		 */
-		bool has(T val) {
-			typename std::deque<T>::iterator it = std::find(_buffer.begin(),
-					_buffer.end(), val);
-			return (it != _buffer.end());
+		bool has(const T& val) const {
+			return (_buffer.find(val) != _buffer.cend());
 		}
 
 		/**
-		 * @brief	Constructs a new element and emplaces it at the back of the buffer
-		 * @param	args Properties of the new element to emplace back
+		 * @brief	Constructs a new element and emplaces it in the buffer
+		 * @param	args Properties of the new element to emplace
 		 */
 		template<typename... Args>
-			void emplace_back( Args&&... args) {
-				_buffer.emplace_back(std::forward<Args>(args)...);
+			void emplace( Args&&... args) {
+				_buffer.emplace(std::forward<Args>(args)...);
 			}
 
 		/**
@@ -138,30 +140,9 @@ class write_buffer
 		 * @return	The element that was popped from the buffer
 		 */
 		T pop() {
-			auto elem = std::move(_buffer.front());
-			_buffer.pop_front();
+			auto node_handle = _buffer.extract(_buffer.begin());
+			T elem = std::move(node_handle.value());
 			return elem;
-		}
-
-		/**
-		 * @brief	Sorts all elements by home node id in ascending order
-		 */
-		void sort() {
-			std::sort(_buffer.begin(), _buffer.end(),
-					[](const T& l, const T& r) {
-				return get_homenode(cacheControl[l].tag) < get_homenode(cacheControl[r].tag);
-			});
-		}
-
-		/**
-		 * @brief	Sorts the first _write_back_size elements by home node id in ascending order
-		 */
-		void sort_first() {
-			assert(_buffer.size() >= _write_back_size);
-			std::sort(_buffer.begin(), _buffer.begin()+_write_back_size,
-					[](const T& l, const T& r) {
-				return get_homenode(cacheControl[l].tag) < get_homenode(cacheControl[r].tag);
-			});
 		}
 
 		/**
@@ -172,8 +153,6 @@ class write_buffer
 		 */
 		void flush_partial() {
 			double t_start = MPI_Wtime();
-			// Sort the first _write_back_size elements
-			sort_first();
 
 			// For each element, handle the corresponding ArgoDSM page
 			for(std::size_t i = 0; i < _write_back_size; i++) {
@@ -222,7 +201,7 @@ class write_buffer
 		 */
 		void _add(T val) {
 			// If already present in the buffer, do nothing
-			if(has(val)){
+			if (has(val)) {
 				return;
 			}
 
@@ -231,8 +210,8 @@ class write_buffer
 				flush_partial();
 			}
 
-			// Add val to the back of the buffer
-			emplace_back(val);
+			// Add val to the buffer
+			emplace(val);
 			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
 			_page_count++;
 		}
@@ -253,10 +232,9 @@ class write_buffer
 		 */
 		void _erase(T val) {
 			// Attempt to get iterator to element equal to val
-			typename std::deque<T>::iterator it =
-				std::find(_buffer.begin(),_buffer.end(), val);
+			const auto it = _buffer.find(val);
 			// If found, erase it
-			if(it != _buffer.end()){
+			if (it != _buffer.cend()) {
 				_buffer.erase(it);
 			}
 		}
@@ -277,11 +255,6 @@ class write_buffer
 		 */
 		void _flush(std::atomic<bool>* w_flag) {
 			double t_start = MPI_Wtime();
-
-			// If the buffer is not empty, sort it
-			if(!empty()) {
-				sort();
-			}
 
 			// Write back pagediffs until the buffer is empty
 			while(!empty()) {
