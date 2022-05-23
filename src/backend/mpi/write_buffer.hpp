@@ -57,20 +57,24 @@ class write_buffer
 {
 	private:
 		/**
-		 * @brief Key comparison function to sort elements by home node id and cache index in
-		 *        ascending order
+		 * @brief Key comparison function to sort elements by home node
+		 *        id and cache index in ascending order
 		 */
-		static bool comp_key(const T& l, const T& r) {
-			return (get_homenode(l) == get_homenode(r))
+		static bool key_cmp(const T& l, const T& r) {
+			const auto l_home = get_homenode(l);
+			const auto r_home = get_homenode(r);
+
+			return l_home == r_home
 			     ? l < r
-			     : (get_homenode(l)  < get_homenode(r));
+			     : l_home  < r_home;
 		}
 
 		/** 
-		 * @brief This associative container holds cache indices that should be written back
+		 * @brief This associative container holds cache indices that
+		 *        should be written back
 		 * @note  Elements in the container are unique
 		 */
-		std::set<T, decltype(comp_key)*> _buffer{comp_key};
+		std::set<T, decltype(key_cmp)*> _buffer{key_cmp};
 
 		/** @brief The maximum size of the write buffer */
 		std::size_t _max_size;
