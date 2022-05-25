@@ -32,18 +32,6 @@ extern argo_statistics stats;
  */
 extern control_data* cacheControl;
 
-/**
- * @brief		MPI Window for the global ArgoDSM memory space
- * @deprecated 	Prototype implementation, this should not be accessed directly
- */
-extern MPI_Win* globalDataWindow;
-
-/**
- * @brief		Tracking of which MPI RDMA windows are open
- * @deprecated 	Prototype implementation, this should not be accessed directly
- */
-extern char* barwindowsused;
-
 /** @brief Block size based on backend definition */
 const std::size_t block_size = page_size*CACHELINE;
 
@@ -190,14 +178,6 @@ class write_buffer
 				for(int i=0; i < CACHELINE; i++){
 					storepageDIFF(cache_index+i,page_size*i+page_address);
 				}
-				// Close any windows used to write back data
-				// This should be replaced with an API call
-				for(int i = 0; i < argo::backend::number_of_nodes(); i++){
-					if(barwindowsused[i] == 1){
-						MPI_Win_unlock(i, globalDataWindow[i]);
-						barwindowsused[i] = 0;
-					}
-				}
 			}
 			double t_end = MPI_Wtime();
 
@@ -295,13 +275,6 @@ class write_buffer
 				cacheControl[cache_index].dirty=CLEAN;
 				for(int i=0; i < CACHELINE; i++){
 					storepageDIFF(cache_index+i,page_size*i+page_address);
-				}
-				// The windows must be unlocked for concurrency
-				for(int i = 0; i < argo::backend::number_of_nodes(); i++){
-					if(barwindowsused[i] == 1){
-						MPI_Win_unlock(i, globalDataWindow[i]);
-						barwindowsused[i] = 0;
-					}
 				}
 			}
 			double t_stop = MPI_Wtime();
