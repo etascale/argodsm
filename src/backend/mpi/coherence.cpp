@@ -31,18 +31,6 @@ extern pthread_mutex_t cachemutex;
  */
 extern sem_t ibsem;
 /**
- * @brief barwindowsused is needed to know which globalDataWindows
- * to close.
- * @deprecated No longer needed once proper API functions are in place
- */
-extern char * barwindowsused;
-/**
- * @brief globalDataWindows need to be explicitly closed by the
- * caller of storepageDIFF
- * @deprecated Should eventually be handled through API functions
- */
-extern MPI_Win *globalDataWindow;
-/**
  * @brief sharerWindow protects the pyxis directory
  * @deprecated Should not be needed once the pyxis directory is
  * managed from elsewhere through a cache module.
@@ -139,13 +127,6 @@ namespace argo {
 					mprotect((char*)start_address + page_address, block_size, PROT_NONE);
 				}
 			}
-			// Make sure to sync writebacks
-			for(int i = 0; i < number_of_nodes(); i++){
-				if(barwindowsused[i] == 1){
-					MPI_Win_unlock(i, globalDataWindow[i]); //Sync write backs
-					barwindowsused[i] = 0;
-				}
-			}
 
 			double t2 = MPI_Wtime();
 			stats.ssitime += t2-t1;
@@ -200,13 +181,6 @@ namespace argo {
 					}
 					argo_write_buffer->erase(cache_index);
 					cacheControl[cache_index].dirty = CLEAN;
-				}
-			}
-			// Make sure to sync writebacks
-			for(int i = 0; i < number_of_nodes(); i++){
-				if(barwindowsused[i] == 1){
-					MPI_Win_unlock(i, globalDataWindow[i]); //Sync write backs
-					barwindowsused[i] = 0;
 				}
 			}
 

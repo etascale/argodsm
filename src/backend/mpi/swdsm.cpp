@@ -79,8 +79,6 @@ int numtasks;
 int rank;
 /** @brief rank/process ID in the MPI/ArgoDSM runtime*/
 argo::node_id_t workrank;
-/** @brief tracking which windows are used for reading and writing global address space*/
-char * barwindowsused;
 /** @brief Semaphore protecting infiniband accesses*/
 /** @todo replace with a (qd?)lock */
 sem_t ibsem;
@@ -340,13 +338,6 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 					storepageDIFF(idx+j,pagesize*j+(cacheControl[idx].tag));
 				}
 				argo_write_buffer->erase(idx);
-			}
-			/* Ensure the writeback has finished */
-			for(int i = 0; i < numtasks; i++){
-				if(barwindowsused[i] == 1){
-					MPI_Win_unlock(i, globalDataWindow[i]);
-					barwindowsused[i] = 0;
-				}
 			}
 
 			/* Clean up cache and protect memory */
@@ -788,11 +779,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	classificationSize = 2*(argo_size/pagesize);
 	argo_write_buffer = new write_buffer<std::size_t>();
 
-	barwindowsused = (char *)malloc(numtasks*sizeof(char));
-	for(argo::node_id_t i = 0; i < numtasks; i++){
-		barwindowsused[i] = 0;
-	}
-
 	int *workranks = (int *) malloc(sizeof(int)*numtasks);
 	int *procranks = (int *) malloc(sizeof(int)*2);
 	int workindex = 0;
@@ -1157,10 +1143,7 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr){
 	char * real = (char *)startAddr+addr;
 	size_t drf_unit = sizeof(char);
 
-	if(barwindowsused[homenode] == 0){
-		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, homenode, 0, globalDataWindow[homenode]);
-		barwindowsused[homenode] = 1;
-	}
+	MPI_Win_lock(MPI_LOCK_EXCLUSIVE, homenode, 0, globalDataWindow[homenode]);
 
 	std::size_t i;
 	for(i = 0; i < pagesize; i+=drf_unit){
@@ -1184,6 +1167,8 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr){
 	if(cnt > 0){
 		MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
 	}
+
+	MPI_Win_unlock(homenode, globalDataWindow[homenode]);
 	stats.stores++;
 }
 
