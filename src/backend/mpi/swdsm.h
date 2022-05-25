@@ -170,7 +170,7 @@ void self_upgrade(argo::backend::upgrade_type upgrade);
  * @param n number of local thread participating
  * @param upgrade the type of classification upgrade to perform
  */
-void argo_barrier(int n, argo::backend::upgrade_type upgrade =
+void swdsm_argo_barrier(int n, argo::backend::upgrade_type upgrade =
 				  argo::backend::upgrade_type::upgrade_none);
 
 /**

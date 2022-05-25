@@ -196,7 +196,7 @@ namespace argo {
 		}
 
 		void barrier(std::size_t tc, upgrade_type upgrade) {
-			argo_barrier(tc, upgrade);
+			swdsm_argo_barrier(tc, upgrade);
 		}
 
 		template<typename T>

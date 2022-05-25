@@ -909,11 +909,11 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 
 void argo_finalize(){
 	int i;
-	argo_barrier(1);
+	swdsm_argo_barrier(1);
 	if(getID() == 0){
 		printf("ArgoDSM shutting down\n");
 	}
-	argo_barrier(1);
+	swdsm_argo_barrier(1);
 	mprotect(startAddr,size_of_all,PROT_WRITE|PROT_READ);
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -1018,7 +1018,7 @@ void self_upgrade(upgrade_type upgrade) {
 	MPI_Win_unlock(workrank, sharerWindow);
 }
 
-void argo_barrier(int n, upgrade_type upgrade){
+void swdsm_argo_barrier(int n, upgrade_type upgrade){
 	pthread_t barrierlockholder;
 	double t1 = MPI_Wtime();
 
@@ -1099,9 +1099,9 @@ void argo_reset_coherence(){
 	}
 
 	sem_post(&ibsem);
-	argo_barrier(1);
+	swdsm_argo_barrier(1);
 	mprotect(startAddr,size_of_all,PROT_NONE);
-	argo_barrier(1);
+	swdsm_argo_barrier(1);
 	clearStatistics();
 }
 
