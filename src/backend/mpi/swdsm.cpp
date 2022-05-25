@@ -983,10 +983,9 @@ void self_upgrade(upgrade_type upgrade) {
 	assert(upgrade == upgrade_type::upgrade_writers ||
 		   upgrade == upgrade_type::upgrade_all);
 	const std::uint64_t node_id_bit = static_cast<std::uint64_t>(1) << getID();
-	const std::size_t reserved_indices = 2; // The last page is system reserved
 
 	MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
-	for(std::size_t i = 0; i < classificationSize-reserved_indices; i+=2) {
+	for(std::size_t i = 0; i < classificationSize; i+=2) {
 		std::size_t page_index = i/2;
 		std::uintptr_t page_addr = page_index*pagesize*CACHELINE;
 		void* global_addr = static_cast<char*>(startAddr) + page_addr;
