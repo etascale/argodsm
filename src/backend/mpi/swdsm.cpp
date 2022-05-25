@@ -18,6 +18,8 @@ namespace vm = argo::virtual_memory;
 namespace sig = argo::signal;
 namespace env = argo::env;
 
+using namespace argo::backend;
+
 /** @brief For matching threads to more sensible thread IDs */
 pthread_t tid[NUM_THREADS] = {0};
 
@@ -977,9 +979,9 @@ void self_invalidation(){
 	stats.selfinvtime += (t2-t1);
 }
 
-void self_upgrade(argo::backend::upgrade_type upgrade) {
-	assert(upgrade == argo::backend::upgrade_type::upgrade_writers ||
-		   upgrade == argo::backend::upgrade_type::upgrade_all);
+void self_upgrade(upgrade_type upgrade) {
+	assert(upgrade == upgrade_type::upgrade_writers ||
+		   upgrade == upgrade_type::upgrade_all);
 	const std::uint64_t node_id_bit = static_cast<std::uint64_t>(1) << getID();
 	const std::size_t reserved_indices = 2; // The last page is system reserved
 
@@ -993,7 +995,7 @@ void self_upgrade(argo::backend::upgrade_type upgrade) {
 		bool is_writer = globalSharers[i+1]&node_id_bit;
 
 		// Reset globalSharers for this page
-		if(upgrade == argo::backend::upgrade_type::upgrade_all) {
+		if(upgrade == upgrade_type::upgrade_all) {
 			globalSharers[i] = 0;
 		}
 		globalSharers[i+1] = 0;
@@ -1001,7 +1003,7 @@ void self_upgrade(argo::backend::upgrade_type upgrade) {
 		// Apply the correct mprotection and cache state
 		if(is_cached) {
 			// Must invalidate all pages upgrading to P
-			if(upgrade == argo::backend::upgrade_type::upgrade_all && is_sharer) {
+			if(upgrade == upgrade_type::upgrade_all && is_sharer) {
 				std::size_t cache_index = getCacheIndex(page_addr);
 				mprotect(global_addr,block_size,PROT_NONE);
 				cacheControl[cache_index].dirty = CLEAN;
@@ -1017,7 +1019,7 @@ void self_upgrade(argo::backend::upgrade_type upgrade) {
 	MPI_Win_unlock(workrank, sharerWindow);
 }
 
-void argo_barrier(int n, argo::backend::upgrade_type upgrade){
+void argo_barrier(int n, upgrade_type upgrade){
 	pthread_t barrierlockholder;
 	double t1 = MPI_Wtime();
 
@@ -1043,7 +1045,7 @@ void argo_barrier(int n, argo::backend::upgrade_type upgrade){
 		self_invalidation();
 
 		// Perform upgrade if requested
-		if(upgrade != argo::backend::upgrade_type::upgrade_none) {
+		if(upgrade != upgrade_type::upgrade_none) {
 			self_upgrade(upgrade);
 			MPI_Barrier(workcomm);
 		}

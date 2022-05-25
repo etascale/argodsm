@@ -20,6 +20,7 @@
 
 namespace vm = argo::virtual_memory;
 namespace sig = argo::signal;
+using namespace argo::backend;
 
 /** @brief a lock for atomically executed operations */
 std::mutex atomic_op_mutex;
@@ -148,7 +149,7 @@ namespace argo {
 			}
 		}
 
-		void barrier(std::size_t threadcount, argo::backend::upgrade_type upgrade) {
+		void barrier(std::size_t threadcount, upgrade_type upgrade) {
 			(void)upgrade;
 			/* initially: flag = false */
 			std::unique_lock<std::mutex> barrier_lock(barrier_mutex);
