@@ -39,25 +39,53 @@ if("${isSystemDir}" STREQUAL "-1")
 	set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 endif()
 
+# Enabling ARGO_TESTS builds both Googletest and the ArgoDSM tests
+option(ARGO_TESTS "Build tests for ArgoDSM" ON)
+
 # Attempt to update submodules from Git
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 	# Update submodules as needed
 	option(GIT_SUBMODULE "Check submodules during build" ON)
 	if(GIT_SUBMODULE)
-		message(STATUS "Submodule update")
-		execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive --remote
+
+		# Update the QD library submodule
+		message(STATUS "Submodule update: extern/qd")
+		execute_process(COMMAND ${GIT_EXECUTABLE} submodule update
+			--init --recursive --remote extern/qd
 			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 			RESULT_VARIABLE GIT_SUBMOD_RESULT)
 		if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-			message(FATAL_ERROR "git submodule update --init --recursive --remote failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+			message(FATAL_ERROR "git submodule update --init --recursive "
+			"--remote extern/qd failed with ${GIT_SUBMOD_RESULT}, "
+			"please checkout submodules")
+		else()
+			message(STATUS "Submodule update: extern/qd - Success")
 		endif()
+
+		# Update the googletest submodule
+		if(ARGO_TESTS)
+			message(STATUS "Submodule update: extern/googletest")
+			execute_process(COMMAND ${GIT_EXECUTABLE} submodule update
+				--init --recursive --remote extern/googletest
+				WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+				RESULT_VARIABLE GIT_SUBMOD_RESULT)
+			if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+				message(FATAL_ERROR "git submodule update --init --recursive "
+				"--remote extern/googletest failed with ${GIT_SUBMOD_RESULT}, "
+				"please checkout submodules")
+			else()
+				message(STATUS "Submodule update: extern/googletest - Success")
+			endif()
+		endif()
+
 	endif()
 endif()
 
 # Check for presence of QD library submodule
 if(NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/qd/CMakeLists.txt")
-	message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
+	message(FATAL_ERROR "The qd submodule was not downloaded! GIT_SUBMODULE "
+	"was turned off or failed. Please update submodules and try again.")
 else()
 	option(QD_TESTS OFF)
 	add_subdirectory(extern/qd)
@@ -67,18 +95,31 @@ endif()
 include_directories("${PROJECT_SOURCE_DIR}/src")
 add_subdirectory(src)
 
+# Set a default number of MPI processes for make test
 set(ARGO_TESTS_NPROCS 2 CACHE STRING "Number of ArgoDSM nodes to execute with make test")
 if(NOT ARGO_TESTS_NPROCS MATCHES "^[1-8]$")
 	message(FATAL_ERROR "ARGO_TESTS_NPROCS must be a number from 1 to 8.")
 endif()
 
-option(ARGO_TESTS
-	"Build tests for ArgoDSM" ON)
+# Check for presence of the Googletests submodule
+if(ARGO_TESTS AND NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/googletest/CMakeLists.txt")
+	message(FATAL_ERROR "The googletest submodule was not downloaded! GIT_SUBMODULE "
+	"was turned off or failed. Please update submodules and try again.")
+endif()
 if(ARGO_TESTS)
 	enable_testing()
+	# GMock is not used, skip building this
+	option(BUILD_GMOCK OFF)
+
+	# Add the googletest dir but exclude it from installation
+	include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+	add_subdirectory(extern/googletest EXCLUDE_FROM_ALL)
+
+	# Add the tests
 	include_directories("${PROJECT_SOURCE_DIR}/tests")
 	add_subdirectory(tests)
-endif(ARGO_TESTS)
+endif()
+
 
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)

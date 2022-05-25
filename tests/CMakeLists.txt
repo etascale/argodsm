@@ -1,7 +1,5 @@
 # Copyright (C) Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
 
-add_subdirectory(googletest)
-include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
 function(forall_backends target)
 	list(REMOVE_AT ARGV 0 )

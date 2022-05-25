@@ -1,4 +1,8 @@
-[submodule "qd"]
+[submodule "extern/qd"]
 	path = extern/qd
 	url = https://github.com/davidklaftenegger/qd_library.git
 	branch = master
+[submodule "extern/googletest"]
+	path = extern/googletest
+	url = https://github.com/google/googletest.git
+	branch = main
