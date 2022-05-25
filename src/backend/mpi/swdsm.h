@@ -33,6 +33,7 @@
 #include <unistd.h>
 
 #include "argo.h"
+#include "backend/backend.hpp"
 
 #ifndef CACHELINE
 /** @brief Size of a ArgoDSM cacheline in number of pages */
@@ -159,23 +160,18 @@ void self_invalidation();
 
 /**
  * @brief Perform upgrade of page classifications
- * @param upgrade_level controls what classifications are upgraded
- * 	- 1 upgrade all pages to at least S
- * 	- 2 upgrade all pages to P
- * @pre upgrade_level must be 1 or 2
+ * @param upgrade the type of classification upgrade to perform
  */
-void self_upgrade(std::size_t upgrade_level);
+void self_upgrade(argo::backend::upgrade_type upgrade);
 
 /**
  * @brief Global barrier for ArgoDSM - needs to be called by every thread in the
  *        system that need coherent view of the memory
  * @param n number of local thread participating
- * @param upgrade_level controls if the barrier should upgrade pages:
- *	- 0 upgrade no pages
- * 	- 1 upgrade all pages to at least S
- * 	- 2 upgrade all pages to P
+ * @param upgrade the type of classification upgrade to perform
  */
-void argo_barrier(int n, std::size_t upgrade_level = 0);
+void argo_barrier(int n, argo::backend::upgrade_type upgrade =
+				  argo::backend::upgrade_type::upgrade_none);
 
 /**
  * @brief acquire function for ArgoDSM (Acquire according to Release Consistency)

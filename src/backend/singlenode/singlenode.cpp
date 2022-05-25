@@ -148,8 +148,8 @@ namespace argo {
 			}
 		}
 
-		void barrier(std::size_t threadcount, std::size_t upgrade_level) {
-			(void)upgrade_level;
+		void barrier(std::size_t threadcount, argo::backend::upgrade_type upgrade) {
+			(void)upgrade;
 			/* initially: flag = false */
 			std::unique_lock<std::mutex> barrier_lock(barrier_mutex);
 			barrier_counter++;

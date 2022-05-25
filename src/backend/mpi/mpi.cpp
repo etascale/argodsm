@@ -195,8 +195,8 @@ namespace argo {
 			argo_reset_coherence();
 		}
 
-		void barrier(std::size_t tc, std::size_t upgrade_level) {
-			argo_barrier(tc, upgrade_level);
+		void barrier(std::size_t tc, upgrade_type upgrade) {
+			argo_barrier(tc, upgrade);
 		}
 
 		template<typename T>

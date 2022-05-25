@@ -8,15 +8,15 @@
 
 namespace argo {
 	void barrier(std::size_t threadcount) {
-		backend::barrier(threadcount, 0);
+		backend::barrier(threadcount, backend::upgrade_type::upgrade_none);
 	}
 
 	void barrier_upgrade_writers(std::size_t threadcount) {
-		backend::barrier(threadcount, 1);
+		backend::barrier(threadcount, backend::upgrade_type::upgrade_writers);
 	}
 
 	void barrier_upgrade_all(std::size_t threadcount) {
-		backend::barrier(threadcount, 2);
+		backend::barrier(threadcount, backend::upgrade_type::upgrade_all);
 	}
 } // namespace argo
 
