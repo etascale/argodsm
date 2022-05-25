@@ -18,6 +18,8 @@ namespace vm = argo::virtual_memory;
 namespace sig = argo::signal;
 namespace env = argo::env;
 
+using namespace argo::backend;
+
 /** @brief For matching threads to more sensible thread IDs */
 pthread_t tid[NUM_THREADS] = {0};
 
@@ -977,35 +979,86 @@ void self_invalidation(){
 	stats.selfinvtime += (t2-t1);
 }
 
-void swdsm_argo_barrier(int n){ //BARRIER
-	double time1,time2;
+void self_upgrade(upgrade_type upgrade) {
+	assert(upgrade == upgrade_type::upgrade_writers ||
+		   upgrade == upgrade_type::upgrade_all);
+	const std::uint64_t node_id_bit = static_cast<std::uint64_t>(1) << getID();
+
+	MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, sharerWindow);
+	for(std::size_t i = 0; i < classificationSize; i+=2) {
+		std::size_t page_index = i/2;
+		std::uintptr_t page_addr = page_index*pagesize*CACHELINE;
+		void* global_addr = static_cast<char*>(startAddr) + page_addr;
+		bool is_cached = _is_cached(reinterpret_cast<std::uintptr_t>(global_addr));
+		bool is_sharer = globalSharers[i]&node_id_bit;
+		bool is_writer = globalSharers[i+1]&node_id_bit;
+
+		// Reset globalSharers for this page
+		if(upgrade == upgrade_type::upgrade_all) {
+			globalSharers[i] = 0;
+		}
+		globalSharers[i+1] = 0;
+
+		// Apply the correct mprotection and cache state
+		if(is_cached) {
+			// Must invalidate all pages upgrading to P
+			if(upgrade == upgrade_type::upgrade_all && is_sharer) {
+				std::size_t cache_index = getCacheIndex(page_addr);
+				mprotect(global_addr,block_size,PROT_NONE);
+				cacheControl[cache_index].dirty = CLEAN;
+				cacheControl[cache_index].state = INVALID;
+				touchedcache[cache_index] = 0;
+			}
+			// Must protect all pages upgrading to S from writes
+			else if(is_writer) {
+				mprotect(global_addr,block_size,PROT_READ);
+			}
+		}
+	}
+	MPI_Win_unlock(workrank, sharerWindow);
+}
+
+void swdsm_argo_barrier(int n, upgrade_type upgrade){
 	pthread_t barrierlockholder;
-	time1 = MPI_Wtime();
+	double t1 = MPI_Wtime();
+
+	// Wait for n threads to arrive
 	pthread_barrier_wait(&threadbarrier[n]);
+
+	// Optimize the single node case
 	if(argo_get_nodes()==1){
-		time2 = MPI_Wtime();
 		stats.barriers++;
-		stats.barriertime += (time2-time1);
+		stats.barriertime += MPI_Wtime() - t1;
 		return;
 	}
 
+	// Let one thread per node perform MPI operations
 	if(pthread_mutex_trylock(&barriermutex) == 0){
 		barrierlockholder = pthread_self();
 		pthread_mutex_lock(&cachemutex);
 		sem_wait(&ibsem);
+
+		// Perform SD followed by SI
 		argo_write_buffer->flush();
 		MPI_Barrier(workcomm);
 		self_invalidation();
+
+		// Perform upgrade if requested
+		if(upgrade != upgrade_type::upgrade_none) {
+			self_upgrade(upgrade);
+			MPI_Barrier(workcomm);
+		}
+
 		sem_post(&ibsem);
 		pthread_mutex_unlock(&cachemutex);
 	}
 
+	// Wait for n threads to arrive
 	pthread_barrier_wait(&threadbarrier[n]);
 	if(pthread_equal(barrierlockholder,pthread_self())){
 		pthread_mutex_unlock(&barriermutex);
-		time2 = MPI_Wtime();
 		stats.barriers++;
-		stats.barriertime += (time2-time1);
+		stats.barriertime += MPI_Wtime() - t1;
 	}
 }
 

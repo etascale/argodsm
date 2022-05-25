@@ -40,6 +40,15 @@ namespace argo {
 
 	namespace backend {
 		/**
+		 * @brief Type of classification upgrade for the barrier operation
+		 */
+		enum class upgrade_type {
+			upgrade_none,	// Don't upgrade anything
+			upgrade_writers,// Upgrade all S-SW/MW to S-NW
+			upgrade_all		// Upgrade all S-NW/SW/MW to P
+		};
+
+		/**
 		 * @brief initialize backend
 		 * @param argo_size the size (in bytes) of the global memory to initialize
 		 * @param cache_size the size (in bytes) of the cache used by ArgoDSM
@@ -108,8 +117,9 @@ namespace argo {
 		/**
 		 * @brief a simple collective barrier
 		 * @param threadcount number of threads on each node that go into the barrier
+		 * @param upgrade the type of classification upgrade to perform
 		 */
-		void barrier(std::size_t threadcount=1);
+		void barrier(std::size_t threadcount=1, upgrade_type upgrade = upgrade_type::upgrade_none);
 
 		/**
 		 * @brief broadcast-style collective synchronization
