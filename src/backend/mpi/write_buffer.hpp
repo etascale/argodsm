@@ -132,52 +132,35 @@ class write_buffer
 		}
 
 		/**
-		 * @brief	Sorts all elements by home node id in ascending order
+		 * @brief	Perform writeback of a single cached page
+		 * @param	cache_index the cache index to write back from
+		 * @pre		Require ibsem and cachemutex to be taken
 		 */
-		void sort() {
-			std::sort(_buffer.begin(), _buffer.end(),
-					[](const T& l, const T& r) {
-				return get_homenode(cacheControl[l].tag) < get_homenode(cacheControl[r].tag);
-			});
-		}
+		void write_back_index(std::size_t cache_index) {
+			assert(cacheControl[cache_index].dirty == DIRTY);
+			std::uintptr_t page_address = cacheControl[cache_index].tag;
+			void* page_ptr = static_cast<char*>(
+				argo::virtual_memory::start_address()) + page_address;
 
-		/**
-		 * @brief	Sorts the first _write_back_size elements by home node id in ascending order
-		 */
-		void sort_first() {
-			assert(_buffer.size() >= _write_back_size);
-			std::sort(_buffer.begin(), _buffer.begin()+_write_back_size,
-					[](const T& l, const T& r) {
-				return get_homenode(cacheControl[l].tag) < get_homenode(cacheControl[r].tag);
-			});
+			// Write back the page
+			mprotect(page_ptr, block_size, PROT_READ);
+			cacheControl[cache_index].dirty = CLEAN;
+			for(std::size_t i = 0; i < CACHELINE; i++){
+				storepageDIFF(cache_index+i, page_size*i+page_address);
+			}
 		}
 
 		/**
 		 * @brief	Flushes first _write_back_size elements of the  ArgoDSM 
 		 * 			write buffer to memory
-		 * @pre		Require ibsem to be taken until parallel MPI
-		 * @pre		Require write_buffer_mutex to be held
+		 * @pre		Require qd_lock to be held
 		 */
 		void flush_partial() {
 			double t_start = MPI_Wtime();
-			// Sort the first _write_back_size elements
-			sort_first();
 
-			// For each element, handle the corresponding ArgoDSM page
+			// For each element, write back the corresponding ArgoDSM page
 			for(std::size_t i = 0; i < _write_back_size; i++) {
-				// The code below should be replaced with a cache API
-				// call to write back a cached page
-				std::size_t cache_index = pop();
-				std::uintptr_t page_address = cacheControl[cache_index].tag;
-				void* page_ptr = static_cast<char*>(
-						argo::virtual_memory::start_address()) + page_address;
-
-				// Write back the page
-				mprotect(page_ptr, block_size, PROT_READ);
-				cacheControl[cache_index].dirty=CLEAN;
-				for(int i=0; i < CACHELINE; i++){
-					storepageDIFF(cache_index+i,page_size*i+page_address);
-				}
+				write_back_index(pop());
 			}
 			double t_end = MPI_Wtime();
 
@@ -199,12 +182,11 @@ class write_buffer
 		/**
 		 * @brief	Internal function to add an element to the write buffer
 		 * @param	val The value of type T to add to the buffer
+		 * @pre		Require qd_lock to be held
 		 */
 		void _add(T val) {
-			// If already present in the buffer, do nothing
-			if(has(val)){
-				return;
-			}
+			// For debug builds, check for duplicate additions
+			assert(!has(val));
 
 			// If the buffer is full, write back _write_back_size indices
 			if(size() >= _max_size){
@@ -258,24 +240,9 @@ class write_buffer
 		void _flush(std::atomic<bool>* w_flag) {
 			double t_start = MPI_Wtime();
 
-			// If the buffer is not empty, sort it
-			if(!empty()) {
-				sort();
-			}
-
 			// Write back pagediffs until the buffer is empty
 			while(!empty()) {
-				std::size_t cache_index = pop();
-				const std::uintptr_t page_address = cacheControl[cache_index].tag;
-				void* page_ptr = static_cast<char*>(
-					argo::virtual_memory::start_address()) + page_address;
-
-				// Write back the page and clean up cache
-				mprotect(page_ptr, block_size, PROT_READ);
-				cacheControl[cache_index].dirty=CLEAN;
-				for(int i=0; i < CACHELINE; i++){
-					storepageDIFF(cache_index+i,page_size*i+page_address);
-				}
+				write_back_index(pop());
 			}
 			double t_stop = MPI_Wtime();
 
