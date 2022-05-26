@@ -145,7 +145,7 @@ class write_buffer
 			// Write back the page
 			mprotect(page_ptr, block_size, PROT_READ);
 			cacheControl[cache_index].dirty = CLEAN;
-			for(int i=0; i < CACHELINE; i++){
+			for(std::size_t i = 0; i < CACHELINE; i++){
 				storepageDIFF(cache_index+i, page_size*i+page_address);
 			}
 		}
