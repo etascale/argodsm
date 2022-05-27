@@ -40,9 +40,7 @@ Note: adjust the below commands to your needs, especially `CMAKE_INSTALL_PREFIX`
 
 ``` bash
 git clone https://github.com/etascale/argodsm.git
-cd argodsm
-mkdir build
-cd build
+cd argodsm && mkdir build && cd build
 cmake -DARGO_BACKEND_MPI=ON              \
       -DARGO_BACKEND_SINGLENODE=ON       \
       -DARGO_TESTS=ON                    \
@@ -61,7 +59,6 @@ the Github repository.
 
 ``` bash
 git clone https://github.com/etascale/argodsm.git
-cd argodsm
 ```
 
 CMake supports building in a separate folder. This is recommended for two
@@ -69,8 +66,7 @@ reasons. First of all, it makes cleaning up much easier. Second, it allows for
 different builds with different configurations to exist in parallel.
 
 ``` bash
-mkdir build
-cd build
+cd argodsm && mkdir build && cd build
 ```
 
 In order to generate the makefiles with CMake, you can use either the `cmake` or
@@ -182,4 +178,3 @@ See [Code Style](code-style.html)
 ### Code Review Process
 
 See [Code Style](code-style.html)
-
