@@ -22,6 +22,12 @@ you are running at least version 1.8.4. Installing OpenMPI is [fairly
 easy](https://www.open-mpi.org/faq/?category=building#easy-build), but you
 should contact your system administrator if you are uncertain about it.
 
+ArgoDSM depends on the
+[C++ QD Locking Library](https://github.com/davidklaftenegger/qd_library).
+This is included as a git submodule and is built automatically by CMake,
+requiring both git and an internet connection. For instructions on how to build
+offline, see [building ArgoDSM offline](#Building-ArgoDSM-offline).
+
 Additionally, ArgoDSM requires `libnuma` to detect whether it is running on top
 of NUMA systems, and if so how they are structured internally.
 
@@ -34,15 +40,7 @@ Note: adjust the below commands to your needs, especially `CMAKE_INSTALL_PREFIX`
 
 ``` bash
 git clone https://github.com/etascale/argodsm.git
-cd argodsm
-cd tests
-wget https://github.com/google/googletest/archive/release-1.11.0.zip
-unzip release-1.11.0.zip
-mv googletest-release-1.11.0 googletest
-rm release-1.11.0.zip
-cd ..
-mkdir build
-cd build
+cd argodsm && mkdir build && cd build
 cmake -DARGO_BACKEND_MPI=ON              \
       -DARGO_BACKEND_SINGLENODE=ON       \
       -DARGO_TESTS=ON                    \
@@ -56,25 +54,11 @@ make test
 make install
 ```
 
-Initially, you need to get the ArgoDSM sources. If you already have a tarball,
-you can skip this step and just extract its contents. Otherwise, if you have
-access to it, you can get the latest code from the Github repository.
+Initially, you need to get the ArgoDSM sources. You can get the latest code from
+the Github repository.
 
 ``` bash
 git clone https://github.com/etascale/argodsm.git
-cd argodsm
-```
-
-If you are planning on building the ArgoDSM tests (recommended), you also need
-the [googletest](https://github.com/google/googletest/) framework. Extract it
-into the `tests` folder, and make sure that its folder is named `googletest`.
-
-``` bash
-cd tests
-wget https://github.com/google/googletest/archive/release-1.11.0.zip
-unzip release-1.11.0.zip
-mv googletest-release-1.11.0 googletest
-cd ..
 ```
 
 CMake supports building in a separate folder. This is recommended for two
@@ -82,8 +66,7 @@ reasons. First of all, it makes cleaning up much easier. Second, it allows for
 different builds with different configurations to exist in parallel.
 
 ``` bash
-mkdir build
-cd build
+cd argodsm && mkdir build && cd build
 ```
 
 In order to generate the makefiles with CMake, you can use either the `cmake` or
@@ -94,6 +77,11 @@ arguments. If you plan on contributing to the ArgoDSM source code, you should
 also enable the `ARGO_DEBUG` option. Remember to change `CMAKE_INSTALL_PREFIX`
 to a path that you have write access to. After generating the makefiles proceed
 to building the library and executables with a simple make command.
+
+If you are planning on building the ArgoDSM tests (recommended), CMake will
+automatically include the [googletest](https://github.com/google/googletest/)
+framework as a submodule and build this as part of the project. To disable
+building googletest and the ArgoDSM test suite, set `ARGO_TESTS=OFF`.
 
 ``` bash
 cmake -DARGO_BACKEND_MPI=ON              \
@@ -172,6 +160,15 @@ We **strongly recommend** running all of the MPI tests on at least two nodes
 before continueing working with ArgoDSM, to ensure that your system is
 configured properly and also that it is fully supported by ArgoDSM.
 
+### Building ArgoDSM offline
+If you are building ArgoDSM in an **offline** environment, submodules will first
+have to be updated in an online environment. This can be done either by running
+CMake, manually executing `git submodule update --init --recursive` or using
+`git clone --recurse-submodules https://github.com/etascale/argodsm.git` to clone
+the ArgoDSM repository. Once submodules are updated, your ArgoDSM directory can
+safely be moved to the offline environment. Finally, before building offline,
+set `GIT_SUBMODULE=OFF` in CMake.
+
 ## Contributing to ArgoDSM
 
 If you are interested in contributing to ArgoDSM, do not hesitate to contact us.
@@ -184,4 +181,3 @@ See [Code Style](code-style.html)
 ### Code Review Process
 
 See [Code Style](code-style.html)
-
