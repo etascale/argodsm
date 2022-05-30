@@ -42,54 +42,46 @@ endif()
 # Enabling ARGO_TESTS builds both Googletest and the ArgoDSM tests
 option(ARGO_TESTS "Build tests for ArgoDSM" ON)
 
+# Directory containing submodules
+# Changing this requires running 'git mv old/submodule new/submodule´ for each submodule
+set(SUBMODULES_DIR submodules)
+
+# Function performing submodule update
+function(submodule_update submodule)
+	message(STATUS "Submodule update: ${SUBMODULES_DIR}/${submodule}")
+	execute_process(COMMAND ${GIT_EXECUTABLE} submodule update
+		--init --recursive --remote ${SUBMODULES_DIR}/${submodule}
+		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+		RESULT_VARIABLE GIT_SUBMOD_RESULT)
+	if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+		message(FATAL_ERROR "git submodule update --init --recursive "
+			"--remote ${SUBMODULES_DIR}/${submodule} failed with ${GIT_SUBMOD_RESULT}, "
+			"please checkout submodules")
+	else()
+		message(STATUS "Submodule update: ${SUBMODULES_DIR}/${submodule} - Success")
+	endif()
+endfunction()
+
 # Attempt to update submodules from Git
 find_package(Git QUIET)
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 	# Update submodules as needed
 	option(GIT_SUBMODULE "Check submodules during build" ON)
 	if(GIT_SUBMODULE)
-
-		# Update the QD library submodule
-		message(STATUS "Submodule update: extern/qd")
-		execute_process(COMMAND ${GIT_EXECUTABLE} submodule update
-			--init --recursive --remote extern/qd
-			WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-			RESULT_VARIABLE GIT_SUBMOD_RESULT)
-		if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-			message(FATAL_ERROR "git submodule update --init --recursive "
-			"--remote extern/qd failed with ${GIT_SUBMOD_RESULT}, "
-			"please checkout submodules")
-		else()
-			message(STATUS "Submodule update: extern/qd - Success")
-		endif()
-
-		# Update the googletest submodule
-		if(ARGO_TESTS)
-			message(STATUS "Submodule update: extern/googletest")
-			execute_process(COMMAND ${GIT_EXECUTABLE} submodule update
-				--init --recursive --remote extern/googletest
-				WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-				RESULT_VARIABLE GIT_SUBMOD_RESULT)
-			if(NOT GIT_SUBMOD_RESULT EQUAL "0")
-				message(FATAL_ERROR "git submodule update --init --recursive "
-				"--remote extern/googletest failed with ${GIT_SUBMOD_RESULT}, "
-				"please checkout submodules")
-			else()
-				message(STATUS "Submodule update: extern/googletest - Success")
-			endif()
-		endif()
-
+		# Update submodules
+		submodule_update(qd)
+		submodule_update(googletest)
 	endif()
 endif()
 
 # Check for presence of QD library submodule
-if(NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/qd/CMakeLists.txt")
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/${SUBMODULES_DIR}/qd/CMakeLists.txt")
 	message(FATAL_ERROR "The qd submodule was not downloaded! GIT_SUBMODULE "
 	"was turned off or failed. Please update submodules and try again.")
 else()
 	option(QD_TESTS OFF)
-	add_subdirectory(extern/qd)
-	include_directories(extern/qd)
+	add_subdirectory(${SUBMODULES_DIR}/qd)
+	include_directories(${SUBMODULES_DIR}/qd)
 endif()
 
 include_directories("${PROJECT_SOURCE_DIR}/src")
@@ -102,7 +94,7 @@ if(NOT ARGO_TESTS_NPROCS MATCHES "^[1-8]$")
 endif()
 
 # Check for presence of the Googletests submodule
-if(ARGO_TESTS AND NOT EXISTS "${PROJECT_SOURCE_DIR}/extern/googletest/CMakeLists.txt")
+if(ARGO_TESTS AND NOT EXISTS "${PROJECT_SOURCE_DIR}/${SUBMODULES_DIR}/googletest/CMakeLists.txt")
 	message(FATAL_ERROR "The googletest submodule was not downloaded! GIT_SUBMODULE "
 	"was turned off or failed. Please update submodules and try again.")
 endif()
@@ -113,7 +105,7 @@ if(ARGO_TESTS)
 
 	# Add the googletest dir but exclude it from installation
 	include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
-	add_subdirectory(extern/googletest EXCLUDE_FROM_ALL)
+	add_subdirectory(${SUBMODULES_DIR}/googletest EXCLUDE_FROM_ALL)
 
 	# Add the tests
 	include_directories("${PROJECT_SOURCE_DIR}/tests")
