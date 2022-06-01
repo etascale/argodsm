@@ -5,8 +5,8 @@
  * @note not intended for production use
  */
 
-#ifndef argo_dummy_mempool_hpp
-#define argo_dummy_mempool_hpp argo_dummy_mempool_hpp
+#ifndef SRC_MEMPOOLS_DUMMY_MEMPOOL_HPP_
+#define SRC_MEMPOOLS_DUMMY_MEMPOOL_HPP_
 
 namespace argo {
 	/**
@@ -62,4 +62,4 @@ namespace argo {
 	};
 } // namespace argo
 
-#endif /* argo_dummy_mempool_hpp */
+#endif // SRC_MEMPOOLS_DUMMY_MEMPOOL_HPP_

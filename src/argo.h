@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_argo_h
-#define argo_argo_h argo_argo_h
+#ifndef SRC_ARGO_H_
+#define SRC_ARGO_H_
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -72,4 +72,4 @@ int argo_get_homenode(void* addr);
  */
 size_t argo_get_block_size();
 
-#endif /* argo_argo_h */
+#endif // SRC_ARGO_H_

@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_skew_mapp_distribution_hpp
-#define argo_skew_mapp_distribution_hpp argo_skew_mapp_distribution_hpp
+#ifndef SRC_DATA_DISTRIBUTION_SKEW_MAPP_DISTRIBUTION_HPP_
+#define SRC_DATA_DISTRIBUTION_SKEW_MAPP_DISTRIBUTION_HPP_
 
 #include "base_distribution.hpp"
 
@@ -59,4 +59,4 @@ namespace argo {
 	} // namespace data_distribution
 } // namespace argo
 
-#endif /* argo_skew_mapp_distribution_hpp */
+#endif // SRC_DATA_DISTRIBUTION_SKEW_MAPP_DISTRIBUTION_HPP_

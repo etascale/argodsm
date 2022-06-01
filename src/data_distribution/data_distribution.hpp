@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_data_distribution_hpp
-#define argo_data_distribution_hpp argo_data_distribution_hpp
+#ifndef SRC_DATA_DISTRIBUTION_DATA_DISTRIBUTION_HPP_
+#define SRC_DATA_DISTRIBUTION_DATA_DISTRIBUTION_HPP_
 
 #include "base_distribution.hpp"
 #include "naive_distribution.hpp"
@@ -138,9 +138,9 @@ namespace argo {
 			std::size_t requested_block_size = env::allocation_block_size();
 			if(is_cyclic_policy()) {
 				return requested_block_size*granularity;
-			}else if(is_first_touch_policy()) {
+			} else if(is_first_touch_policy()) {
 				return granularity;
-			}else {
+			} else {
 				return base_distribution<0>::get_size_per_node();
 			}
 		}
@@ -172,16 +172,13 @@ namespace argo {
 				 */
 				long translate_virtual_to_global(void* address){
 
-					if(static_cast<char*>(address) == NULL){
+					if(static_cast<char*>(address) == NULL)
 						throw std::runtime_error("ArgoDSM - NULL pointer exception");
-					}
 					else if(	 static_cast<char*>(address) < start_address
-										 || static_cast<char*>(address) >= (start_address + memory_size)){
+										 || static_cast<char*>(address) >= (start_address + memory_size))
 						throw std::runtime_error("ArgoDSM - Pointer out of bounds exception");
-					}
-					else{
+					else
 						return static_cast<char*>(address) - start_address;
-					}
 				}
 
 				/** @todo Documentation */
@@ -206,4 +203,4 @@ namespace argo {
 	} // namespace data_distribution
 } // namespace argo
 
-#endif /* argo_data_distribution_hpp */
+#endif // SRC_DATA_DISTRIBUTION_DATA_DISTRIBUTION_HPP_

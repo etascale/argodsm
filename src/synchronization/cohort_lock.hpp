@@ -5,21 +5,12 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_cohort_lock_hpp
-#define argo_cohort_lock_hpp argo_cohort_lock_hpp
+#ifndef SRC_SYNCHRONIZATION_COHORT_LOCK_HPP_
+#define SRC_SYNCHRONIZATION_COHORT_LOCK_HPP_
 
-#include "../allocators/collective_allocator.hpp"
-#include "../backend/backend.hpp"
-#include "../data_distribution/data_distribution.hpp"
-#include "global_tas_lock.hpp"
-#include "intranode/mcs_lock.hpp"
-#include "intranode/ticket_lock.hpp"
-
-#include <vector>
-
+// C headers
 #include <sched.h>
 #include <unistd.h>
-
 #ifdef ARGO_USE_LIBNUMA
 #include <numa.h>
 #endif
@@ -27,6 +18,16 @@
 extern "C" {
 #include "cohort_lock.h"
 }
+
+// C++ headers
+#include <vector>
+
+#include "../allocators/collective_allocator.hpp"
+#include "../backend/backend.hpp"
+#include "../data_distribution/data_distribution.hpp"
+#include "global_tas_lock.hpp"
+#include "intranode/mcs_lock.hpp"
+#include "intranode/ticket_lock.hpp"
 
 namespace argo {
 	namespace globallock {
@@ -155,8 +156,7 @@ namespace argo {
 					/* Check if we can hand over the lock locally */
 					if(local_lock[node].is_contended() && handovers[node] < MAX_HANDOVER){
 						handovers[node]++;
-					}
-					else{
+					}else{
 						/* Cant hand over locally in the NUMA node - releases the NUMA lock */
 						handovers[node] = 0;
 						nodelockowner = NO_OWNER;
@@ -165,8 +165,7 @@ namespace argo {
 						if(node_lock->is_contended() && numahandover < MAX_HANDOVER_NODELOCK){
 							/* Hand over to another NUMA node */
 							numahandover++;
-						}
-						else{
+						}else{
 							/* hand over to another ArgoDSM node */
 							has_global_lock = false;
 							numahandover = 0;
@@ -202,4 +201,4 @@ namespace argo {
 	} // namespace globallock
 } // namespace argo
 
-#endif /* argo_cohort_lock_hpp */
+#endif // SRC_SYNCHRONIZATION_COHORT_LOCK_HPP_

@@ -70,8 +70,7 @@ namespace argo {
 					MPI_Win_unlock(node_id, sharerWindow);
 					touchedcache[cache_index] = 1;
 					//nothing - we keep the pages, SD is done in flushWB
-				}
-				else{ //multiple writer or SO, invalidate the page
+				}else{ //multiple writer or SO, invalidate the page
 					MPI_Win_unlock(node_id, sharerWindow);
 					cacheControl[cache_index].dirty = CLEAN;
 					cacheControl[cache_index].state = INVALID;

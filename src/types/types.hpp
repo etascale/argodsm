@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_types_types_hpp
-#define argo_types_types_hpp argo_types_types_hpp
+#ifndef SRC_TYPES_TYPES_HPP_
+#define SRC_TYPES_TYPES_HPP_
 
 namespace argo {
 	/** @brief ArgoDSM node identifier type */
@@ -19,4 +19,4 @@ namespace argo {
 
 } // namespace argo
 
-#endif /* argo_types_types_hpp */
+#endif // SRC_TYPES_TYPES_HPP_

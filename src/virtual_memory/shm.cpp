@@ -4,26 +4,27 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#include <cerrno>
-#include <cstddef>
-#include <cstdlib>
+// C headers
 #include <fcntl.h>
-#include <iostream>
-#include <string>
+#include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/types.h>
-#include <system_error>
-#include <unistd.h>
+// C++ headers
+#include <cerrno>
+#include <cstddef>
+#include <cstdlib>
+#include <iostream>
+#include <string>
 #include "virtual_memory.hpp"
 
 namespace {
 	/* file constants */
 	/** @todo hardcoded start address */
-	const char* ARGO_START = (char*) 0x200000000000l;
+	const char* ARGO_START = reinterpret_cast<char*>(0x200000000000l);
 	/** @todo hardcoded end address */
-	const char* ARGO_END   = (char*) 0x600000000000l;
+	const char* ARGO_END   = reinterpret_cast<char*>(0x600000000000l);
 	/** @todo hardcoded size */
 	const ptrdiff_t ARGO_SIZE = ARGO_END - ARGO_START;
 	/** @todo hardcoded maximum size */
@@ -43,7 +44,7 @@ namespace {
 	void* start_addr;
 	/** @brief the size of the ArgoDSM virtual address space */
 	std::size_t avail;
-}
+} // namespace
 
 namespace argo {
 	namespace virtual_memory {

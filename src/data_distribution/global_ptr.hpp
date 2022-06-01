@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_global_ptr_hpp
-#define argo_global_ptr_hpp argo_global_ptr_hpp
+#ifndef SRC_DATA_DISTRIBUTION_GLOBAL_PTR_HPP_
+#define SRC_DATA_DISTRIBUTION_GLOBAL_PTR_HPP_
 
 #include <string>
 
@@ -170,4 +170,4 @@ namespace argo {
 	} // namespace data_distribution
 } // namespace argo
 
-#endif /* argo_global_ptr_hpp */
+#endif // SRC_DATA_DISTRIBUTION_GLOBAL_PTR_HPP_

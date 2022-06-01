@@ -4,10 +4,10 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_allocators_h
-#define argo_allocators_h argo_allocators_h
+#ifndef SRC_ALLOCATORS_ALLOCATORS_H_
+#define SRC_ALLOCATORS_ALLOCATORS_H_
 
 #include "collective_allocator.h"
 #include "dynamic_allocator.h"
 
-#endif /* argo_allocators_h */
+#endif // SRC_ALLOCATORS_ALLOCATORS_H_

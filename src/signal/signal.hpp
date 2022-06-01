@@ -4,13 +4,15 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_signal_signal_hpp
-#define argo_signal_signal_hpp argo_signal_signal_hpp
+#ifndef SRC_SIGNAL_SIGNAL_HPP_
+#define SRC_SIGNAL_SIGNAL_HPP_
 
+// C headers
+#include <signal.h>
+// C++ headers
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include <signal.h>
 
 #include "virtual_memory/virtual_memory.hpp"
 
@@ -132,7 +134,7 @@ namespace argo {
 		};
 		template<int S> handler_ftype signal_handler<S>::argo_handler = nullptr;
 		template<int S> sig_handler signal_handler<S>::application_handler;
-	}
-}
+	} // namespace signal
+} // namespace argo
 
-#endif // argo_signal_signal_hpp
+#endif // SRC_SIGNAL_SIGNAL_HPP_

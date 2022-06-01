@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_dynamic_mempool_hpp
-#define argo_dynamic_mempool_hpp argo_dynamic_mempool_hpp
+#ifndef SRC_MEMPOOLS_DYNAMIC_MEMPOOL_HPP_
+#define SRC_MEMPOOLS_DYNAMIC_MEMPOOL_HPP_
 
 #include "../backend/backend.hpp"
 #include "../synchronization/broadcast.hpp"
@@ -174,4 +174,4 @@ namespace argo {
 	} // namespace mempools
 } // namespace argo
 
-#endif /* argo_dynamic_mempool_hpp */
+#endif // SRC_MEMPOOLS_DYNAMIC_MEMPOOL_HPP_

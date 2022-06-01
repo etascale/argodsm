@@ -5,6 +5,7 @@
  */
 #include<cstddef>
 #include<vector>
+#include<algorithm>
 
 #include "env/env.hpp"
 #include "signal/signal.hpp"
@@ -491,8 +492,7 @@ void handler(int sig, siginfo_t *si, void *context){
 				}
 				if(owner == workrank){
 					throw "bad owner in local access";
-				}
-				else{
+				}else{
 					/* update remote private holder to shared */
 					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
 					MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx, 1, MPI_LONG, MPI_BOR, sharerWindow);
@@ -503,8 +503,7 @@ void handler(int sig, siginfo_t *si, void *context){
 			/** @todo Set cache offset to a variable instead of calculating it here */
 			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ);
 
-		}
-		else{
+		}else{
 			/* Do not register as writer if this is a confirmed read miss */
 			if(miss_type == sig::access_type::read) {
 				sem_post(&ibsem);
@@ -531,13 +530,14 @@ void handler(int sig, siginfo_t *si, void *context){
 				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
 				MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1, 1, MPI_LONG, MPI_BOR, sharerWindow);
 				MPI_Win_unlock(owner, sharerWindow);
-			}
-			else if(writers == id || writers == 0){
-				for(argo::node_id_t n = 0; n < numtasks; n++){
-					if(n != workrank && ((static_cast<std::uint64_t>(1) << n)&sharers) != 0){
-						MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
-						MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1, 1, MPI_LONG, MPI_BOR, sharerWindow);
-						MPI_Win_unlock(n, sharerWindow);
+			}else{
+				if(writers == id || writers == 0){
+					for(argo::node_id_t n = 0; n < numtasks; n++){
+						if(n != workrank && ((static_cast<std::uint64_t>(1) << n)&sharers) != 0){
+							MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
+							MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1, 1, MPI_LONG, MPI_BOR, sharerWindow);
+							MPI_Win_unlock(n, sharerWindow);
+						}
 					}
 				}
 			}
@@ -888,8 +888,7 @@ void self_invalidation(){
 				MPI_Win_unlock(workrank, sharerWindow);
 				touchedcache[i] = 1;
 				/*nothing - we keep the pages, SD is done in flushWB*/
-			}
-			else{ //multiple writer or SO
+			}else{ //multiple writer or SO
 				MPI_Win_unlock(workrank, sharerWindow);
 				cacheControl[i].dirty = CLEAN;
 				cacheControl[i].state = INVALID;
@@ -931,10 +930,10 @@ void self_upgrade(upgrade_type upgrade) {
 				cacheControl[cache_index].dirty = CLEAN;
 				cacheControl[cache_index].state = INVALID;
 				touchedcache[cache_index] = 0;
-			}
-			// Must protect all pages upgrading to S from writes
-			else if(is_writer) {
-				mprotect(global_addr, block_size, PROT_READ);
+			}else{ // Must protect all pages upgrading to S from writes
+				if(is_writer) {
+					mprotect(global_addr, block_size, PROT_READ);
+				}
 			}
 		}
 	}

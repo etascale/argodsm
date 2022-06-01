@@ -4,20 +4,22 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_global_mempool_hpp
-#define argo_global_mempool_hpp argo_global_mempool_hpp
+#ifndef SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_
+#define SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_
 
 /** @todo Documentation */
 constexpr int PAGESIZE = 4096;
 
+// C headers
+#include <stdlib.h>
+#include <sys/mman.h>
+// C++ headers
+#include <memory>
+#include <iostream>
+
 #include "../backend/backend.hpp"
 #include "../synchronization/global_tas_lock.hpp"
 #include "../data_distribution/global_ptr.hpp"
-
-#include <sys/mman.h>
-#include <memory>
-#include <iostream>
-#include <stdlib.h>
 
 namespace argo {
 	namespace mempools {
@@ -77,7 +79,7 @@ namespace argo {
 				~global_memory_pool(){
 					delete global_tas_lock;
 					backend::finalize();
-				};
+				}
 
 				/**
 				 *@brief  Resets the memory pool to the initial state instead of de-allocating and (re)allocating all buffers again.
@@ -143,4 +145,4 @@ namespace argo {
 	} // namespace mempools
 } // namespace argo
 
-#endif /* argo_global_mempool_hpp */
+#endif // SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_

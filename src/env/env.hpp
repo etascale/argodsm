@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_env_env_hpp
-#define argo_env_env_hpp argo_env_env_hpp
+#ifndef SRC_ENV_ENV_HPP_
+#define SRC_ENV_ENV_HPP_
 
 #include <cstddef>
 
@@ -113,4 +113,4 @@ namespace argo {
 	} // namespace env
 } // namespace argo
 
-#endif
+#endif // SRC_ENV_ENV_HPP_

@@ -4,12 +4,12 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_base_distribution_hpp
-#define argo_base_distribution_hpp argo_base_distribution_hpp
+#ifndef SRC_DATA_DISTRIBUTION_BASE_DISTRIBUTION_HPP_
+#define SRC_DATA_DISTRIBUTION_BASE_DISTRIBUTION_HPP_
 
+#include <string>
 #include <cstdlib>
 #include <iostream>
-#include <system_error>
 
 #include "../types/types.hpp"
 
@@ -142,4 +142,4 @@ namespace argo {
 	} // namespace data_distribution
 } // namespace argo
 
-#endif /* argo_base_distribution_hpp */
+#endif // SRC_DATA_DISTRIBUTION_BASE_DISTRIBUTION_HPP_

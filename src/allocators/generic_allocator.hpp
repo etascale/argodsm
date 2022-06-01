@@ -16,8 +16,8 @@
  * memory pool is thread-safe (or safety is otherwise guaranteed).
  */
 
-#ifndef argo_generic_allocator_hpp
-#define argo_generic_allocator_hpp argo_generic_allocator_hpp
+#ifndef SRC_ALLOCATORS_GENERIC_ALLOCATOR_HPP_
+#define SRC_ALLOCATORS_GENERIC_ALLOCATOR_HPP_
 
 #include <map>
 #include <stack>
@@ -121,7 +121,7 @@ namespace argo {
 			static_assert(!synchronize || !no_synchronize, "Conflicting parameters");
 		};
 
-    } // namespace internal
+	} // namespace _internal
 
 	namespace allocators {
 
@@ -199,7 +199,7 @@ namespace argo {
 				 * @brief Construct allocator for a memory pool
 				 * @param mp The memory pool to allocate from
 				 */
-				generic_allocator(MemoryPool* mp)
+				explicit generic_allocator(MemoryPool* mp)
 					: mempool(mp), lock(new LockType), allocation_size(), freelist() {}
 
 				/**
@@ -302,4 +302,4 @@ namespace argo {
 	} // namespace allocators
 } // namespace argo
 
-#endif /* generic_allocator_hpp */
+#endif // SRC_ALLOCATORS_GENERIC_ALLOCATOR_HPP_

@@ -4,10 +4,11 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_first_touch_distribution_hpp
-#define argo_first_touch_distribution_hpp argo_first_touch_distribution_hpp
+#ifndef SRC_DATA_DISTRIBUTION_FIRST_TOUCH_DISTRIBUTION_HPP_
+#define SRC_DATA_DISTRIBUTION_FIRST_TOUCH_DISTRIBUTION_HPP_
 
 #include <mutex>
+#include <string>
 
 #include "base_distribution.hpp"
 
@@ -71,7 +72,7 @@ namespace argo {
 #define is_one_equal_to(arr, val) (((arr[0] == val) || (arr[1] == val) || (arr[2] == val)) ? 1 : 0)
 
 /** @brief error message string */
-static const std::string msg_first_touch_fail = "ArgoDSM failed to find a backing node. Please report a bug.";
+static const char msg_first_touch_fail[] = "ArgoDSM failed to find a backing node. Please report a bug.";
 
 namespace argo {
 	namespace data_distribution {
@@ -321,4 +322,4 @@ namespace argo {
 	} // namespace data_distribution
 } // namespace argo
 
-#endif /* argo_first_touch_distribution_hpp */
+#endif // SRC_DATA_DISTRIBUTION_FIRST_TOUCH_DISTRIBUTION_HPP_

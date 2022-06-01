@@ -6,13 +6,10 @@
  * @warning do not rely on functions from this file
  */
 
-#ifndef argo_swdsm_h
-#define argo_swdsm_h argo_swdsm_h
+#ifndef SRC_BACKEND_MPI_SWDSM_H_
+#define SRC_BACKEND_MPI_SWDSM_H_
 
-/* Includes */
-#include <cstdint>
-#include <type_traits>
-
+// C headers
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -31,6 +28,9 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+// C++ headers
+#include <cstdint>
+#include <type_traits>
 
 #include "argo.h"
 #include "backend/backend.hpp"
@@ -411,5 +411,4 @@ std::size_t get_classification_index(std::uintptr_t addr);
  * @todo This should be moved in to a dedicated cache class
  */
 bool _is_cached(std::uintptr_t addr);
-#endif /* argo_swdsm_h */
-
+#endif // SRC_BACKEND_MPI_SWDSM_H_

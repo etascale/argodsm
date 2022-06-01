@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_allocators_hpp
-#define argo_allocators_hpp argo_allocators_hpp
+#ifndef SRC_ALLOCATORS_ALLOCATORS_HPP_
+#define SRC_ALLOCATORS_ALLOCATORS_HPP_
 
 #include "collective_allocator.hpp"
 #include "dynamic_allocator.hpp"
@@ -17,4 +17,4 @@ namespace argo {
 	namespace allocators { }
 } // namespace argo
 
-#endif /* argo_allocators_hpp */
+#endif // SRC_ALLOCATORS_ALLOCATORS_HPP_

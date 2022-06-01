@@ -4,15 +4,18 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_write_buffer_hpp
-#define argo_write_buffer_hpp argo_write_buffer_hpp
+#ifndef SRC_BACKEND_MPI_WRITE_BUFFER_HPP_
+#define SRC_BACKEND_MPI_WRITE_BUFFER_HPP_
 
+#include <mpi.h>
+#include <atomic>
+#include <algorithm>
 #include <deque>
 #include <iterator>
-#include <algorithm>
 #include <mutex>
-#include <atomic>
-#include <mpi.h>
+#include <utility>
+
+#include "swdsm.h"
 
 #include "backend/backend.hpp"
 #include "env/env.hpp"
@@ -471,4 +474,4 @@ class write_buffer
 
 }; //class
 
-#endif /* argo_write_buffer_hpp */
+#endif // SRC_BACKEND_MPI_WRITE_BUFFER_HPP_
