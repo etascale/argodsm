@@ -29,7 +29,7 @@ namespace argo {
 			 * @brief Default constructor: initializes memory on heap and sets offset to 0
 			 * @param size The amount of memory in the pool
 			 */
-			memory_pool(std::size_t size) : memory(new char[size]), max_size(size), offset{0} {}
+			explicit memory_pool(std::size_t size) : memory(new char[size]), max_size(size), offset{0} {}
 
 			/**
 			 * @brief Reserve more memory
