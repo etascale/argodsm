@@ -16,8 +16,8 @@
 #include <malloc.h>
 #include <math.h>
 #include <mpi.h>
-#include <pthread.h>
 #include <omp.h>
+#include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
 #include <stdio.h>

@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_collective_allocators_h
-#define argo_collective_allocators_h argo_collective_allocators_h
+#ifndef SRC_ALLOCATORS_COLLECTIVE_ALLOCATOR_H_
+#define SRC_ALLOCATORS_COLLECTIVE_ALLOCATOR_H_
 
 /**
  * @brief basic collective allocation function, for C interface
@@ -20,4 +20,4 @@ void* collective_alloc(size_t size);
  */
 void collective_free(void* ptr);
 
-#endif /* argo_collective_allocators_h */
+#endif // SRC_ALLOCATORS_COLLECTIVE_ALLOCATOR_H_

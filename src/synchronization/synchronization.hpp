@@ -43,7 +43,7 @@ namespace argo {
 } // namespace argo
 
 extern "C" {
-#include "synchronization.h"
+#include "./synchronization.h"
 }
 
 #endif // SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_

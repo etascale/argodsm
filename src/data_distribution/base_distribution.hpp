@@ -7,9 +7,9 @@
 #ifndef SRC_DATA_DISTRIBUTION_BASE_DISTRIBUTION_HPP_
 #define SRC_DATA_DISTRIBUTION_BASE_DISTRIBUTION_HPP_
 
-#include <string>
 #include <cstdlib>
 #include <iostream>
+#include <string>
 
 #include "../types/types.hpp"
 

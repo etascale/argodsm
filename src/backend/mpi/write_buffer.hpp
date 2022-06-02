@@ -7,9 +7,11 @@
 #ifndef SRC_BACKEND_MPI_WRITE_BUFFER_HPP_
 #define SRC_BACKEND_MPI_WRITE_BUFFER_HPP_
 
+// C headers
 #include <mpi.h>
-#include <atomic>
+// C++ headers
 #include <algorithm>
+#include <atomic>
 #include <deque>
 #include <iterator>
 #include <mutex>

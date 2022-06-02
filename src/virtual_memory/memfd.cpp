@@ -5,10 +5,10 @@
  */
 
 // C headers
-#include <unistd.h>
 #include <sys/mman.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include <unistd.h>
 // C++ headers
 #include <cerrno>
 #include <cstddef>

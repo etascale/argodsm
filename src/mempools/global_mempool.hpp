@@ -14,12 +14,12 @@ constexpr int PAGESIZE = 4096;
 #include <stdlib.h>
 #include <sys/mman.h>
 // C++ headers
-#include <memory>
 #include <iostream>
+#include <memory>
 
 #include "../backend/backend.hpp"
-#include "../synchronization/global_tas_lock.hpp"
 #include "../data_distribution/global_ptr.hpp"
+#include "../synchronization/global_tas_lock.hpp"
 
 namespace argo {
 	namespace mempools {

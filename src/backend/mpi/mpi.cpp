@@ -7,8 +7,8 @@
 #include <mpi.h>
 #include <semaphore.h>
 
-#include <atomic>
 #include <algorithm>
+#include <atomic>
 #include <type_traits>
 
 #include "swdsm.h"

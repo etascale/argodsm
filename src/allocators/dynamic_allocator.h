@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_dynamic_allocators_h
-#define argo_dynamic_allocators_h argo_dynamic_allocators_h
+#ifndef SRC_ALLOCATORS_DYNAMIC_ALLOCATOR_H_
+#define SRC_ALLOCATORS_DYNAMIC_ALLOCATOR_H_
 
 /**
  * @brief dynamic allocation function, for C interface
@@ -20,4 +20,4 @@ void* dynamic_alloc(size_t size);
  */
 void dynamic_free(void* ptr);
 
-#endif /* argo_dynamic_allocators_h */
+#endif // SRC_ALLOCATORS_DYNAMIC_ALLOCATOR_H_

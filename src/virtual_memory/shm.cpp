@@ -6,11 +6,11 @@
 
 // C headers
 #include <fcntl.h>
-#include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/types.h>
+#include <unistd.h>
 // C++ headers
 #include <cerrno>
 #include <cstddef>

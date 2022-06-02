@@ -7,12 +7,13 @@
 #ifndef SRC_DATA_DISTRIBUTION_DATA_DISTRIBUTION_HPP_
 #define SRC_DATA_DISTRIBUTION_DATA_DISTRIBUTION_HPP_
 
+// Alphabetic order below
 #include "base_distribution.hpp"
-#include "naive_distribution.hpp"
 #include "cyclic_distribution.hpp"
-#include "skew_mapp_distribution.hpp"
-#include "prime_mapp_distribution.hpp"
 #include "first_touch_distribution.hpp"
+#include "naive_distribution.hpp"
+#include "prime_mapp_distribution.hpp"
+#include "skew_mapp_distribution.hpp"
 
 /**
  * @note backend.hpp is not included here as it includes global_ptr.hpp,

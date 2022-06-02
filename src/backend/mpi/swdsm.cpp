@@ -3,9 +3,9 @@
  * @brief This file implements the MPI-backend of ArgoDSM
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
+#include<algorithm>
 #include<cstddef>
 #include<vector>
-#include<algorithm>
 
 #include "env/env.hpp"
 #include "signal/signal.hpp"
@@ -619,13 +619,14 @@ void handler(int sig, siginfo_t *si, void *context){
 			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
 			MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1, 1, MPI_LONG, MPI_BOR, sharerWindow);
 			MPI_Win_unlock(owner, sharerWindow);
-		}
-		else if(writers == id || writers == 0){
-			for(argo::node_id_t n = 0; n < numtasks; n++){
-				if(n != workrank && ((static_cast<std::uint64_t>(1) << n)&sharers) != 0){
-					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
-					MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1, 1, MPI_LONG, MPI_BOR, sharerWindow);
-					MPI_Win_unlock(n, sharerWindow);
+		}else{
+			if(writers == id || writers == 0){
+				for(argo::node_id_t n = 0; n < numtasks; n++){
+					if(n != workrank && ((static_cast<std::uint64_t>(1) << n)&sharers) != 0){
+						MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
+						MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1, 1, MPI_LONG, MPI_BOR, sharerWindow);
+						MPI_Win_unlock(n, sharerWindow);
+					}
 				}
 			}
 		}
@@ -1092,8 +1093,7 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr){
 		}
 		if(branchval != 0){
 			cnt+=drf_unit;
-		}
-		else{
+		}else{
 			if(cnt > 0){
 				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, offset+(i-cnt), cnt, MPI_BYTE, globalDataWindow[homenode]);
 				cnt = 0;

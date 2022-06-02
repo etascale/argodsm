@@ -11,9 +11,9 @@
 
 #include "allocators/allocators.hpp"
 #include "backend/backend.hpp"
-#include "types/types.hpp"
-#include "synchronization/synchronization.hpp"
 #include "data_distribution/data_distribution.hpp"
+#include "synchronization/synchronization.hpp"
+#include "types/types.hpp"
 
 extern "C" {
 #include "argo.h"
