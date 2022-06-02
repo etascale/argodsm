@@ -21,6 +21,7 @@ namespace argo {
 			std::size_t max_size;
 			/** @todo Documentation */
 			std::size_t offset;
+
 		public:
 			/** type of allocation failures within this memory pool */
 			using bad_alloc = std::bad_alloc;

@@ -40,6 +40,7 @@ namespace argo {
 
 				/** @todo Documentation */
 				argo::globallock::global_tas_lock *global_tas_lock;
+
 			public:
 				/** type of allocation failures within this memory pool */
 				using bad_alloc = std::bad_alloc;

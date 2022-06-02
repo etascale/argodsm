@@ -60,14 +60,14 @@
 typedef unsigned char argo_byte;
 
 /** @brief Struct for cache control data */
-typedef struct myControlData //global cache control data / directory
+typedef struct myControlData // global cache control data / directory
 {
 		/** @brief Coherence state, basically only Valid/Invalid now */
-		argo_byte state;    // I/P/SW/MW
+		argo_byte state;	// I/P/SW/MW
 		/** @brief Tracks if page is dirty or clean */
-		argo_byte dirty;   // is this locally dirty?
+		argo_byte dirty;	// is this locally dirty?
 		/** @brief Tracks address of page */
-		std::uintptr_t tag;   // address of global page in distr memory
+		std::uintptr_t tag;	// address of global page in distr memory
 } control_data;
 
 /** @brief Struct containing statistics */

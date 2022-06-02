@@ -186,7 +186,6 @@ std::size_t peek_offset(std::uintptr_t addr) {
  * @pre aligned_access_offset must be aligned as CACHELINE*pagesize
  */
 void load_cache_entry(std::uintptr_t aligned_access_offset) {
-
 	/* If it's not an ArgoDSM address, do not handle it */
 	if(aligned_access_offset >= size_of_all){
 		return;
@@ -502,7 +501,6 @@ void handler(int sig, siginfo_t *si, void *context){
 			/* set page to permit reads and map it to the page cache */
 			/** @todo Set cache offset to a variable instead of calculating it here */
 			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ);
-
 		}else{
 			/* Do not register as writer if this is a confirmed read miss */
 			if(miss_type == sig::access_type::read) {

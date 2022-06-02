@@ -473,7 +473,6 @@ class write_buffer
 			_page_count = 0;
 			_partial_flush_count = 0;
 		}
-
-}; //class
+}; // class
 
 #endif // SRC_BACKEND_MPI_WRITE_BUFFER_HPP_

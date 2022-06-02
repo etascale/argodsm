@@ -109,6 +109,7 @@ namespace argo {
 
 				/** @brief amount of memory in pool that is already allocated */
 				std::size_t offset;
+
 			public:
 				/** type of allocation failures within this memory pool */
 				using bad_alloc = std::bad_alloc;
@@ -159,7 +160,6 @@ namespace argo {
 						memory = nullptr;
 					}
 					synchronize<growth_mode>(&memory);
-
 				}
 
 				/**

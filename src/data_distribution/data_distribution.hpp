@@ -172,7 +172,6 @@ namespace argo {
 				 * @todo Documentation
 				 */
 				long translate_virtual_to_global(void* address){
-
 					if(static_cast<char*>(address) == NULL)
 						throw std::runtime_error("ArgoDSM - NULL pointer exception");
 					else if(	 static_cast<char*>(address) < start_address
