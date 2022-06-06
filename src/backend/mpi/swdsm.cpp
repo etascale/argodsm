@@ -478,7 +478,7 @@ void handler(int sig, siginfo_t *si, void *context){
 #endif /* REG_ERR */
 	double t1 = MPI_Wtime();
 	std::uintptr_t tag;
-	argo_byte owner,state;
+	argo_byte state;
 
 	/* compute offset in distributed memory in bytes, always positive */
 	const std::size_t access_offset = static_cast<char*>(si->si_addr) - static_cast<char*>(startAddr);
@@ -579,9 +579,10 @@ void handler(int sig, siginfo_t *si, void *context){
 
 			/* remote single writer */
 			if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
+				argo::node_id_t owner = 0;
 				for(argo::node_id_t n = 0; n < numtasks; n++){
 					if((static_cast<std::uint64_t>(1)<<n)==(writers&invid)){
-						owner = n; //just get rank...
+						owner = n;  // just get rank...
 						break;
 					}
 				}
@@ -667,9 +668,10 @@ void handler(int sig, siginfo_t *si, void *context){
 
 		/* check if we need to update */
 		if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
+			argo::node_id_t owner = 0;
 			for(argo::node_id_t n = 0; n < numtasks; n++){
 				if((static_cast<std::uint64_t>(1)<<n)==(writers&invid)){
-					owner = n; //just get rank...
+					owner = n;  // just get rank...
 					break;
 				}
 			}
