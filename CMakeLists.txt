@@ -3,17 +3,16 @@
 cmake_minimum_required(VERSION 3.3)
 project(ArgoDSM VERSION 0.1)
 
-set(DEFAULT_C_FLAGS "-std=c17 -pthread")
-set(DEFAULT_CXX_FLAGS "-std=c++17 -pthread -DOMPI_SKIP_MPICXX=1")
+set(DEFAULT_C_FLAGS "-std=c17 -pthread -Wall -Wextra -Werror")
+set(DEFAULT_CXX_FLAGS "-std=c++17 -pthread -DOMPI_SKIP_MPICXX=1 -Wall -Wextra -Werror")
 set(DEFAULT_LINK_FLAGS "")
 
 option(ARGO_DEBUG
 	"Build ArgoDSM without optimization and with debugging symbols" OFF)
 if(ARGO_DEBUG)
-	set(DEFAULT_C_FLAGS "${DEFAULT_C_FLAGS} -O0 -g -Wall -Wextra -Werror")
-	set(DEFAULT_CXX_FLAGS
-		"${DEFAULT_CXX_FLAGS} -O0 -g -Wall -Wextra -Werror")
-	set(DEFAULT_LINK_FLAGS "${DEFAULT_LINK_FLAGS} -g -Wall -Wextra -Werror")
+	set(DEFAULT_C_FLAGS "${DEFAULT_C_FLAGS} -O0 -g")
+	set(DEFAULT_CXX_FLAGS "${DEFAULT_CXX_FLAGS} -O0 -g")
+	set(DEFAULT_LINK_FLAGS "${DEFAULT_LINK_FLAGS} -g")
 else(ARGO_DEBUG)
 	set(DEFAULT_C_FLAGS "${DEFAULT_C_FLAGS} -O3 -DNDEBUG")
 	set(DEFAULT_CXX_FLAGS "${DEFAULT_CXX_FLAGS} -O3 -DNDEBUG")
