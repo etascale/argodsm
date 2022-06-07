@@ -1,3 +1,9 @@
+/**
+ * @file
+ * @brief This file provides a C interface for ArgoDSM-based cohort locks
+ * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
+ */
+
 #include "cohort_lock.hpp"
 
 using lock_t = argo::globallock::cohort_lock;
