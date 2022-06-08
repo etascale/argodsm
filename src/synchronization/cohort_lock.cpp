@@ -6,6 +6,7 @@
 
 #include "cohort_lock.hpp"
 
+/** @brief ArgoDSM global 'cohort' lock */
 using lock_t = argo::globallock::cohort_lock;
 
 extern "C" {
