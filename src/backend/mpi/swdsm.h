@@ -63,11 +63,11 @@ typedef unsigned char argo_byte;
 typedef struct myControlData //global cache control data / directory
 {
 		/** @brief Coherence state, basically only Valid/Invalid now */
-		argo_byte state;    //I/P/SW/MW
+		argo_byte state;    // I/P/SW/MW
 		/** @brief Tracks if page is dirty or clean */
-		argo_byte dirty;   //Is this locally dirty?  
+		argo_byte dirty;   // is this locally dirty?
 		/** @brief Tracks address of page */
-		std::uintptr_t tag;   //addres of global page in distr mem
+		std::uintptr_t tag;   // address of global page in distr memory
 } control_data;
 
 /** @brief Struct containing statistics */
@@ -76,17 +76,17 @@ typedef struct argo_statisticsStruct
 		/** @brief Time spend locking */
 		double locktime;
 		/** @brief Time spent self invalidating */
-		double selfinvtime; 
+		double selfinvtime;
 		/** @brief Time spent loading pages */
 		double loadtime;
 		/** @brief Time spent storing pages */
-		double storetime; 
+		double storetime;
 		/** @brief Time spent writing back from the writebuffer */
-		double writebacktime; 
+		double writebacktime;
 		/** @brief Time spent flushing the writebuffer */
-		double flushtime; 
+		double flushtime;
 		/** @brief Time spent in global barrier */
-		double barriertime; 
+		double barriertime;
 		/** @brief Number of stores */
 		std::size_t stores;
 		/** @brief Number of loads */

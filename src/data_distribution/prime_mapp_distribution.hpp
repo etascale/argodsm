@@ -55,7 +55,7 @@ namespace argo {
 							pagenum = addr / pageblock;
 							currhome = homenode(static_cast<char*>(base_distribution<instance>::start_address) + addr);
 							homecounter += (currhome == realhome) ? 1 : 0;
-							if (((addr <= (base_distribution<instance>::nodes * pageblock)) && (currhome == realhome)) || 
+							if (((addr <= (base_distribution<instance>::nodes * pageblock)) && (currhome == realhome)) ||
 									(((pagenum % prime) >= static_cast<std::size_t>(base_distribution<instance>::nodes)) && (currhome == realhome))) {
 								offset = (pagenum / base_distribution<instance>::nodes) * pageblock + addr % pageblock;
 								offset += homecounter * pageblock + drift;

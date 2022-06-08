@@ -1067,7 +1067,7 @@ void argo_reset_coherence(){
 		globalSharers[i] = 0;
 	}
 	MPI_Win_unlock(workrank, sharerWindow);
-	
+
 	if (dd::is_first_touch_policy()) {
 		/**
 		 * @note initialize the first-touch directory with a magic value,

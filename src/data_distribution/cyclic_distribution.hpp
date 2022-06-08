@@ -42,7 +42,7 @@ namespace argo {
 					const std::size_t addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
 					const std::size_t pagenum = addr / pageblock;
 					const std::size_t offset = pagenum / base_distribution<instance>::nodes * pageblock + addr % pageblock + drift;
-					
+
 					if(offset >= static_cast<std::size_t>(base_distribution<instance>::size_per_node)) {
 						std::cerr << msg_fetch_offset_fail << std::endl;
 						throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_fetch_offset_fail);
