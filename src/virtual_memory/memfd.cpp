@@ -42,7 +42,7 @@ namespace {
 namespace argo {
 	namespace virtual_memory {
 		void init() {
-			fd = syscall(__NR_memfd_create,"argocache", 0);
+			fd = syscall(__NR_memfd_create, "argocache", 0);
 			if(ftruncate(fd, ARGO_SIZE)) {
 				std::cerr << msg_main_mmap_fail << std::endl;
 				/** @todo do something? */
