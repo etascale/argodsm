@@ -13,27 +13,29 @@
 /** @brief Provides MPI RMA epoch locking */
 class mpi_lock {
 	private:
-		/** @brief spinlock protecting the MPI lock */
-		pthread_spinlock_t spin_lock;
+		/** @brief local lock protecting the MPI lock from multi-threaded access */
+		pthread_spinlock_t _local_lock;
 
 		/** @brief General statistics */
-		int num_locks;
+		int _num_locks{0};
 
 		/**@{*/
 		/**
-		 * @brief Variables used to track spin lock statistics
+		 * @brief Variables used to track local lock statistics
 		 */
-		double spin_lock_time, max_spin_lock_time;
-		double spin_hold_time, max_spin_hold_time, spin_acquire_time, spin_release_time;
+		double _local_lock_time{0}, _max_local_lock_time{0};
+		double _local_hold_time{0}, _max_local_hold_time{0};
+		double _local_acquire_time{0}, _local_release_time{0};
 		/**@}*/
 
 		/**@{*/
 		/**
 		 * @brief Variables used to track MPI lock statistics
 		 */
-		double mpi_lock_time, max_mpi_lock_time;
-		double mpi_unlock_time, max_mpi_unlock_time;
-		double mpi_hold_time, max_mpi_hold_time, mpi_acquire_time, mpi_release_time;
+		double _mpi_lock_time{0}, _max_mpi_lock_time{0};
+		double _mpi_unlock_time{0}, _max_mpi_unlock_time{0};
+		double _mpi_hold_time{0}, _max_mpi_hold_time{0};
+		double _mpi_acquire_time{0}, _mpi_release_time{0};
 		/**@}*/
 
 	public:
@@ -72,32 +74,32 @@ class mpi_lock {
 
 
 		/*********************************************************
-		 * SPIN LOCK STATISTICS
+		 * LOCAL LOCK STATISTICS
 		 * ******************************************************/
 
 		/**
 		 * @brief  get timekeeping statistics
-		 * @return the total time spent locking a spin lock
+		 * @return the total time spent locking a local lock
 		 */
-		double get_spin_lock_time();
+		double get_local_lock_time();
 
 		/**
 		 * @brief  get timekeeping statistics
-		 * @return the maximum time spent locking a spin lock
+		 * @return the maximum time spent locking a local lock
 		 */
-		double get_max_spin_lock_time();
+		double get_max_local_lock_time();
 
 		/**
 		 * @brief  get timekeeping statistics
-		 * @return the total time spent holding a spin lock
+		 * @return the total time spent holding a local lock
 		 */
-		double get_spin_hold_time();
+		double get_local_hold_time();
 
 		/**
 		 * @brief  get timekeeping statistics
-		 * @return the maximum time spent holding a spin lock
+		 * @return the maximum time spent holding a local lock
 		 */
-		double get_max_spin_hold_time();
+		double get_max_local_hold_time();
 
 		/*********************************************************
 		 * MPI LOCK STATISTICS
