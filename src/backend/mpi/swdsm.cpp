@@ -1219,8 +1219,6 @@ void argo_reset_stats(){
 	stats.load_time = 0;
 	stats.store_time = 0;
 	stats.sync_lock_time = 0;
-	stats.inittime = 0;
-	stats.exectime = 0;
 	stats.barriertime = 0;
 	stats.write_misses.store(0);
 	stats.read_misses.store(0);
