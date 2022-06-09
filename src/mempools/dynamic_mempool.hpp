@@ -92,7 +92,7 @@ namespace argo {
 		/**
 		 * @brief Dynamically growing memory pool
 		 */
-		template<template<class> class Allocator, growth_mode_t growth_mode, std::size_t chunk_size=4096>
+		template<template<class> class Allocator, growth_mode_t growth_mode, std::size_t chunk_size = 4096>
 		class dynamic_memory_pool {
 			private:
 				/**  @brief typedef for byte-size allocator */
@@ -118,7 +118,7 @@ namespace argo {
 				 * @param a a pointer to the allocator to use for growing this mempool
 				 * @todo passing the allocator by pointer may be unnecessary
 				 */
-				dynamic_memory_pool(allocator_t* a) : allocator(a), memory(nullptr), max_size(0), offset{0} {}
+				explicit dynamic_memory_pool(allocator_t* a) : allocator(a), memory(nullptr), max_size(0), offset{0} {}
 
 				/**
 				 * @brief Reserve more memory

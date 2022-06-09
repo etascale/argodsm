@@ -24,7 +24,7 @@ namespace argo {
 		/**
 		 * @brief Globalally growing memory pool
 		 */
-		template<std::size_t chunk_size=4096>
+		template<std::size_t chunk_size = 4096>
 		class global_memory_pool {
 			private:
 				/** @brief current base address of this memory pool's memory */

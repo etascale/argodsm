@@ -105,17 +105,17 @@ typedef struct argo_statisticsStruct
 
 /*constants for control values*/
 /** @brief Constant for invalid states */
-static const argo_byte INVALID=0;
+static const argo_byte INVALID = 0;
 /** @brief Constant for valid states */
-static const argo_byte VALID=1;
+static const argo_byte VALID = 1;
 /** @brief Constant for clean states */
-static const argo_byte CLEAN=2;
+static const argo_byte CLEAN = 2;
 /** @brief Constant for dirty states */
-static const argo_byte DIRTY=3;
+static const argo_byte DIRTY = 3;
 /** @brief Constant for writer states */
-static const argo_byte WRITER=4;
+static const argo_byte WRITER = 4;
 /** @brief Constant for reader states */
-static const argo_byte READER=5;
+static const argo_byte READER = 5;
 
 /**
  * @brief The size of a hardware memory page

@@ -80,10 +80,10 @@ namespace argo {
 				argo::locallock::ticket_lock *node_lock;
 
 				/** @brief maximum amount of local handovers withing a NUMA node - numbers are experimental */
-				static const int MAX_HANDOVER=8192;
+				static const int MAX_HANDOVER = 8192;
 
 				/** @brief maximum amount of local handovers between NUMA nodes on the same ArgoDSM node - numbers are experimental */
-				static const int MAX_HANDOVER_NODELOCK=128;
+				static const int MAX_HANDOVER_NODELOCK = 128;
 
 				/** @brief Constant for no NUMA node having the node_lock */
 				static const int NO_OWNER = -1;

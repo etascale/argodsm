@@ -116,14 +116,14 @@ namespace argo {
 						 ((globalSharers[classification_index] & node_id_bit) == node_id_bit))
 				  ){
 					MPI_Win_unlock(node_id, sharerWindow);
-					touchedcache[cache_index]=1;
+					touchedcache[cache_index] = 1;
 					//nothing - we keep the pages, SD is done in flushWB
 				}
 				else{ //multiple writer or SO, invalidate the page
 					MPI_Win_unlock(node_id, sharerWindow);
-					cacheControl[cache_index].dirty=CLEAN;
+					cacheControl[cache_index].dirty = CLEAN;
 					cacheControl[cache_index].state = INVALID;
-					touchedcache[cache_index]=0;
+					touchedcache[cache_index] = 0;
 					mprotect((char*)start_address + page_address, block_size, PROT_NONE);
 				}
 			}

@@ -19,7 +19,7 @@ namespace argo {
 	 *          barrier call on each ArgoDSM node, then performs self-downgrade
 	 *          and self-invalidation on each node.
 	 */
-	void barrier(std::size_t threadcount=1);
+	void barrier(std::size_t threadcount = 1);
 
 	/**
 	 * @brief a barrier for ArgoDSM nodes
@@ -29,7 +29,7 @@ namespace argo {
 	 *          and self-invalidation on each node. Additionally, this barrier
 	 *          upgrades all pages with registered writers to a shared state.
 	 */
-	void barrier_upgrade_writers(std::size_t threadcount=1);
+	void barrier_upgrade_writers(std::size_t threadcount = 1);
 
 	/**
 	 * @brief a barrier for ArgoDSM nodes
@@ -39,7 +39,7 @@ namespace argo {
 	 *          and self-invalidation on each node. Additionally, this barrier
 	 *          upgrades all pages to a private state.
 	 */
-	void barrier_upgrade_all(std::size_t threadcount=1);
+	void barrier_upgrade_all(std::size_t threadcount = 1);
 } // namespace argo
 
 extern "C" {
