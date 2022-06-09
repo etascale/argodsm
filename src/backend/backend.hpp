@@ -119,7 +119,7 @@ namespace argo {
 		 * @param threadcount number of threads on each node that go into the barrier
 		 * @param upgrade the type of classification upgrade to perform
 		 */
-		void barrier(std::size_t threadcount=1, upgrade_type upgrade = upgrade_type::upgrade_none);
+		void barrier(std::size_t threadcount = 1, upgrade_type upgrade = upgrade_type::upgrade_none);
 
 		/**
 		 * @brief broadcast-style collective synchronization
