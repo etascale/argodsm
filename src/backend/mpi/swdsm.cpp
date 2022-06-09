@@ -126,7 +126,7 @@ std::size_t isPowerOf2(std::size_t x){
 int argo_get_local_tid(){
 	int i;
 	for(i = 0; i < NUM_THREADS; i++){
-		if(pthread_equal(tid[i],pthread_self())){
+		if(pthread_equal(tid[i], pthread_self())){
 			return i;
 		}
 	}
@@ -136,7 +136,7 @@ int argo_get_local_tid(){
 int argo_get_global_tid(){
 	int i;
 	for(i = 0; i < NUM_THREADS; i++){
-		if(pthread_equal(tid[i],pthread_self())){
+		if(pthread_equal(tid[i], pthread_self())){
 			return ((getID()*NUM_THREADS) + i);
 		}
 	}
@@ -183,13 +183,13 @@ std::size_t getCacheIndex(std::uintptr_t addr){
 }
 
 void init_mpi_struct(void){
-	//init our struct coherence unit to work in mpi.
-	const int blocklen[3] = { 1,1,1};
+	// init our struct coherence unit to work in MPI.
+	const int blocklen[3] = {1, 1, 1};
 	MPI_Aint offsets[3];
 	offsets[0] = 0;  offsets[1] = sizeof(argo_byte)*1;  offsets[2] = sizeof(argo_byte)*2;
 
-	MPI_Datatype types[3] = {MPI_BYTE,MPI_BYTE,MPI_UNSIGNED_LONG};
-	MPI_Type_create_struct(3,blocklen, offsets, types, &mpi_control_data);
+	MPI_Datatype types[3] = {MPI_BYTE, MPI_BYTE, MPI_UNSIGNED_LONG};
+	MPI_Type_create_struct(3, blocklen, offsets, types, &mpi_control_data);
 
 	MPI_Type_commit(&mpi_control_data);
 }
@@ -197,7 +197,7 @@ void init_mpi_struct(void){
 
 void init_mpi_cacheblock(void){
 	//init our struct coherence unit to work in mpi.
-	MPI_Type_contiguous(pagesize*CACHELINE,MPI_BYTE,&cacheblock);
+	MPI_Type_contiguous(pagesize*CACHELINE, MPI_BYTE, &cacheblock);
 	MPI_Type_commit(&cacheblock);
 }
 
@@ -333,9 +333,9 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 
 			/* If the page is dirty, write it back */
 			if(cacheControl[idx].dirty == DIRTY){
-				mprotect(old_ptr,block_size,PROT_READ);
+				mprotect(old_ptr, block_size, PROT_READ);
 				for(std::size_t j = 0; j < CACHELINE; j++){
-					storepageDIFF(idx+j,pagesize*j+(cacheControl[idx].tag));
+					storepageDIFF(idx+j, pagesize*j+(cacheControl[idx].tag));
 				}
 				argo_write_buffer->erase(idx);
 			}
@@ -345,7 +345,7 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 			cacheControl[idx].tag = temp_addr;
 			cacheControl[idx].dirty = CLEAN;
 			vm::map_memory(temp_ptr, block_size, pagesize*idx, PROT_NONE);
-			mprotect(old_ptr,block_size,PROT_NONE);
+			mprotect(old_ptr, block_size, PROT_NONE);
 		}
 	}
 
@@ -553,7 +553,7 @@ void handler(int sig, siginfo_t *si, void *context){
 				else{
 					/* update remote private holder to shared */
 					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
-					MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx,1,MPI_LONG,MPI_BOR,sharerWindow);
+					MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx, 1, MPI_LONG, MPI_BOR, sharerWindow);
 					MPI_Win_unlock(owner, sharerWindow);
 				}
 			}
@@ -587,28 +587,27 @@ void handler(int sig, siginfo_t *si, void *context){
 					}
 				}
 				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
-				MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
+				MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1, 1, MPI_LONG, MPI_BOR, sharerWindow);
 				MPI_Win_unlock(owner, sharerWindow);
 			}
 			else if(writers == id || writers == 0){
 				for(argo::node_id_t n = 0; n < numtasks; n++){
 					if(n != workrank && ((static_cast<std::uint64_t>(1)<<n)&sharers) != 0){
 						MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
-						MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
+						MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1, 1, MPI_LONG, MPI_BOR, sharerWindow);
 						MPI_Win_unlock(n, sharerWindow);
 					}
 				}
 			}
 			/* set page to permit read/write and map it to the page cache */
 			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ|PROT_WRITE);
-
 		}
 		sem_post(&ibsem);
 		pthread_mutex_unlock(&cachemutex);
 		return;
 	}
 
-	state  = cacheControl[startIndex].state;
+	state = cacheControl[startIndex].state;
 	tag = cacheControl[startIndex].tag;
 	bool performed_load = false;
 
@@ -627,7 +626,7 @@ void handler(int sig, siginfo_t *si, void *context){
 		assert(cacheControl[startIndex].tag == aligned_access_offset);
 		pthread_mutex_unlock(&cachemutex);
 		double t2 = MPI_Wtime();
-		stats.loadtime+=t2-t1;
+		stats.loadtime += t2-t1;
 		return;
 	}
 
@@ -655,9 +654,9 @@ void handler(int sig, siginfo_t *si, void *context){
 
 		/* register and get latest sharers / writers */
 		MPI_Win_lock(MPI_LOCK_SHARED, homenode, 0, sharerWindow);
-		MPI_Get_accumulate(&id, 1,MPI_LONG,&writers,1,MPI_LONG,homenode,
-			classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
-		MPI_Get(&sharers,1, MPI_LONG, homenode, classidx, 1,MPI_LONG,sharerWindow);
+		MPI_Get_accumulate(&id, 1, MPI_LONG, &writers, 1, MPI_LONG, homenode,
+			classidx+1, 1, MPI_LONG, MPI_BOR, sharerWindow);
+		MPI_Get(&sharers, 1, MPI_LONG, homenode, classidx, 1, MPI_LONG, sharerWindow);
 		MPI_Win_unlock(homenode, sharerWindow);
 		/* We get result of accumulation before operation so we need to account for that */
 		writers |= id;
@@ -676,24 +675,24 @@ void handler(int sig, siginfo_t *si, void *context){
 				}
 			}
 			MPI_Win_lock(MPI_LOCK_EXCLUSIVE, owner, 0, sharerWindow);
-			MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
+			MPI_Accumulate(&id, 1, MPI_LONG, owner, classidx+1, 1, MPI_LONG, MPI_BOR, sharerWindow);
 			MPI_Win_unlock(owner, sharerWindow);
 		}
 		else if(writers==id || writers==0){
 			for(argo::node_id_t n = 0; n < numtasks; n++){
 				if(n != workrank && ((static_cast<std::uint64_t>(1)<<n)&sharers) != 0){
 					MPI_Win_lock(MPI_LOCK_EXCLUSIVE, n, 0, sharerWindow);
-					MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1,1,MPI_LONG,MPI_BOR,sharerWindow);
+					MPI_Accumulate(&id, 1, MPI_LONG, n, classidx+1, 1, MPI_LONG, MPI_BOR, sharerWindow);
 					MPI_Win_unlock(n, sharerWindow);
 				}
 			}
 		}
 	}
 	unsigned char* copy = reinterpret_cast<unsigned char*>(pagecopy + line*pagesize);
-	memcpy(copy,aligned_access_ptr,CACHELINE*pagesize);
+	memcpy(copy, aligned_access_ptr, CACHELINE*pagesize);
 	argo_write_buffer->add(startIndex);
 	sem_post(&ibsem);
-	mprotect(aligned_access_ptr, pagesize*CACHELINE,PROT_WRITE|PROT_READ);
+	mprotect(aligned_access_ptr, pagesize*CACHELINE, PROT_WRITE|PROT_READ);
 	pthread_mutex_unlock(&cachemutex);
 	double t2 = MPI_Wtime();
 	stats.storetime += t2-t1;
@@ -701,15 +700,13 @@ void handler(int sig, siginfo_t *si, void *context){
 }
 
 
-
-void initmpi(){
-	int ret,initialized,thread_status;
+void initmpi() {
+	int ret, initialized, thread_status;
 	int thread_level = (ARGO_ENABLE_MT == 1) ? MPI_THREAD_MULTIPLE : MPI_THREAD_SERIALIZED;
 	MPI_Initialized(&initialized);
-	if (!initialized){
-		ret = MPI_Init_thread(NULL,NULL,thread_level,&thread_status);
-	}
-	else{
+	if (!initialized) {
+		ret = MPI_Init_thread(NULL, NULL, thread_level, &thread_status);
+	} else {
 		printf("MPI was already initialized before starting ArgoDSM - shutting down\n");
 		exit(EXIT_FAILURE);
 	}
@@ -720,8 +717,8 @@ void initmpi(){
 		exit(EXIT_FAILURE);
 	}
 
-	MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	init_mpi_struct();
 	init_mpi_cacheblock();
 }
@@ -765,7 +762,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 
 	threadbarrier = (pthread_barrier_t *) malloc(sizeof(pthread_barrier_t)*(NUM_THREADS+1));
 	for(std::size_t i = 1; i <= NUM_THREADS; i++){
-		pthread_barrier_init(&threadbarrier[i],NULL,i);
+		pthread_barrier_init(&threadbarrier[i], NULL, i);
 	}
 
 	/** Get the number of pages to load from the env module */
@@ -792,9 +789,9 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	}
 
 	MPI_Comm_group(MPI_COMM_WORLD, &startgroup);
-	MPI_Group_incl(startgroup,numtasks,workranks,&workgroup);
-	MPI_Comm_create(MPI_COMM_WORLD,workgroup,&workcomm);
-	MPI_Group_rank(workgroup,&workrank);
+	MPI_Group_incl(startgroup, numtasks, workranks, &workgroup);
+	MPI_Comm_create(MPI_COMM_WORLD, workgroup, &workcomm);
+	MPI_Group_rank(workgroup, &workrank);
 
 
 	//Allocate local memory for each node,
@@ -867,7 +864,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		vm::map_memory(tmpcache, offsets_tbl_size_bytes, current_offset, PROT_READ|PROT_WRITE);
 	}
 
-	sem_init(&ibsem,0,1);
+	sem_init(&ibsem, 0, 1);
 
 	globalDataWindow = static_cast<MPI_Win*>(malloc(numtasks*sizeof(MPI_Win)));
 
@@ -902,11 +899,11 @@ void argo_finalize(){
 		printf("ArgoDSM shutting down\n");
 	}
 	swdsm_argo_barrier(1);
-	mprotect(startAddr,size_of_all,PROT_WRITE|PROT_READ);
+	mprotect(startAddr, size_of_all, PROT_WRITE|PROT_READ);
 	MPI_Barrier(MPI_COMM_WORLD);
 
-	for(i = 0; i < numtasks;i++){
-		if(i==workrank){
+	for(i = 0; i < numtasks; i++){
+		if(i == workrank){
 			printStatistics();
 		}
 	}
@@ -992,14 +989,14 @@ void self_upgrade(upgrade_type upgrade) {
 			// Must invalidate all pages upgrading to P
 			if(upgrade == upgrade_type::upgrade_all && is_sharer) {
 				std::size_t cache_index = getCacheIndex(page_addr);
-				mprotect(global_addr,block_size,PROT_NONE);
+				mprotect(global_addr, block_size, PROT_NONE);
 				cacheControl[cache_index].dirty = CLEAN;
 				cacheControl[cache_index].state = INVALID;
 				touchedcache[cache_index] = 0;
 			}
 			// Must protect all pages upgrading to S from writes
 			else if(is_writer) {
-				mprotect(global_addr,block_size,PROT_READ);
+				mprotect(global_addr, block_size, PROT_READ);
 			}
 		}
 	}
@@ -1032,7 +1029,7 @@ void swdsm_argo_barrier(int n, upgrade_type upgrade){
 		self_invalidation();
 
 		// Perform upgrade if requested
-		if(upgrade != upgrade_type::upgrade_none) {
+		if (upgrade != upgrade_type::upgrade_none) {
 			self_upgrade(upgrade);
 			MPI_Barrier(workcomm);
 		}
@@ -1043,7 +1040,7 @@ void swdsm_argo_barrier(int n, upgrade_type upgrade){
 
 	// Wait for n threads to arrive
 	pthread_barrier_wait(&threadbarrier[n]);
-	if(pthread_equal(barrierlockholder,pthread_self())){
+	if (pthread_equal(barrierlockholder, pthread_self())) {
 		pthread_mutex_unlock(&barriermutex);
 		stats.barriers++;
 		stats.barriertime += MPI_Wtime() - t1;
@@ -1088,44 +1085,44 @@ void argo_reset_coherence(){
 
 	sem_post(&ibsem);
 	swdsm_argo_barrier(1);
-	mprotect(startAddr,size_of_all,PROT_NONE);
+	mprotect(startAddr, size_of_all, PROT_NONE);
 	swdsm_argo_barrier(1);
 	clearStatistics();
 }
 
-void argo_acquire(){
+void argo_acquire() {
 	int flag;
 	pthread_mutex_lock(&cachemutex);
 	sem_wait(&ibsem);
 	self_invalidation();
-	MPI_Iprobe(MPI_ANY_SOURCE,MPI_ANY_TAG,workcomm,&flag,MPI_STATUS_IGNORE);
+	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
 	sem_post(&ibsem);
 	pthread_mutex_unlock(&cachemutex);
 }
 
 
-void argo_release(){
+void argo_release() {
 	int flag;
 	pthread_mutex_lock(&cachemutex);
 	sem_wait(&ibsem);
 	argo_write_buffer->flush();
-	MPI_Iprobe(MPI_ANY_SOURCE,MPI_ANY_TAG,workcomm,&flag,MPI_STATUS_IGNORE);
+	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
 	sem_post(&ibsem);
 	pthread_mutex_unlock(&cachemutex);
 }
 
-void argo_acq_rel(){
+void argo_acq_rel() {
 	argo_acquire();
 	argo_release();
 }
 
-void clearStatistics(){
+void clearStatistics() {
 	stats.selfinvtime = 0;
 	stats.loadtime = 0;
 	stats.storetime = 0;
 	stats.flushtime = 0;
 	stats.writebacktime = 0;
-	stats.locktime=0;
+	stats.locktime = 0;
 	stats.barriertime = 0;
 	stats.stores = 0;
 	stats.writebacks = 0;
@@ -1178,24 +1175,24 @@ void printStatistics(){
 	stats.flushtime = argo_write_buffer->get_flush_time();
 	stats.writebacktime = argo_write_buffer->get_write_back_time();
 	printf("#####################STATISTICS#########################\n");
-	printf("# PROCESS ID %d \n",workrank);
-	printf("cachesize:%ld,CACHELINE:%ld wbsize:%ld\n",cachesize,CACHELINE,
+	printf("# PROCESS ID %d \n", workrank);
+	printf("cachesize:%ld,CACHELINE:%ld wbsize:%ld\n", cachesize, CACHELINE,
 			env::write_buffer_size()/CACHELINE);
-	printf("     writebacktime+=(t2-t1): %lf\n",stats.writebacktime);
+	printf("     writebacktime+=(t2-t1): %lf\n", stats.writebacktime);
 	printf("# Storetime : %lf , loadtime :%lf flushtime:%lf, writebacktime: %lf\n",
 		stats.storetime, stats.loadtime, stats.flushtime, stats.writebacktime);
 	printf("# SSDtime:%lf, SSItime:%lf\n", stats.ssdtime, stats.ssitime);
-	printf("# Barriertime : %lf, selfinvtime %lf\n",stats.barriertime, stats.selfinvtime);
-	printf("stores:%lu, loads:%lu, barriers:%lu\n",stats.stores,stats.loads,stats.barriers);
-	printf("Locks:%d\n",stats.locks);
+	printf("# Barriertime : %lf, selfinvtime %lf\n", stats.barriertime, stats.selfinvtime);
+	printf("stores:%lu, loads:%lu, barriers:%lu\n", stats.stores, stats.loads, stats.barriers);
+	printf("Locks:%d\n", stats.locks);
 	printf("########################################################\n");
 	printf("\n\n");
 }
 
-void *argo_get_global_base(){return startAddr;}
-size_t argo_get_global_size(){return size_of_all;}
+void *argo_get_global_base() { return startAddr; }
+size_t argo_get_global_size() { return size_of_all; }
 
-std::size_t get_classification_index(std::uintptr_t addr){
+std::size_t get_classification_index(std::uintptr_t addr) {
 	return (2*(addr/(pagesize*CACHELINE))) % classificationSize;
 }
 

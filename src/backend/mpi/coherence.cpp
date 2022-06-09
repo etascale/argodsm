@@ -98,7 +98,7 @@ namespace argo {
 				if(cacheControl[cache_index].dirty == DIRTY){
 					mprotect((char*)start_address + page_address, block_size, PROT_READ);
 					for(int i = 0; i <CACHELINE; i++){
-						storepageDIFF(cache_index+i,page_address+page_size*i);
+						storepageDIFF(cache_index+i, page_address+page_size*i);
 					}
 					argo_write_buffer->erase(cache_index);
 					cacheControl[cache_index].dirty = CLEAN;
@@ -133,7 +133,7 @@ namespace argo {
 
 			// Poke the MPI system to force progress
 			int flag;
-			MPI_Iprobe(MPI_ANY_SOURCE,MPI_ANY_TAG,workcomm,&flag,MPI_STATUS_IGNORE);
+			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
 
 			// Release relevant mutexes
 			sem_post(&ibsem);
@@ -177,7 +177,7 @@ namespace argo {
 				if(cacheControl[cache_index].dirty == DIRTY){
 					mprotect((char*)start_address + page_address, block_size, PROT_READ);
 					for(int i = 0; i <CACHELINE; i++){
-						storepageDIFF(cache_index+i,page_address+page_size*i);
+						storepageDIFF(cache_index+i, page_address+page_size*i);
 					}
 					argo_write_buffer->erase(cache_index);
 					cacheControl[cache_index].dirty = CLEAN;
@@ -189,7 +189,7 @@ namespace argo {
 
 			// Poke the MPI system to force progress
 			int flag;
-			MPI_Iprobe(MPI_ANY_SOURCE,MPI_ANY_TAG,workcomm,&flag,MPI_STATUS_IGNORE);
+			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
 
 			// Release relevant mutexes
 			sem_post(&ibsem);

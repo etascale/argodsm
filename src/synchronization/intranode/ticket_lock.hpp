@@ -24,7 +24,7 @@ namespace argo {
 				/**
 				 * @brief constructs a ticket_lock
 				 */
-				ticket_lock() : in_counter(0),out_counter(0){}
+				ticket_lock() : in_counter(0), out_counter(0) {}
 
 				/**
 				 * @brief take the lock by fetching your ticket and wait untill out_counter matches your ticket
@@ -46,7 +46,7 @@ namespace argo {
 				 * @return true it the lock is contended (some thread is waiting to get the lock) false otherwise.
 				 */
 				bool is_contended(){
-					int local_in,local_out;
+					int local_in, local_out;
 					local_in = in_counter.load(std::memory_order_relaxed);
 					local_out = out_counter.load(std::memory_order_relaxed);
 					return (local_in - local_out) > 1;

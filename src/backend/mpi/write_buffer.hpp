@@ -216,7 +216,7 @@ class write_buffer
 		void _erase(T val) {
 			// Attempt to get iterator to element equal to val
 			typename std::deque<T>::iterator it =
-				std::find(_buffer.begin(),_buffer.end(), val);
+				std::find(_buffer.begin(), _buffer.end(), val);
 			// If found, erase it
 			if(it != _buffer.end()){
 				_buffer.erase(it);
@@ -373,7 +373,7 @@ class write_buffer
 		void flush() {
 			// Use an atomic flag to detect when flush is done
 			std::atomic<bool> w_flag;
-			w_flag.store(false,std::memory_order_release);
+			w_flag.store(false, std::memory_order_release);
 
 			double t_start = MPI_Wtime();
 			// Delegate flushing to lock holder (can be self)
