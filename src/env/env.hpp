@@ -88,7 +88,7 @@ namespace argo {
 		 * @see @ref ARGO_WRITE_BUFFER_WRITE_BACK_SIZE
 		 */
 		std::size_t write_buffer_write_back_size();
-		
+
 		/**
 		 * @brief get the allocation policy requested by environment variable
 		 * @return the requested allocation policy as a number

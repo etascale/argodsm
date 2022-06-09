@@ -318,7 +318,7 @@ namespace argo {
 			 */
 			void _load_local_owners_dir(void* output_buffer,
 				const std::size_t count, const std::size_t rank, const std::size_t disp);
-				
+
 			/**
 			 * @brief Backend internal type erased atomic load function
 			 * @param output_buffer Pointer to the memory location where the value of the object should be stored

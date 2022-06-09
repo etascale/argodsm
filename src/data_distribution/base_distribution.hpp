@@ -29,7 +29,7 @@ namespace argo {
 		static const std::string msg_fetch_homenode_fail = "ArgoDSM failed to fetch a valid backing node. Please report a bug.";
 		/** @brief error message string for the implementations */
 		static const std::string msg_fetch_offset_fail = "ArgoDSM failed to fetch a valid backing offset. Please report a bug.";
-		
+
 		/**
 		 * @brief the base data distribution class
 		 * @details this is the parent class from which all the memory policies

@@ -38,7 +38,7 @@ namespace {
 	 * @see @ref ARGO_WRITE_BUFFER_WRITE_BACK_SIZE
 	 */
 	const std::size_t default_write_buffer_write_back_size = 32; // default: 32 pages
-	
+
 	/**
 	 * @brief default requested allocation policy (if environment variable is unset)
 	 * @see @ref ARGO_ALLOCATION_POLICY
@@ -80,7 +80,7 @@ namespace {
 	 * @see @ref ARGO_WRITE_BUFFER_WRITE_BACK_SIZE
 	 */
 	const std::string env_write_buffer_write_back_size = "ARGO_WRITE_BUFFER_WRITE_BACK_SIZE";
-	
+
 	/**
 	 * @brief environment variable used for requesting allocation policy
 	 * @see @ref ARGO_ALLOCATION_POLICY
@@ -126,7 +126,7 @@ namespace {
 	 * @brief write buffer write back size requested through the environment variable @ref ARGO_WRITE_BUFFER_WRITE_BACK_SIZE
 	 */
 	std::size_t value_write_buffer_write_back_size;
-	
+
 	/**
 	 * @brief allocation policy requested through the environment variable @ref ARGO_ALLOCATION_POLICY
 	 */
@@ -229,7 +229,7 @@ namespace argo {
 			assert_initialized();
 			return value_write_buffer_write_back_size;
 		}
-		
+
 		std::size_t allocation_policy() {
 			assert_initialized();
 			return value_allocation_policy;
