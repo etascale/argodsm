@@ -20,9 +20,6 @@ namespace env = argo::env;
 
 using namespace argo::backend;
 
-/** @brief For matching threads to more sensible thread IDs */
-pthread_t tid[NUM_THREADS] = {0};
-
 /*Barrier*/
 /** @brief  Locks access to part that does SD in the global barrier */
 pthread_mutex_t barriermutex = PTHREAD_MUTEX_INITIALIZER;
@@ -122,60 +119,6 @@ std::size_t isPowerOf2(std::size_t x){
 	std::size_t retval =  ((x & (x - 1)) == 0); //Checks if x is power of 2 (or zero)
 	return retval;
 }
-
-int argo_get_local_tid(){
-	int i;
-	for(i = 0; i < NUM_THREADS; i++){
-		if(pthread_equal(tid[i], pthread_self())){
-			return i;
-		}
-	}
-	return 0;
-}
-
-int argo_get_global_tid(){
-	int i;
-	for(i = 0; i < NUM_THREADS; i++){
-		if(pthread_equal(tid[i], pthread_self())){
-			return ((getID()*NUM_THREADS) + i);
-		}
-	}
-	return 0;
-}
-
-
-void argo_register_thread(){
-	int i;
-	sem_wait(&ibsem);
-	for(i = 0; i < NUM_THREADS; i++){
-		if(tid[i] == 0){
-			tid[i] = pthread_self();
-			break;
-		}
-	}
-	sem_post(&ibsem);
-	pthread_barrier_wait(&threadbarrier[NUM_THREADS]);
-}
-
-
-void argo_pin_threads(){
-
-  cpu_set_t cpuset;
-  int s;
-  argo_register_thread();
-  sem_wait(&ibsem);
-  CPU_ZERO(&cpuset);
-  int pinto = argo_get_local_tid();
-  CPU_SET(pinto, &cpuset);
-
-  s = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
-  if (s != 0){
-    printf("PINNING ERROR\n");
-    argo_finalize();
-  }
-  sem_post(&ibsem);
-}
-
 
 std::size_t getCacheIndex(std::uintptr_t addr){
 	std::size_t index = (addr/pagesize) % cachesize;

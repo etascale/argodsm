@@ -251,29 +251,6 @@ void *argo_get_global_base();
  */
 size_t argo_get_global_size();
 
-/**
- * @brief Gives out a local thread ID for a local thread assuming NUM_THREADS per node
- * @return a local thread ID for the local thread 
- */
-int argo_get_local_tid();
-
-/**
- * @brief Gives out a global thread ID for a local thread assuming NUM_THREADS per node
- * @return a global thread ID for the local thread 
- * @bug NUM_THREADS is not defined properly. DO NOT USE!
- */
-int argo_get_global_tid();
-/**
- * @brief Registers the local thread to ArgoDSM and gets a local thread ID.
- * @bug NUM_THREADS is not defined properly. DO NOT USE!
- */
-void argo_register_thread();
-/**
- * @brief Pins and registers the local thread
- * @see argo_register_thread()
- */
-void argo_pin_threads();
-
 /*MPI*/
 /**
  * @brief Initializes the MPI environment
