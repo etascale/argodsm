@@ -778,13 +778,10 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	argo_write_buffer = new write_buffer<std::size_t>();
 
 	int *workranks = (int *) malloc(sizeof(int)*numtasks);
-	int *procranks = (int *) malloc(sizeof(int)*2);
 	int workindex = 0;
 
 	for(argo::node_id_t i = 0; i < numtasks; i++){
 		workranks[workindex++] = i;
-		procranks[0] = i;
-		procranks[1] = i+1;
 	}
 
 	MPI_Comm_group(MPI_COMM_WORLD, &startgroup);
