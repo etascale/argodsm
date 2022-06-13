@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief       This file provices an implementation of a specialized MPI lock allowing
+ * @brief       This file provides an implementation of a specialized MPI lock allowing
  *              multiple threads to access an MPI Window concurrently.
  * @copyright   Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
