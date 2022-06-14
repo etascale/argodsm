@@ -10,13 +10,13 @@
 #define argo_swdsm_h argo_swdsm_h
 
 /* Includes */
-#include <cstdint>
-#include <type_traits>
-#include <mutex>
-#include <functional>
-#include <cmath>
-#include <vector>
 #include <atomic>
+#include <cmath>
+#include <cstdint>
+#include <functional>
+#include <mutex>
+#include <type_traits>
+#include <vector>
 
 #include <assert.h>
 #include <errno.h>

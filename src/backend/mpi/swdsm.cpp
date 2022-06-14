@@ -3,9 +3,9 @@
  * @brief This file implements the MPI-backend of ArgoDSM
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
-#include<cstddef>
-#include<vector>
+#include <cstddef>
 #include <memory>
+#include <vector>
 
 #include "env/env.hpp"
 #include "signal/signal.hpp"
@@ -622,7 +622,7 @@ void handler(int sig, siginfo_t *si, void *context){
 				sharer_op(MPI_LOCK_EXCLUSIVE, owner, classidx,
 						[&](std::size_t win_index){
 						MPI_Accumulate(&id, 1, MPI_LONG, owner, sharer_win_offset+1,
-								1,MPI_LONG,MPI_BOR,sharer_windows[win_index][owner]);
+								1, MPI_LONG, MPI_BOR, sharer_windows[win_index][owner]);
 						});
 			}
 			else if(writers == id || writers == 0){
@@ -631,7 +631,7 @@ void handler(int sig, siginfo_t *si, void *context){
 						sharer_op(MPI_LOCK_EXCLUSIVE, n, classidx,
 								[&](std::size_t win_index){
 								MPI_Accumulate(&id, 1, MPI_LONG, n, sharer_win_offset+1,
-										1,MPI_LONG,MPI_BOR,sharer_windows[win_index][n]);
+										1, MPI_LONG, MPI_BOR, sharer_windows[win_index][n]);
 								});
 					}
 				}
@@ -726,7 +726,7 @@ void handler(int sig, siginfo_t *si, void *context){
 			sharer_op(MPI_LOCK_EXCLUSIVE, owner, classidx+1,
 					[&](std::size_t win_index){
 					MPI_Accumulate(&id, 1, MPI_LONG, owner, sharer_win_offset+1,
-							1,MPI_LONG,MPI_BOR,sharer_windows[win_index][owner]);
+							1, MPI_LONG, MPI_BOR, sharer_windows[win_index][owner]);
 					});
 		}
 		else if(writers == id || writers == 0){
@@ -735,7 +735,7 @@ void handler(int sig, siginfo_t *si, void *context){
 					sharer_op(MPI_LOCK_EXCLUSIVE, n, classidx+1,
 							[&](std::size_t win_index){
 							MPI_Accumulate(&id, 1, MPI_LONG, n, sharer_win_offset+1,
-									1,MPI_LONG,MPI_BOR,sharer_windows[win_index][n]);
+									1, MPI_LONG, MPI_BOR, sharer_windows[win_index][n]);
 							});
 				}
 			}
@@ -923,7 +923,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	mpi_windows = env::mpi_windows();
 
 	// Create one data_window per page chunk
-	// TODO: Do we need the double dimensions or can each window be reused for another node?
 	data_windows.resize(mpi_windows, std::vector<MPI_Win>(numtasks));
 	for(std::size_t i = 0; i < mpi_windows; i++){
 		for(int j = 0; j < numtasks; j++){
@@ -931,7 +930,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 						   MPI_INFO_NULL, MPI_COMM_WORLD, &data_windows[i][j]);
 		}
 	}
-	// Locks to protect the globalData windows from concurrent local access
+	// Locks to protect the data_windows from concurrent local access
 	mpi_lock_data = new mpi_lock*[mpi_windows];
 	for(std::size_t i = 0; i < mpi_windows; i++){
 		mpi_lock_data[i] = new mpi_lock[numtasks];
@@ -941,7 +940,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	sharer_windows.resize(mpi_windows, std::vector<MPI_Win>(numtasks));
 	for(std::size_t i = 0; i < mpi_windows; i++){
 		for(int j = 0; j < numtasks; j++){
-			MPI_Win_create(globalSharers, gwritersize, sizeof(unsigned long),
+			MPI_Win_create(globalSharers, gwritersize, sizeof(std::uint64_t),
 						   MPI_INFO_NULL, MPI_COMM_WORLD, &sharer_windows[i][j]);
 		}
 	}
@@ -1142,7 +1141,6 @@ void swdsm_argo_barrier(int n, upgrade_type upgrade){
 }
 
 void argo_reset_coherence(){
-	std::size_t j;
 	stats.write_misses.store(0);
 
 	memset(touchedcache, 0, cachesize);
@@ -1154,7 +1152,7 @@ void argo_reset_coherence(){
 
 	for(std::size_t i=0; i<classificationSize; i+=(load_size*2)){
 		sharer_op(MPI_LOCK_EXCLUSIVE, workrank, i, [&](std::size_t){
-				for(j = i; j < i+(load_size*2); j++){
+				for(std::size_t j = i; j < i+(load_size*2); j++){
 					globalSharers[j] = 0;
 				}
 			});
@@ -1228,20 +1226,20 @@ void argo_reset_stats(){
 	stats.ssd_time = 0;
 
 	// Clear the cache lock statistics
-	for( auto& cache_lock : cache_locks ){
+	for(auto& cache_lock : cache_locks){
 		cache_lock.reset_stats();
 	}
 
 	// Clear the sharer lock statistics
-	for( std::size_t i = 0; i < mpi_windows; i++ ) {
-		for( int j = 0; j < numtasks; j++ ) {
+	for(std::size_t i = 0; i < mpi_windows; i++) {
+		for(argo::node_id_t j = 0; j < numtasks; j++) {
 			mpi_lock_sharer[i][j].reset_stats();
 		}
 	}
 
 	// Clear the data lock statistics
-	for( std::size_t i = 0; i < mpi_windows; i++ ) {
-		for( int j = 0; j < numtasks; j++ ) {
+	for(std::size_t i = 0; i < mpi_windows; i++) {
+		for(argo::node_id_t j = 0; j < numtasks; j++) {
 			mpi_lock_data[i][j].reset_stats();
 		}
 	}
@@ -1339,7 +1337,7 @@ void print_statistics(){
 	double data_mpi_hold_time(0), data_mpi_avg_hold_time(0), data_mpi_max_hold_time(0);
 
 	for(std::size_t i = 0; i < mpi_windows; i++){
-		for(int j=0; j<numtasks; j++){
+		for(argo::node_id_t j = 0; j < numtasks; j++){
 			/* Get number of locks */
 			data_num_locks += mpi_lock_data[i][j].get_num_locks();
 
@@ -1387,7 +1385,7 @@ void print_statistics(){
 	double sharer_mpi_hold_time(0), sharer_mpi_avg_hold_time(0), sharer_mpi_max_hold_time(0);
 
 	for(std::size_t i = 0; i < mpi_windows; i++){
-		for(int j=0; j<numtasks; j++){
+		for(argo::node_id_t j = 0; j < numtasks; j++){
 			/* Get number of locks */
 			sharer_num_locks += mpi_lock_sharer[i][j].get_num_locks();
 
@@ -1426,7 +1424,7 @@ void print_statistics(){
 
 	/** Nicely format and print the results */
 	MPI_Barrier(MPI_COMM_WORLD);
-	if(workrank==0){
+	if(workrank == 0){
 		/** Adjust memory size */
 		double mem_size_readable = size_of_all;
 		std::vector<const char*> sizes = { "B ", "KB", "MB", "GB", "TB" };
@@ -1453,9 +1451,9 @@ void print_statistics(){
 
 	/* Print node information */
 	if(print_level > 1) {
-		for(int i=0; i<numtasks; i++){
+		for(argo::node_id_t i = 0; i < numtasks; i++){
 			MPI_Barrier(MPI_COMM_WORLD);
-			if(i==workrank){
+			if(i == workrank){
 				printf("#" YEL "  ### PROCESS ID %d ###\n" RESET,workrank);
 
 				/* Print remote access info */

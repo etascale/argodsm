@@ -4,12 +4,13 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#include "../backend.hpp"
-#include "swdsm.h"
-#include "write_buffer.hpp"
-#include "mpi_lock.hpp"
-#include "virtual_memory/virtual_memory.hpp"
 #include <vector>
+
+#include "../backend.hpp"
+#include "mpi_lock.hpp"
+#include "swdsm.h"
+#include "virtual_memory/virtual_memory.hpp"
+#include "write_buffer.hpp"
 
 // EXTERNAL VARIABLES FROM BACKEND
 /**

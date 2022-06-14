@@ -226,7 +226,6 @@ namespace argo {
 				// Perform the exchange operation
 				std::size_t win_index = get_data_win_index(obj.offset());
 				std::size_t win_offset = get_data_win_offset(obj.offset());
-				// TODO: Does this have to be to node 0 like in prev implementation?
 				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_EXCLUSIVE, obj.node(), data_windows[win_index][obj.node()]);
 				MPI_Fetch_and_op(desired, output_buffer, t_type, obj.node(), win_offset, MPI_REPLACE, data_windows[win_index][obj.node()]);
 				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);
@@ -274,7 +273,6 @@ namespace argo {
 				// Perform the store operation
 				std::size_t win_index = get_data_win_index(obj.offset());
 				std::size_t win_offset = get_data_win_offset(obj.offset());
-				// TODO: Does this have to be to node 0 like in prev implementation?
 				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_SHARED, obj.node(), data_windows[win_index][obj.node()]);
 				MPI_Get(output_buffer, 1, t_type, obj.node(), win_offset, 1, t_type, data_windows[win_index][obj.node()]);
 				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);
@@ -314,7 +312,6 @@ namespace argo {
 				// Perform the store operation
 				std::size_t win_index = get_data_win_index(obj.offset());
 				std::size_t win_offset = get_data_win_offset(obj.offset());
-				// TODO: Does this have to be to node 0 like in prev implementation?
 				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_EXCLUSIVE, obj.node(), data_windows[win_index][obj.node()]);
 				MPI_Compare_and_swap(desired, expected, output_buffer, t_type, obj.node(), win_offset, data_windows[win_index][obj.node()]);
 				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);
@@ -356,7 +353,6 @@ namespace argo {
 				// Perform the exchange operation
 				std::size_t win_index = get_data_win_index(obj.offset());
 				std::size_t win_offset = get_data_win_offset(obj.offset());
-				// TODO: Does this have to be to node 0 like in prev implementation?
 				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_EXCLUSIVE, obj.node(), data_windows[win_index][obj.node()]);
 				MPI_Fetch_and_op(value, output_buffer, t_type, obj.node(), win_offset, MPI_SUM, data_windows[win_index][obj.node()]);
 				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);

@@ -12,7 +12,6 @@
 #include <atomic>
 #include <chrono>
 #include <thread>
-#include <atomic>
 
 namespace argo {
 	namespace globallock {

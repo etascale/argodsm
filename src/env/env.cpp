@@ -240,8 +240,7 @@ namespace argo {
 			value_allocation_policy = parse_env<std::size_t>(env_allocation_policy, default_allocation_policy).second;
 			value_allocation_block_size = parse_env<std::size_t>(env_allocation_block_size, default_allocation_block_size).second;
 			value_load_size = parse_env<std::size_t>(env_load_size, default_load_size).second;
-			value_mpi_windows = parse_env<std::size_t>(env_mpi_windows,
-					default_mpi_windows).second;
+			value_mpi_windows = parse_env<std::size_t>(env_mpi_windows, default_mpi_windows).second;
 			value_print_statistics = parse_env<std::size_t>(env_print_statistics, default_print_statistics).second;
 
 			is_initialized = true;

@@ -132,8 +132,8 @@ namespace argo {
 		std::size_t mpi_windows();
 
 		/**
-		 * @brief Get the level of statistics print
-		 * @return The initialized level
+		 * @brief Get the requested statistics print level
+		 * @return The requested statistics print level
 		 * @see @ref ARGO_PRINT_STATISTICS
 		 */
 		std::size_t print_statistics();
