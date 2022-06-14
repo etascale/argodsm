@@ -554,7 +554,7 @@ std::size_t get_classification_index(std::uintptr_t addr);
  * @param addr Address in the global address space
  * @return true if cached or locally backed, else false
  * @warning This is strictly meant for testing prefetching
- * @todo This should be moved in to a dedicated cache class
+ * @todo This should be moved into a dedicated cache class
  */
 bool _is_cached(std::uintptr_t addr);
 
@@ -563,7 +563,7 @@ bool _is_cached(std::uintptr_t addr);
  * op and then unlocks the locked mpi_lock_sharer
  * @param lock_type MPI lock type
  * @param rank remote node to perform op on
- * @param offset the offset in to the remote node's globalSharer
+ * @param offset the offset into the remote node's globalSharer
  * data structure
  * @param op A function to execute
  */
@@ -582,14 +582,14 @@ std::size_t get_sharer_win_index(int classification_index);
  * @brief Gets the sharer window offset based on the classification
  * index
  * @param classification_index the page classification index
- * @return the offset in to the sharer window
+ * @return the offset into the sharer window
  */
 std::size_t get_sharer_win_offset(int classification_index);
 
 /**
  * @brief Gets the data window index based on the offset into the
  * node's backing store
- * @param offset the page offset in to the remote node's backing
+ * @param offset the page offset into the remote node's backing
  * store
  * @return the data window index
  */
@@ -598,9 +598,9 @@ std::size_t get_data_win_index(std::size_t offset);
 /**
  * @brief Gets the sharer window offset based on the classification
  * index
- * @param offset the page offset in to the remote node's backing
+ * @param offset the page offset into the remote node's backing
  * store
- * @return the offset in to the sharer window
+ * @return the offset into the sharer window
  */
 std::size_t get_data_win_offset(std::size_t offset);
 #endif /* argo_swdsm_h */
