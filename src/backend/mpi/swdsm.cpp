@@ -5,6 +5,7 @@
  */
 #include <cstddef>
 #include <memory>
+#include <shared_mutex>
 #include <vector>
 
 #include "env/env.hpp"
@@ -53,8 +54,8 @@ char* cacheData;
 char * pagecopy;
 /** @brief Pointer to locks protecting the page cache */
 std::vector<cache_lock> cache_locks;
-/** @brief Mutex ensuring that only one thread can perform sync */
-pthread_rwlock_t sync_lock = PTHREAD_RWLOCK_INITIALIZER;
+/** @brief Mutex ensuring that only one thread can perform node-wide synchronization */
+std::shared_mutex sync_lock;
 
 /*Writebuffer*/
 /** @brief A write buffer storing cache indices */
@@ -549,7 +550,7 @@ void handler(int sig, siginfo_t *si, void *context){
 
 	/* Acquire shared sync lock and first cache index lock */
 	double sync_lock_start = MPI_Wtime();
-	pthread_rwlock_rdlock(&sync_lock);
+	std::shared_lock lock(sync_lock);
 	double sync_lock_end = MPI_Wtime();
 	{
 		std::lock_guard<std::mutex> sync_time_lock(stats.sync_lock_time_mutex);
@@ -598,7 +599,6 @@ void handler(int sig, siginfo_t *si, void *context){
 			/* Do not register as writer if this is a confirmed read miss */
 			if(miss_type == sig::access_type::read) {
 				cache_locks[startIndex].unlock();
-				pthread_rwlock_unlock(&sync_lock);
 				return;
 			}
 
@@ -642,7 +642,6 @@ void handler(int sig, siginfo_t *si, void *context){
 		}
 		/* Unlock shared sync lock and cache index lock */
 		cache_locks[startIndex].unlock();
-		pthread_rwlock_unlock(&sync_lock);
 		return;
 	}
 
@@ -664,7 +663,6 @@ void handler(int sig, siginfo_t *si, void *context){
 		assert(cacheControl[startIndex].state == VALID);
 		assert(cacheControl[startIndex].tag == aligned_access_offset);
 		cache_locks[startIndex].unlock();
-		pthread_rwlock_unlock(&sync_lock);
 		double t2 = MPI_Wtime();
 		std::lock_guard<std::mutex> load_lock(stats.load_time_mutex);
 		stats.load_time += t2-t1;
@@ -676,7 +674,6 @@ void handler(int sig, siginfo_t *si, void *context){
 
 	if(cacheControl[line].dirty == DIRTY){
 		cache_locks[startIndex].unlock();
-		pthread_rwlock_unlock(&sync_lock);
 		return;
 	}
 
@@ -745,9 +742,7 @@ void handler(int sig, siginfo_t *si, void *context){
 	memcpy(copy, aligned_access_ptr, CACHELINE*pagesize);
 	mprotect(aligned_access_ptr, pagesize*CACHELINE, PROT_WRITE|PROT_READ);
 	cache_locks[startIndex].unlock();
-	pthread_rwlock_unlock(&sync_lock);
 	double t2 = MPI_Wtime();
-	// TODO: Check if this actually needs to be outside
 	argo_write_buffer->add(startIndex);
 	std::lock_guard<std::mutex> store_lock(stats.store_time_mutex);
 	stats.store_time += t2-t1;
@@ -1115,7 +1110,7 @@ void swdsm_argo_barrier(int n, upgrade_type upgrade){
 	// Let one thread per node perform MPI operations
 	if(pthread_mutex_trylock(&barriermutex) == 0){
 		barrierlockholder = pthread_self();
-		pthread_rwlock_wrlock(&sync_lock);
+		std::unique_lock lock(sync_lock);
 
 		// Perform SD followed by SI
 		argo_write_buffer->flush();
@@ -1127,8 +1122,6 @@ void swdsm_argo_barrier(int n, upgrade_type upgrade){
 			self_upgrade(upgrade);
 			MPI_Barrier(workcomm);
 		}
-
-		pthread_rwlock_unlock(&sync_lock);
 	}
 
 	// Wait for n threads to arrive
@@ -1184,26 +1177,24 @@ void argo_reset_coherence(){
 void argo_acquire() {
 	int flag;
 	double t1 = MPI_Wtime();
-	pthread_rwlock_wrlock(&sync_lock);
+	std::unique_lock lock(sync_lock);
 	double t2 = MPI_Wtime();
 	// Sync lock can only be held by one so no lock_guard required
 	stats.sync_lock_time += t2-t1;
 	self_invalidation();
 	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
-	pthread_rwlock_unlock(&sync_lock);
 }
 
 
 void argo_release() {
 	int flag;
 	double t1 = MPI_Wtime();
-	pthread_rwlock_wrlock(&sync_lock);
+	std::unique_lock lock(sync_lock);
 	double t2 = MPI_Wtime();
 	// Sync lock can only be held by one so no lock_guard required
 	stats.sync_lock_time += t2-t1;
 	argo_write_buffer->flush();
 	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
-	pthread_rwlock_unlock(&sync_lock);
 }
 
 void argo_acq_rel() {

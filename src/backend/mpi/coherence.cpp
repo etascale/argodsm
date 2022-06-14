@@ -4,6 +4,7 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
+#include <shared_mutex>
 #include <vector>
 
 #include "../backend.hpp"
@@ -32,7 +33,7 @@ extern std::vector<cache_lock> cache_locks;
  * @brief A sync lock that acquires shared read or exclusive
  * write access to the whole cache.
  */
-extern pthread_rwlock_t sync_lock;
+extern std::shared_mutex sync_lock;
 /**
  * @brief sharer_windows protects the pyxis directory
  * @deprecated Should not be needed once the pyxis directory is
@@ -82,7 +83,7 @@ namespace argo {
 
 			// Lock relevant mutexes. Start statistics timekeeping
 			double t1 = MPI_Wtime();
-			pthread_rwlock_rdlock(&sync_lock);
+			std::shared_lock lock(sync_lock);
 
 			// Iterate over all pages to selectively invalidate
 			for(std::size_t page_address = argo_address;
@@ -143,9 +144,6 @@ namespace argo {
 			int flag;
 			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
 
-			// Release relevant mutexes
-			pthread_rwlock_unlock(&sync_lock);
-
 			std::lock_guard<std::mutex> ssi_time_lock(stats.ssi_time_mutex);
 			stats.ssi_time += t2-t1;
 		}
@@ -165,7 +163,7 @@ namespace argo {
 
 			// Lock relevant mutexes. Start statistics timekeeping
 			double t1 = MPI_Wtime();
-			pthread_rwlock_rdlock(&sync_lock);
+			std::shared_lock lock(sync_lock);
 
 			// Iterate over all pages to selectively downgrade
 			for(std::size_t page_address = argo_address;
@@ -200,9 +198,6 @@ namespace argo {
 			// Poke the MPI system to force progress
 			int flag;
 			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
-
-			// Release relevant mutexes
-			pthread_rwlock_unlock(&sync_lock);
 
 			std::lock_guard<std::mutex> ssd_time_lock(stats.ssd_time_mutex);
 			stats.ssd_time += t2-t1;
