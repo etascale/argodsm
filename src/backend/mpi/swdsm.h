@@ -124,55 +124,50 @@ class alignas(64) cache_lock {
 	private:
 		/** 
 		 * @brief Mutex protecting one cache block 
-		 * @todo This should be used through std::scoped_lock
-		 * in the future, but this requires minimum C++17.
 		 */
-		std::mutex c_mutex;
+		mutable std::mutex c_mutex;
 
 		/** @brief Time spent waiting for lock */
-		double wait_time;
+		double wait_time{0};
 
 		/** @brief Time spent holding the lock */
-		double hold_time;
+		double hold_time{0};
 
 		/** @brief For timekeeping hold time */
-		double acquire_time;
+		double acquire_time{0};
 
 		/** @brief Number of times held */
-		std::size_t num_locks;
+		std::size_t num_locks{0};
 
 	public:
 		/**
 		 * @brief Constructor
 		 */
-		cache_lock()
-			: wait_time(0),
-			hold_time(0),
-			acquire_time(0),
-			num_locks(0)
-		{ };
+		cache_lock() { };
 
 		/**
 		 * @brief Copy constructor
 		 * @param _other cache_lock to copy from
 		 */
-		cache_lock( const cache_lock& _other )
-			: wait_time(_other.wait_time),
-			hold_time(_other.hold_time),
-			acquire_time(_other.acquire_time),
-			num_locks(_other.num_locks)
-		{ };
+		cache_lock(const cache_lock& _other) {
+			std::scoped_lock lock_other(_other.c_mutex);
+			wait_time = _other.wait_time;
+			hold_time = _other.hold_time;
+			acquire_time = _other.acquire_time;
+			num_locks = _other.num_locks;
+		}
 
 		/**
 		 * @brief Move constructor
 		 * @param _other cache_lock to move
 		 */
-		cache_lock( const cache_lock&& _other )
-			: wait_time(std::move(_other.wait_time)),
-			hold_time(std::move(_other.hold_time)),
-			acquire_time(std::move(_other.acquire_time)),
-			num_locks(std::move(_other.num_locks))
-		{ };
+		cache_lock(const cache_lock&& _other) {
+			std::scoped_lock lock_other(_other.c_mutex);
+			wait_time = std::move(_other.wait_time);
+			hold_time = std::move(_other.hold_time);
+			acquire_time = std::move(_other.acquire_time);
+			num_locks = std::move(_other.num_locks);
+		}
 
 		/** @brief Destructor */
 		~cache_lock() { };
@@ -192,7 +187,12 @@ class alignas(64) cache_lock {
 		 * @return True if successful, else false
 		 */
 		bool try_lock(){
-			return c_mutex.try_lock();
+			bool is_locked = c_mutex.try_lock();
+			if(is_locked) {
+				acquire_time = MPI_Wtime();
+				num_locks++;
+			}
+			return is_locked;
 		}
 
 		/** @brief Release a cache lock */
@@ -206,6 +206,7 @@ class alignas(64) cache_lock {
 		 * @return	The time in seconds
 		 */
 		double get_lock_time() const {
+			std::scoped_lock lock(c_mutex);
 			return wait_time;
 		}
 
@@ -214,6 +215,7 @@ class alignas(64) cache_lock {
 		 * @return	The time in seconds
 		 */
 		double get_hold_time() const {
+			std::scoped_lock lock(c_mutex);
 			return hold_time;
 		}
 
@@ -222,6 +224,7 @@ class alignas(64) cache_lock {
 		 * @return	The number of times this lock was held
 		 */
 		std::size_t get_num_locks() const {
+			std::scoped_lock lock(c_mutex);
 			return num_locks;
 		}
 
@@ -229,6 +232,7 @@ class alignas(64) cache_lock {
 		 * @brief Clear all recorded statistics
 		 */
 		void reset_stats(){
+			std::scoped_lock lock(c_mutex);
 			wait_time = 0;
 			hold_time = 0;
 			num_locks = 0;
