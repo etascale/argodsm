@@ -5,7 +5,6 @@
  */
 #include <cstddef>
 #include <memory>
-#include <shared_mutex>
 #include <vector>
 
 #include "env/env.hpp"
@@ -13,8 +12,6 @@
 #include "virtual_memory/virtual_memory.hpp"
 #include "data_distribution/global_ptr.hpp"
 #include "swdsm.h"
-#include "write_buffer.hpp"
-#include "mpi_lock.hpp"
 
 namespace dd = argo::data_distribution;
 namespace vm = argo::virtual_memory;

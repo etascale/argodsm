@@ -13,53 +13,6 @@
 #include <vector>
 
 #include "swdsm.h"
-#include "mpi_lock.hpp"
-
-/**
- * @brief MPI communicator for node processes
- * @deprecated prototype implementation detail
- * @see swdsm.h
- * @see swdsm.cpp
- */
-extern MPI_Comm workcomm;
-/**
- * @todo MPI communication channel for exclusive accesses
- * @deprecated prototype implementation detail
- * @see swdsm.h
- * @see swdsm.cpp
- */
-extern std::vector<std::vector<MPI_Win>>  data_windows;
-/**
- * @brief locks to protect data windows from unlawful access
- * @see swdsm.h
- * @see swdsm.cpp
- */
-extern mpi_lock **mpi_lock_data;
-
-/**
- * @brief MPI window for the first-touch data distribution
- * @see swdsm.cpp
- * @see first_touch_distribution.hpp
- */
-extern MPI_Win owners_dir_window;
-/**
- * @brief MPI window for the first-touch data distribution
- * @see swdsm.cpp
- * @see first_touch_distribution.hpp
- */
-extern MPI_Win offsets_tbl_window;
-/**
- * @brief MPI directory for the first-touch data distribution
- * @see swdsm.cpp
- * @see first_touch_distribution.hpp
- */
-extern std::uintptr_t *global_owners_dir;
-/**
- * @brief MPI table for the first-touch data distribution
- * @see swdsm.cpp
- * @see first_touch_distribution.hpp
- */
-extern std::uintptr_t *global_offsets_tbl;
 
 /**
  * @brief Returns an MPI integer type that exactly matches in size the argument given
