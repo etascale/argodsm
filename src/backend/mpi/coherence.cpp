@@ -7,14 +7,6 @@
 #include "../backend.hpp"
 #include "swdsm.h"
 #include "virtual_memory/virtual_memory.hpp"
-#include "write_buffer.hpp"
-
-/**
- * @brief Write buffer to ensure selectively handled pages can be removed
- * @deprecated This should eventually be handled by a cache module
- * @see swdsm.cpp
- */
-extern write_buffer<std::size_t>* argo_write_buffer;
 
 namespace argo {
 	namespace backend {

@@ -17,7 +17,6 @@
 #include "backend/backend.hpp"
 #include "env/env.hpp"
 #include "virtual_memory/virtual_memory.hpp"
-#include "swdsm.h"
 #include "qd.hpp"
 
 /** @brief Block size based on backend definition */

@@ -205,6 +205,22 @@ extern std::uintptr_t* global_owners_dir;
  */
 extern std::uintptr_t* global_offsets_tbl;
 
+/**
+ * @brief stores a page remotely - only writing back what has been written locally since last synchronization point
+ * @param index index in local page cache
+ * @param addr address to page in global address space
+ */
+extern void storepageDIFF(std::size_t index, std::uintptr_t addr);
+
+/*Write Buffer*/
+#include "write_buffer.hpp"  // Needed only in the line below
+/**
+ * @brief Write buffer to ensure selectively handled pages can be removed
+ * @deprecated This should eventually be handled by a cache module
+ * @see swdsm.cpp
+ */
+extern write_buffer<std::size_t>* argo_write_buffer;
+
 /*Handler*/
 /**
  * @brief Catches memory accesses to memory not yet cached in ArgoDSM. Launches remote requests for memory not present.
@@ -268,13 +284,6 @@ void argo_release();
  *        according to Release Consistency)
  */
 void argo_acq_rel();
-
-/**
- * @brief stores a page remotely - only writing back what has been written locally since last synchronization point
- * @param index index in local page cache
- * @param addr address to page in global address space
- */
-void storepageDIFF(std::size_t index, std::uintptr_t addr);
 
 /*Statistics*/
 /**
