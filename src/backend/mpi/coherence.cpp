@@ -6,55 +6,7 @@
 
 #include "../backend.hpp"
 #include "swdsm.h"
-#include "write_buffer.hpp"
 #include "virtual_memory/virtual_memory.hpp"
-
-// EXTERNAL VARIABLES FROM BACKEND
-/**
- * @brief This is needed to access page information from the cache
- * @deprecated Should be replaced with a cache API
- */
-extern control_data *cacheControl;
-/**
- * @brief globalSharers is needed to access and modify the pyxis directory
- * @deprecated Should eventually be handled by a cache module
- */
-extern std::uint64_t *globalSharers;
-/**
- * @brief A cache mutex protects all operations on cacheControl
- * @deprecated Should eventually be handled by a cache module
- */
-extern pthread_mutex_t cachemutex;
-/**
- * @brief ibsem is used to serialize all Infiniband (MPI) operations
- * @deprecated Should not be needed once the cache module is implemented
- */
-extern sem_t ibsem;
-/**
- * @brief sharerWindow protects the pyxis directory
- * @deprecated Should not be needed once the pyxis directory is
- * managed from elsewhere through a cache module.
- */
-extern MPI_Win sharerWindow;
-/**
- * @brief Needed to update argo statistics
- * @deprecated Should be replaced by API calls to a stats module
- */
-extern argo_statistics stats;
-/**
- * @brief Needed to update information about cache pages touched
- * @deprecated Should eventually be handled by a cache module
- */
-extern argo_byte *touchedcache;
-/**
- * @brief workcomm is needed to poke the MPI system during one sided RMA
- */
-extern MPI_Comm workcomm;
-/**
- * @brief Write buffer to ensure selectively handled pages can be removed
- * @deprecated This should eventually be handled by a cache module
- */
-extern write_buffer<std::size_t>* argo_write_buffer;
 
 namespace argo {
 	namespace backend {
