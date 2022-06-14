@@ -20,18 +20,6 @@
 #include "swdsm.h"
 #include "qd.hpp"
 
-/**
- * @brief		Argo statistics struct
- * @deprecated 	This should be replaced with an API call
- */
-extern argo_statistics stats;
-
-/**
- * @brief		Argo cache data structure
- * @deprecated 	prototype implementation, should be replaced with API calls
- */
-extern control_data* cacheControl;
-
 /** @brief Block size based on backend definition */
 const std::size_t block_size = page_size*CACHELINE;
 

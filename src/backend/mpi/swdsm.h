@@ -124,6 +124,87 @@ static const argo_byte READER = 5;
  */
 constexpr std::size_t page_size = 4096;
 
+/* External declarations */
+/**
+ * @brief Argo cache data structure
+ * @deprecated Should be replaced with a cache API
+ */
+extern control_data* cacheControl;
+/**
+ * @brief globalSharers is needed to access and modify the pyxis directory
+ * @deprecated Should eventually be handled by a cache module
+ * @see swdsm.cpp
+ */
+extern std::uint64_t* globalSharers;
+/**
+ * @brief A cache mutex protects all operations on cacheControl
+ * @deprecated Should eventually be handled by a cache module
+ * @see swdsm.cpp
+ */
+extern pthread_mutex_t cachemutex;
+/**
+ * @brief ibsem is used to serialize all Infiniband (MPI) operations
+ * @deprecated Should not be needed once the cache module or a parallel
+ * MPI communication is allowed.
+ * @see swdsm.cpp
+ */
+extern sem_t ibsem;
+/**
+ * @todo MPI communication channel for exclusive accesses
+ * @deprecated MPI communication should be handled by a module and
+ * accessed through a proper API
+ * @see swdsm.cpp
+ */
+extern MPI_Win* globalDataWindow;
+/**
+ * @brief sharerWindow protects the pyxis directory
+ * @deprecated Should not be needed once the pyxis directory is
+ * managed from elsewhere through a cache module.
+ * @see swdsm.cpp
+ */
+extern MPI_Win sharerWindow;
+/**
+ * @brief Needed to update argo statistics
+ * @deprecated Should be replaced by API calls to a stats module
+ * @see swdsm.cpp
+ */
+extern argo_statistics stats;
+/**
+ * @brief Needed to update information about cache pages touched
+ * @deprecated Should eventually be handled by a cache module
+ */
+extern argo_byte* touchedcache;
+/**
+ * @brief MPI communicator for node processes
+ * @deprecated prototype implementation detail
+ * @see swdsm.cpp
+ */
+extern MPI_Comm workcomm;
+/**
+ * @brief MPI window for the first-touch data distribution
+ * @see swdsm.cpp
+ * @see first_touch_distribution.hpp
+ */
+extern MPI_Win owners_dir_window;
+/**
+ * @brief MPI window for the first-touch data distribution
+ * @see swdsm.cpp
+ * @see first_touch_distribution.hpp
+ */
+extern MPI_Win offsets_tbl_window;
+/**
+ * @brief MPI directory for the first-touch data distribution
+ * @see swdsm.cpp
+ * @see first_touch_distribution.hpp
+ */
+extern std::uintptr_t* global_owners_dir;
+/**
+ * @brief MPI table for the first-touch data distribution
+ * @see swdsm.cpp
+ * @see first_touch_distribution.hpp
+ */
+extern std::uintptr_t* global_offsets_tbl;
+
 /*Handler*/
 /**
  * @brief Catches memory accesses to memory not yet cached in ArgoDSM. Launches remote requests for memory not present.

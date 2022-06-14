@@ -14,54 +14,6 @@
 #include "swdsm.h"
 
 /**
- * @brief MPI communicator for node processes
- * @deprecated prototype implementation detail
- * @see swdsm.h
- * @see swdsm.cpp
- */
-extern MPI_Comm workcomm;
-/**
- * @todo MPI communication channel for exclusive accesses
- * @deprecated prototype implementation detail
- * @see swdsm.h
- * @see swdsm.cpp
- */
-extern MPI_Win  *globalDataWindow;
-
-/**
- * @brief MPI window for the first-touch data distribution
- * @see swdsm.cpp
- * @see first_touch_distribution.hpp
- */
-extern MPI_Win owners_dir_window;
-/**
- * @brief MPI window for the first-touch data distribution
- * @see swdsm.cpp
- * @see first_touch_distribution.hpp
- */
-extern MPI_Win offsets_tbl_window;
-/**
- * @brief MPI directory for the first-touch data distribution
- * @see swdsm.cpp
- * @see first_touch_distribution.hpp
- */
-extern std::uintptr_t *global_owners_dir;
-/**
- * @brief MPI table for the first-touch data distribution
- * @see swdsm.cpp
- * @see first_touch_distribution.hpp
- */
-extern std::uintptr_t *global_offsets_tbl;
-
-/**
- * @todo should be changed to qd-locking (but need to be replaced in the other files as well)
- *       or removed when infiniband/the mpi implementations allows for multithreaded accesses to the interconnect
- * @deprecated prototype implementation detail
- */
-#include <semaphore.h>
-extern sem_t ibsem;
-
-/**
  * @brief Returns an MPI integer type that exactly matches in size the argument given
  *
  * @param size The size of the datatype to be returned
