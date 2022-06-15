@@ -739,7 +739,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	sig::signal_handler<SIGSEGV>::install_argo_handler(&handler);
 
 	std::size_t cacheControlSize = sizeof(control_data)*cachesize;
-	std::size_t gwritersize = classificationSize*sizeof(long);
+	std::size_t gwritersize = classificationSize*sizeof(std::uint64_t);
 	cacheControlSize = align_forwards(cacheControlSize, pagesize);
 	gwritersize = align_forwards(gwritersize, pagesize);
 
