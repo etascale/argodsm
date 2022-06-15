@@ -34,7 +34,7 @@
 #include <cstdint>
 #include <functional>
 #include <mutex>
-#include <shared_mutex
+#include <shared_mutex>
 #include <type_traits>
 #include <vector>
 
