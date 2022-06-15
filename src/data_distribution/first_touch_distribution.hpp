@@ -72,7 +72,7 @@ namespace argo {
 #define is_one_equal_to(arr, val) (((arr[0] == val) || (arr[1] == val) || (arr[2] == val)) ? 1 : 0)
 
 /** @brief error message string */
-static const char msg_first_touch_fail[] = "ArgoDSM failed to find a backing node. Please report a bug.";
+static const std::string msg_first_touch_fail = "ArgoDSM failed to find a backing node. Please report a bug.";
 
 namespace argo {
 	namespace data_distribution {
