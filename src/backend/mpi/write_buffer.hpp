@@ -24,12 +24,6 @@
 const std::size_t block_size = page_size*CACHELINE;
 
 /**
- * @brief		Argo cache lock structure
- * @deprecated 	prototype implementation, should be replaced with API calls
- */
-extern std::vector<cache_lock> cache_locks;
-
-/**
  * @brief	A write buffer in FIFO style with the capability to erase any
  * element from the buffer while preserving ordering.
  * @tparam	T the type of the write buffer
