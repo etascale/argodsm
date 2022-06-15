@@ -106,12 +106,12 @@ namespace argo {
 		backend::barrier();
 	}
 
-	int node_id() {
-		return static_cast<int>(argo::backend::node_id());
+	argo::node_id_t node_id() {
+		return argo::backend::node_id();
 	}
 
-	int number_of_nodes() {
-		return static_cast<int>(argo::backend::number_of_nodes());
+	argo::num_nodes_t number_of_nodes() {
+		return argo::backend::number_of_nodes();
 	}
 
 	std::size_t get_block_size() {
@@ -144,7 +144,7 @@ extern "C" {
 		return argo::is_argo_address(addr);
 	}
 
-	int argo_get_homenode(void* addr) {
+	argo::node_id_t argo_get_homenode(void* addr) {
 		return argo::get_homenode(addr);
 	}
 

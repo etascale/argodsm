@@ -69,12 +69,12 @@ namespace argo {
 	 * @brief A unique ArgoDSM node identifier. Counting starts from 0.
 	 * @return The node ID
 	 */
-	int node_id();
+	argo::node_id_t node_id();
 	/**
 	 * @brief Number of ArgoDSM nodes being run
 	 * @return The total number of ArgoDSM nodes
 	 */
-	int number_of_nodes();
+	argo::num_nodes_t number_of_nodes();
 
 	/**
 	 * @brief Check if addr belongs in the ArgoDSM memory space
@@ -100,7 +100,7 @@ namespace argo {
 	 * @pre addr must be an address in ArgoDSM memory
 	 */
 	template<typename T>
-	int get_homenode(T* addr) {
+	argo::node_id_t get_homenode(T* addr) {
 		data_distribution::global_ptr<T> gptr(addr, false, false);
 		return gptr.peek_node();
 	}

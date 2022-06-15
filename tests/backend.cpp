@@ -221,7 +221,7 @@ TEST_F(backendTest, atomicXchgAtomicity) {
 	// Test if only one node succeeded
 	argo::barrier();
 	bool found = false;
-	for (int i = 0; i < argo::number_of_nodes(); ++i) {
+	for (argo::num_nodes_t i = 0; i < argo::number_of_nodes(); ++i) {
 		global_int _rcs(&rcs[i]);
 		if (argo::backend::atomic::load(_rcs)) {
 			ASSERT_FALSE(found);
@@ -301,7 +301,7 @@ TEST_F(backendTest, atomicCASAtomicity) {
 	// Test if only one node succeeded
 	argo::barrier();
 	int count = 0;
-	for (int i = 0; i < argo::number_of_nodes(); ++i) {
+	for (argo::num_nodes_t i = 0; i < argo::number_of_nodes(); ++i) {
 		global_uint _rcs(&rcs[i]);
 		if (argo::backend::atomic::load(_rcs)) {
 			++count;
@@ -887,7 +887,7 @@ TEST_F(backendTest, writeBufferLoad) {
 	argo::barrier();
 
 	// One node at a time, increment random elements num_writes times
-	for(int i=0; i<argo::number_of_nodes(); i++){
+	for(argo::node_id_t i = 0; i < argo::number_of_nodes(); i++){
 		if(i == argo::node_id()){
 			for(std::size_t j=0; j<num_writes; j++){
 				array[dist(rng)]+=1;

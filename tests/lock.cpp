@@ -79,7 +79,7 @@ TEST_F(LockTest,TAS_trylock_all) {
 	/* Init a counter and increment array to 0 */
 	if(argo::node_id() == 0){
 		*counter = 0;
-		for (int i = 0; i < argo::number_of_nodes(); i++){
+		for (argo::num_nodes_t i = 0; i < argo::number_of_nodes(); i++){
 			did_increment[i] = false;
 		}
 	}
@@ -98,7 +98,7 @@ TEST_F(LockTest,TAS_trylock_all) {
 	ASSERT_GE(argo::number_of_nodes(),*counter);
 
 	int sum = 0;
-	for (int i = 0; i < argo::number_of_nodes(); i++){
+	for (argo::num_nodes_t i = 0; i < argo::number_of_nodes(); i++){
 		if(did_increment[i])
 			sum++;
 	}
@@ -113,7 +113,7 @@ TEST_F(LockTest,TAS_trylock_all) {
 
 /** @brief Checks locking is working by implementing a custom barrier */
 TEST_F(LockTest,TAS_lock_custom_barrier) {
-	int tmp;
+	unsigned int tmp;
 
 	/* Checks this many times if barrier was successful */
 	long deadlock_threshold = 100000;
