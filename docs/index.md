@@ -26,7 +26,7 @@ ArgoDSM depends on the
 [C++ QD Locking Library](https://github.com/davidklaftenegger/qd_library).
 This is included as a git submodule and is built automatically by CMake,
 requiring both git and an internet connection. For instructions on how to build
-offline, see [building ArgoDSM offline](#Building-ArgoDSM-offline).
+offline, see [building ArgoDSM offline](building-argodsm-offline).
 
 Additionally, ArgoDSM requires `libnuma` to detect whether it is running on top
 of NUMA systems, and if so how they are structured internally.
@@ -38,12 +38,25 @@ respectively are required.
 
 Note: adjust the below commands to your needs, especially `CMAKE_INSTALL_PREFIX`.
 
+You must activate exactly one of the `ARGO_VM_*` options. See
+[here]({{ site.baseurl }}/advanced.html#virtual-memory-management) for more
+details.
+`ARGO_VM_MEMFD`. If your kernel is too ancient and you cannot it, the next best
+option is `ARGO_VM_SHM`. However, your system administrator must mount `/dev/shm`
+with a tmpfs of sufficient size for your *entire* program (across all nodes).
+This is safe to do, as there will be no actual data stored in the location. If
+you cannot get enough space in `/dev/shm`, you must use `ARGO_VM_ANONYMOUS`,
+which in our experience is 20% to 40% slower.
+
 ``` bash
 git clone https://github.com/etascale/argodsm.git
 cd argodsm && mkdir build && cd build
 cmake -DARGO_BACKEND_MPI=ON              \
       -DARGO_BACKEND_SINGLENODE=ON       \
       -DARGO_TESTS=ON                    \
+      -DARGO_VM_SHM=OFF                  \
+      -DARGO_VM_ANONYMOUS=OFF            \
+      -DARGO_VM_MEMFD=ON                 \
       -DBUILD_DOCUMENTATION=ON           \
       -DCMAKE_CXX_COMPILER=mpic++        \
       -DCMAKE_C_COMPILER=mpicc           \

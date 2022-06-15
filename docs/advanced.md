@@ -82,17 +82,23 @@ To manage the virtual address space for ArgoDSM applications, we acquire large
 amounts of virtual memory. There are currently three ways to acquire the
 underlying memory for ArgoDSM, and exactly one must be selected at compile time:
 
-1. POSIX shared memory objects (`-DARGO_VM_SHM`)
-2. `memfd_create` syscall      (`-DARGO_VM_MEMFD`)
+1. `memfd_create` syscall      (`-DARGO_VM_MEMFD`)
+2. POSIX shared memory objects (`-DARGO_VM_SHM`)
 3. anonymous remappable memory (`-DARGO_VM_ANONYMOUS`)
 
 Each version has its own downsides:
-1. POSIX shared memory objects are size-limited and require `/dev/shm` support.
-2. `memfd_create` requires Linux kernel version of 3.17+ and memory overcommit.
+1. `memfd_create` requires Linux kernel version of 3.17+ and memory overcommit.
+2. POSIX shared memory objects are size-limited and require `/dev/shm` support.
 3. anonymous remappable memory has a runtime overhead, and relies on kernel
    functionality that is deprecated since Linux version 3.16.
 
-For now, the default is to use POSIX shared memory objects.
+The default and best option is to use `ARGO_VM_MEMFD`.
+Only another option if you cannot upgrade your Linux kernel.
+If you use `ARGO_VM_SHM`, make sure you mount `/dev/shm` with a sufficient size,
+it should be larger than your system memory!
+If you cannot mount `/dev/shm` with sufficient size for your program, the only
+remaining option is `ARGO_VM_ANONYMOUS`. It should work, but there is a large
+(20% to 40% in our tests) runtime overhead for using this outdated interface.
 
 
 ## Data Allocation Policies

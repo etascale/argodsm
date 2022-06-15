@@ -28,11 +28,11 @@ endforeach(src)
 
 # exactly one of these must be enabled. below is some code to ensure this.
 option(ARGO_VM_SHM
-	"Handle virtual addresses using POSIX shared memory. Size-limited." ON)
+	"Handle virtual addresses using POSIX shared memory. Size-limited." OFF)
 option(ARGO_VM_ANONYMOUS
 	"Handle virtual addresses using anonymously-mapped memory. Slow." OFF)
 option(ARGO_VM_MEMFD
-	"Handle virtual addresses using an anonymous memory file. Requires kernel 3.17+." OFF)
+	"Handle virtual addresses using an anonymous memory file. Requires kernel 3.17+." ON)
 
 set(ARGO_VM_COUNT 0 CACHE INTERNAL "Check for multiple virtual address handlers")
 unset(vm_libs)
