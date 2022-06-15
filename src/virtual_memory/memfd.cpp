@@ -4,24 +4,27 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
+// C headers
+#include <sys/mman.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
+#include <unistd.h>
+// C++ headers
 #include <cerrno>
 #include <cstddef>
 #include <cstdlib>
 #include <iostream>
 #include <string>
-#include <sys/mman.h>
-#include <sys/syscall.h>
-#include <sys/types.h>
 #include <system_error>
-#include <unistd.h>
+
 #include "virtual_memory.hpp"
 
 namespace {
 	/* file constants */
 	/** @todo hardcoded start address */
-	const char* ARGO_START = (char*) 0x200000000000l;
+	const char* ARGO_START = reinterpret_cast<char*>(0x200000000000l);
 	/** @todo hardcoded end address */
-	const char* ARGO_END   = (char*) 0x600000000000l;
+	const char* ARGO_END   = reinterpret_cast<char*>(0x600000000000l);
 	/** @todo hardcoded size */
 	const ptrdiff_t ARGO_SIZE = ARGO_END - ARGO_START;
 
@@ -37,7 +40,7 @@ namespace {
 	int fd;
 	/** @brief the address at which the virtual address space used by ArgoDSM starts */
 	void* start_addr;
-}
+} // namespace
 
 namespace argo {
 	namespace virtual_memory {
@@ -51,7 +54,7 @@ namespace argo {
 			}
 			/** @todo check desired range is free */
 			constexpr int flags = MAP_ANONYMOUS|MAP_SHARED|MAP_FIXED;
-			start_addr = ::mmap((void*)ARGO_START, ARGO_SIZE, PROT_NONE, flags, -1, 0);
+			start_addr = ::mmap(reinterpret_cast<void*>(ARGO_START), ARGO_SIZE, PROT_NONE, flags, -1, 0);
 			if(start_addr == MAP_FAILED) {
 				std::cerr << msg_main_mmap_fail << std::endl;
 				/** @todo do something? */

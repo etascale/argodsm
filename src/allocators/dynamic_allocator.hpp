@@ -18,12 +18,13 @@
  * @see argo::mempool::dynamic_memory_pool
  */
 
-#ifndef argo_dynamic_allocators_hpp
-#define argo_dynamic_allocators_hpp argo_dynamic_allocators_hpp
+#ifndef ARGODSM_SRC_ALLOCATORS_DYNAMIC_ALLOCATOR_HPP_
+#define ARGODSM_SRC_ALLOCATORS_DYNAMIC_ALLOCATOR_HPP_
 
 #include <map>
 #include <mutex>
 #include <stack>
+#include <utility>
 
 #include "../mempools/dynamic_mempool.hpp"
 #include "../mempools/global_mempool.hpp"
@@ -362,4 +363,4 @@ namespace argo {
 
 } // namespace argo
 
-#endif /* argo_dynamic_allocators_hpp */
+#endif  // ARGODSM_SRC_ALLOCATORS_DYNAMIC_ALLOCATOR_HPP_

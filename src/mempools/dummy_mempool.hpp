@@ -5,8 +5,8 @@
  * @note not intended for production use
  */
 
-#ifndef argo_dummy_mempool_hpp
-#define argo_dummy_mempool_hpp argo_dummy_mempool_hpp
+#ifndef ARGODSM_SRC_MEMPOOLS_DUMMY_MEMPOOL_HPP_
+#define ARGODSM_SRC_MEMPOOLS_DUMMY_MEMPOOL_HPP_
 
 namespace argo {
 	/**
@@ -21,6 +21,7 @@ namespace argo {
 			std::size_t max_size;
 			/** @todo Documentation */
 			std::size_t offset;
+
 		public:
 			/** type of allocation failures within this memory pool */
 			using bad_alloc = std::bad_alloc;
@@ -29,7 +30,7 @@ namespace argo {
 			 * @brief Default constructor: initializes memory on heap and sets offset to 0
 			 * @param size The amount of memory in the pool
 			 */
-			memory_pool(std::size_t size) : memory(new char[size]), max_size(size), offset{0} {}
+			explicit memory_pool(std::size_t size) : memory(new char[size]), max_size(size), offset{0} {}
 
 			/**
 			 * @brief Reserve more memory
@@ -62,4 +63,4 @@ namespace argo {
 	};
 } // namespace argo
 
-#endif /* argo_dummy_mempool_hpp */
+#endif // ARGODSM_SRC_MEMPOOLS_DUMMY_MEMPOOL_HPP_

@@ -3,6 +3,8 @@
  * @brief This file implements the MPI-backend of ArgoDSM
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
+
+#include <algorithm>
 #include <cstddef>
 #include <memory>
 #include <vector>
@@ -194,7 +196,6 @@ std::size_t peek_offset(std::uintptr_t addr) {
  * @pre aligned_access_offset must be aligned as CACHELINE*pagesize
  */
 void load_cache_entry(std::uintptr_t aligned_access_offset) {
-
 	/* If it's not an ArgoDSM address, do not handle it */
 	if(aligned_access_offset >= size_of_all){
 		//TODO: Must probably unlock here?
@@ -524,8 +525,7 @@ void handler(int sig, siginfo_t *si, void *context){
 				}
 				if(owner == workrank){
 					throw "bad owner in local access";
-				}
-				else{
+				}else{
 					/* update remote private holder to shared */
 					sharer_op(MPI_LOCK_EXCLUSIVE, owner, classidx,
 							[&](std::size_t win_index){
@@ -537,9 +537,7 @@ void handler(int sig, siginfo_t *si, void *context){
 			/* set page to permit reads and map it to the page cache */
 			/** @todo Set cache offset to a variable instead of calculating it here */
 			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ);
-
-		}
-		else{
+		}else{
 			/* Do not register as writer if this is a confirmed read miss */
 			if(miss_type == sig::access_type::read) {
 				cache_locks[startIndex].unlock();
@@ -568,15 +566,16 @@ void handler(int sig, siginfo_t *si, void *context){
 						MPI_Accumulate(&id, 1, MPI_LONG, owner, sharer_win_offset+1,
 								1, MPI_LONG, MPI_BOR, sharer_windows[win_index][owner]);
 						});
-			}
-			else if(writers == id || writers == 0){
-				for(argo::num_nodes_t n = 0; n < numtasks; n++){
-					if(n != workrank && ((static_cast<std::uint64_t>(1) << n)&sharers) != 0){
-						sharer_op(MPI_LOCK_EXCLUSIVE, n, classidx,
-								[&](std::size_t win_index){
-								MPI_Accumulate(&id, 1, MPI_LONG, n, sharer_win_offset+1,
-										1, MPI_LONG, MPI_BOR, sharer_windows[win_index][n]);
-								});
+			}else{
+			  if(writers == id || writers == 0){
+				  for(argo::num_nodes_t n = 0; n < numtasks; n++){
+					  if(n != workrank && ((static_cast<std::uint64_t>(1) << n)&sharers) != 0){
+						  sharer_op(MPI_LOCK_EXCLUSIVE, n, classidx,
+							  	[&](std::size_t win_index){
+								  MPI_Accumulate(&id, 1, MPI_LONG, n, sharer_win_offset+1,
+									  	1, MPI_LONG, MPI_BOR, sharer_windows[win_index][n]);
+								  });
+						}
 					}
 				}
 			}
@@ -669,15 +668,16 @@ void handler(int sig, siginfo_t *si, void *context){
 					MPI_Accumulate(&id, 1, MPI_LONG, owner, sharer_win_offset+1,
 							1, MPI_LONG, MPI_BOR, sharer_windows[win_index][owner]);
 					});
-		}
-		else if(writers == id || writers == 0){
-			for(argo::num_nodes_t n = 0; n < numtasks; n++){
-				if(n != workrank && ((static_cast<std::uint64_t>(1) << n)&sharers) != 0){
-					sharer_op(MPI_LOCK_EXCLUSIVE, n, classidx+1,
-							[&](std::size_t win_index){
-							MPI_Accumulate(&id, 1, MPI_LONG, n, sharer_win_offset+1,
-									1, MPI_LONG, MPI_BOR, sharer_windows[win_index][n]);
-							});
+		}else{
+      if(writers == id || writers == 0){
+			  for(argo::num_nodes_t n = 0; n < numtasks; n++){
+				  if(n != workrank && ((static_cast<std::uint64_t>(1) << n)&sharers) != 0){
+					  sharer_op(MPI_LOCK_EXCLUSIVE, n, classidx+1,
+						  	[&](std::size_t win_index){
+							  MPI_Accumulate(&id, 1, MPI_LONG, n, sharer_win_offset+1,
+								  	1, MPI_LONG, MPI_BOR, sharer_windows[win_index][n]);
+							  });
+					}
 				}
 			}
 		}
@@ -793,7 +793,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	sig::signal_handler<SIGSEGV>::install_argo_handler(&handler);
 
 	std::size_t cacheControlSize = sizeof(control_data)*cachesize;
-	std::size_t gwritersize = classificationSize*sizeof(long);
+	std::size_t gwritersize = classificationSize*sizeof(std::uint64_t);
 	cacheControlSize = align_forwards(cacheControlSize, pagesize);
 	gwritersize = align_forwards(gwritersize, pagesize);
 
@@ -983,8 +983,7 @@ void self_invalidation(){
 				mpi_lock_sharer[win_index][workrank].unlock(workrank, sharer_windows[win_index][workrank]);
 				touchedcache[i] = 1;
 				/*nothing - we keep the pages, SD is done in flushWB*/
-			}
-			else{ //multiple writer or SO
+			}else{ //multiple writer or SO
 				mpi_lock_sharer[win_index][workrank].unlock(workrank, sharer_windows[win_index][workrank]);
 				cacheControl[i].dirty = CLEAN;
 				cacheControl[i].state = INVALID;
@@ -1027,10 +1026,11 @@ void self_upgrade(upgrade_type upgrade) {
 				cacheControl[cache_index].dirty = CLEAN;
 				cacheControl[cache_index].state = INVALID;
 				touchedcache[cache_index] = 0;
-			}
-			// Must protect all pages upgrading to S from writes
-			else if(is_writer) {
-				mprotect(global_addr, block_size, PROT_READ);
+			}else{
+				// Must protect all pages upgrading to S from writes
+				if(is_writer) {
+					mprotect(global_addr, block_size, PROT_READ);
+				}
 			}
 		}
 	}
@@ -1208,8 +1208,7 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr){
 		}
 		if(branchval != 0){
 			cnt+=drf_unit;
-		}
-		else{
+		}else{
 			if(cnt > 0){
 				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, win_offset+(i-cnt), cnt, MPI_BYTE, data_windows[win_index][homenode]);
 				cnt = 0;

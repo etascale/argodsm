@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_dynamic_mempool_hpp
-#define argo_dynamic_mempool_hpp argo_dynamic_mempool_hpp
+#ifndef ARGODSM_SRC_MEMPOOLS_DYNAMIC_MEMPOOL_HPP_
+#define ARGODSM_SRC_MEMPOOLS_DYNAMIC_MEMPOOL_HPP_
 
 #include "../backend/backend.hpp"
 #include "../synchronization/broadcast.hpp"
@@ -109,6 +109,7 @@ namespace argo {
 
 				/** @brief amount of memory in pool that is already allocated */
 				std::size_t offset;
+
 			public:
 				/** type of allocation failures within this memory pool */
 				using bad_alloc = std::bad_alloc;
@@ -159,7 +160,6 @@ namespace argo {
 						memory = nullptr;
 					}
 					synchronize<growth_mode>(&memory);
-
 				}
 
 				/**
@@ -174,4 +174,4 @@ namespace argo {
 	} // namespace mempools
 } // namespace argo
 
-#endif /* argo_dynamic_mempool_hpp */
+#endif // ARGODSM_SRC_MEMPOOLS_DYNAMIC_MEMPOOL_HPP_

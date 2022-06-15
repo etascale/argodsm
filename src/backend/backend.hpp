@@ -6,8 +6,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_backend_backend_hpp
-#define argo_backend_backend_hpp argo_backend_backend_hpp
+#ifndef ARGODSM_SRC_BACKEND_BACKEND_HPP_
+#define ARGODSM_SRC_BACKEND_BACKEND_HPP_
 
 #include <cassert>
 #include <cstdint>
@@ -36,7 +36,7 @@ namespace argo {
 			acq_rel, ///< Release + Acquire
 			// seq_cst
 		};
-	}
+	} // namespace atomic
 
 	namespace backend {
 		/**
@@ -211,7 +211,7 @@ namespace argo {
 		}
 
 		namespace atomic {
-			using namespace argo::atomic;
+			using argo::atomic::memory_order;
 
 			/*
 			 * The following atomic functions are implemented by each backend in
@@ -291,8 +291,7 @@ namespace argo {
 			 * @sa load
 			 * @warning For internal use only - DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
 			 */
-			void _load(
-				global_ptr<void> obj, std::size_t size, void* output_buffer);
+			void _load(global_ptr<void> obj, std::size_t size, void* output_buffer);
 
 			/**
 			 * @brief Backend internal type erased atomic load function
@@ -640,4 +639,4 @@ namespace argo {
 	} // namespace backend
 } // namespace argo
 
-#endif /* argo_backend_backend_hpp */
+#endif  // ARGODSM_SRC_BACKEND_BACKEND_HPP_

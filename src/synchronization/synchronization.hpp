@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_synchronization_hpp
-#define argo_synchronization_hpp argo_synchronization_hpp
+#ifndef ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_
+#define ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_
 
 #include <cstddef>
 
@@ -43,7 +43,7 @@ namespace argo {
 } // namespace argo
 
 extern "C" {
-#include "synchronization.h"
+#include "./synchronization.h"
 }
 
-#endif /* argo_synchronization_hpp */
+#endif // ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_

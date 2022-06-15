@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_cohort_lock_h
-#define argo_cohort_lock_h argo_cohort_lock_h
+#ifndef ARGODSM_SRC_SYNCHRONIZATION_COHORT_LOCK_H_
+#define ARGODSM_SRC_SYNCHRONIZATION_COHORT_LOCK_H_
 
 /**
  * @brief cohort handle dummy type
@@ -41,4 +41,4 @@ void argo_cohortlock_lock(cohortlock_t lock);
  */
 void argo_cohortlock_unlock(cohortlock_t lock);
 
-#endif /* argo_cohort_lock_h */
+#endif // ARGODSM_SRC_SYNCHRONIZATION_COHORT_LOCK_H_

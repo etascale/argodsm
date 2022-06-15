@@ -4,15 +4,17 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#include "../backend.hpp"
-
-#include <atomic>
-#include <algorithm>
-#include <type_traits>
+// C headers
 #include <mpi.h>
+#include <semaphore.h>
+// C++ headers
+#include <algorithm>
+#include <atomic>
+#include <type_traits>
 #include <vector>
 
 #include "swdsm.h"
+#include "../backend.hpp"
 
 /**
  * @brief Returns an MPI integer type that exactly matches in size the argument given

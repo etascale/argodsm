@@ -4,25 +4,27 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_global_mempool_hpp
-#define argo_global_mempool_hpp argo_global_mempool_hpp
+#ifndef ARGODSM_SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_
+#define ARGODSM_SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_
+
+// C headers
+#include <stdlib.h>
+#include <sys/mman.h>
+// C++ headers
+#include <iostream>
+#include <memory>
+
+#include "../backend/backend.hpp"
+#include "../data_distribution/global_ptr.hpp"
+#include "../synchronization/global_tas_lock.hpp"
 
 /** @todo Documentation */
 constexpr int PAGESIZE = 4096;
 
-#include "../backend/backend.hpp"
-#include "../synchronization/global_tas_lock.hpp"
-#include "../data_distribution/global_ptr.hpp"
-
-#include <sys/mman.h>
-#include <memory>
-#include <iostream>
-#include <stdlib.h>
-
 namespace argo {
 	namespace mempools {
 		/**
-		 * @brief Globalally growing memory pool
+		 * @brief Globally growing memory pool
 		 */
 		template<std::size_t chunk_size = 4096>
 		class global_memory_pool {
@@ -38,6 +40,7 @@ namespace argo {
 
 				/** @todo Documentation */
 				argo::globallock::global_tas_lock *global_tas_lock;
+
 			public:
 				/** type of allocation failures within this memory pool */
 				using bad_alloc = std::bad_alloc;
@@ -77,7 +80,7 @@ namespace argo {
 				~global_memory_pool(){
 					delete global_tas_lock;
 					backend::finalize();
-				};
+				}
 
 				/**
 				 *@brief  Resets the memory pool to the initial state instead of de-allocating and (re)allocating all buffers again.
@@ -143,4 +146,4 @@ namespace argo {
 	} // namespace mempools
 } // namespace argo
 
-#endif /* argo_global_mempool_hpp */
+#endif // ARGODSM_SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_

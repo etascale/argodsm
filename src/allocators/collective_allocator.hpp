@@ -18,12 +18,13 @@
  * to synchronize the update among all ArgoDSM nodes.
  */
 
-#ifndef argo_collective_allocators_hpp
-#define argo_collective_allocators_hpp argo_collective_allocators_hpp
+#ifndef ARGODSM_SRC_ALLOCATORS_COLLECTIVE_ALLOCATOR_HPP_
+#define ARGODSM_SRC_ALLOCATORS_COLLECTIVE_ALLOCATOR_HPP_
 
 #include <map>
 #include <memory>
 #include <stack>
+#include <utility>
 
 #include "../mempools/dynamic_mempool.hpp"
 #include "../mempools/global_mempool.hpp"
@@ -286,4 +287,4 @@ namespace argo {
 	}
 } // namespace argo
 
-#endif /* argo_collective_allocators_hpp */
+#endif  // ARGODSM_SRC_ALLOCATORS_COLLECTIVE_ALLOCATOR_HPP_
