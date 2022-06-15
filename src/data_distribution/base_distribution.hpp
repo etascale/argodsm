@@ -81,7 +81,7 @@ namespace argo {
 				 * @param ptr address to find homenode of
 				 * @return the computed home node
 				 */
-				virtual node_id_t homenode (char* const ptr) {
+				virtual node_id_t homenode(char* const ptr) {
 					(void)ptr;
 					return invalid_node_id;
 				}
@@ -94,7 +94,7 @@ namespace argo {
 				 * @note this version shall not perform first-touch on an
 				 * address that has not yet been first touched
 				 */
-				virtual node_id_t peek_homenode (char* const ptr) {
+				virtual node_id_t peek_homenode(char* const ptr) {
 					(void)ptr;
 					return invalid_node_id;
 				}
@@ -105,7 +105,7 @@ namespace argo {
 				 * @param ptr address to find offset of
 				 * @return the backing store offset
 				 */
-				virtual std::size_t local_offset (char* const ptr) {
+				virtual std::size_t local_offset(char* const ptr) {
 					(void)ptr;
 					return invalid_offset;
 				}
@@ -120,7 +120,7 @@ namespace argo {
 				 * @note this version shall not perform first-touch on an
 				 * address that has not yet been first touched
 				 */
-				virtual std::size_t peek_local_offset (char* const ptr) {
+				virtual std::size_t peek_local_offset(char* const ptr) {
 					(void)ptr;
 					return invalid_offset;
 				}

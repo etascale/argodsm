@@ -109,7 +109,7 @@ class write_buffer
 		 * @param	args Properties of the new element to emplace back
 		 */
 		template<typename... Args>
-			void emplace_back( Args&&... args) {
+			void emplace_back(Args&&... args) {
 				_buffer.emplace_back(std::forward<Args>(args)...);
 			}
 

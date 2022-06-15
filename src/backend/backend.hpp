@@ -434,10 +434,8 @@ namespace argo {
 					"It is not possible to implicitly convert \'desired\' to an"
 					" object of type T.");
 				T desired_buffer(desired);
-				static_assert(
-					std::is_trivially_copy_assignable<T>::value,
-					"T must be trivially copy assignable"
-				);
+				static_assert(std::is_trivially_copy_assignable<T>::value,
+					"T must be trivially copy assignable");
 
 				if (order == memory_order::acq_rel || order == memory_order::release)
 					release();
@@ -468,10 +466,8 @@ namespace argo {
 					"It is not possible to implicitly convert \'desired\' to an"
 					" object of type T.");
 				T desired_buffer(desired);
-				static_assert(
-					std::is_trivially_copy_assignable<T>::value,
-					"T must be trivially copy assignable"
-				);
+				static_assert(std::is_trivially_copy_assignable<T>::value,
+					"T must be trivially copy assignable");
 
 				if (order == memory_order::acq_rel || order == memory_order::release)
 					release();
@@ -495,10 +491,8 @@ namespace argo {
 			template<typename T>
 			T load(global_ptr<T> obj, memory_order order = memory_order::acquire) {
 				T out_buffer;
-				static_assert(
-					std::is_trivially_copy_assignable<T>::value,
-					"T must be trivially copy assignable"
-				);
+				static_assert(std::is_trivially_copy_assignable<T>::value,
+					"T must be trivially copy assignable");
 
 				if (order == memory_order::acq_rel || order == memory_order::release)
 					release();
@@ -538,10 +532,8 @@ namespace argo {
 					" object of type T.");
 				T expected_buffer(expected);
 				T desired_buffer(desired);
-				static_assert(
-					std::is_trivially_copy_assignable<T>::value,
-					"T must be trivially copy assignable"
-				);
+				static_assert(std::is_trivially_copy_assignable<T>::value,
+					"T must be trivially copy assignable");
 
 				if (order == memory_order::acq_rel || order == memory_order::release)
 					release();
@@ -575,10 +567,8 @@ namespace argo {
 					"It is not possible to implicitly convert \'desired\' to an"
 					" object of type T.");
 				T value_buffer(value);
-				static_assert(
-					std::is_trivially_copy_assignable<T>::value,
-					"T must be trivially copy assignable"
-				);
+				static_assert(std::is_trivially_copy_assignable<T>::value,
+					"T must be trivially copy assignable");
 
 				if (order == memory_order::acq_rel || order == memory_order::release)
 					release();

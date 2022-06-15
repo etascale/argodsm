@@ -18,7 +18,7 @@ namespace argo {
 		template<int instance>
 		class cyclic_distribution : public base_distribution<instance> {
 			public:
-				virtual node_id_t homenode (char* const ptr) {
+				virtual node_id_t homenode(char* const ptr) {
 					static const std::size_t pageblock = env::allocation_block_size() * granularity;
 					const std::size_t addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
 					const std::size_t pagenum = addr / pageblock;
@@ -36,7 +36,7 @@ namespace argo {
 					return homenode(ptr);
 				}
 
-				virtual std::size_t local_offset (char* const ptr) {
+				virtual std::size_t local_offset(char* const ptr) {
 					static const std::size_t pageblock = env::allocation_block_size() * granularity;
 					const std::size_t drift = (ptr - base_distribution<instance>::start_address) % granularity;
 					const std::size_t addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
@@ -51,7 +51,7 @@ namespace argo {
 					return offset;
 				}
 
-				virtual std::size_t peek_local_offset (char* const ptr) {
+				virtual std::size_t peek_local_offset(char* const ptr) {
 					return local_offset(ptr);
 				}
 		};
