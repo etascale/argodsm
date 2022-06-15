@@ -9,14 +9,16 @@
 
 namespace argo {
 	/** @brief ArgoDSM node identifier type */
-	using node_id_t = int;
+	using node_id_t = unsigned int;
+
+	/** @brief ArgoDSM number of nodes type */
+	using num_nodes_t = unsigned int;
 
 	/**
 	 * @brief type of memory base addresses
 	 * @see dynamic_memory_pool
 	 */
 	using memory_t = char*;
-
 } // namespace argo
 
 #endif /* argo_types_types_hpp */
