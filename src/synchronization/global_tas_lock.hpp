@@ -4,14 +4,13 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_global_tas_lock_hpp
-#define argo_global_tas_lock_hpp argo_global_lock_hpp
+#ifndef ARGODSM_SRC_SYNCHRONIZATION_GLOBAL_TAS_LOCK_HPP_
+#define ARGODSM_SRC_SYNCHRONIZATION_GLOBAL_TAS_LOCK_HPP_
 
+#include <atomic>
+#include <thread>
 #include "../backend/backend.hpp"
 #include "../data_distribution/global_ptr.hpp"
-#include <atomic>
-#include <chrono>
-#include <thread>
 
 namespace argo {
 	namespace globallock {
@@ -38,9 +37,9 @@ namespace argo {
 				 * @brief construct global tas lock from existing memory in global address space
 				 * @param f pointer to global field for storing lock state
 				 */
-				global_tas_lock(std::size_t* f) : lastuser(global_size_t(f)) {
+				explicit global_tas_lock(std::size_t* f) : lastuser(global_size_t(f)) {
 					*lastuser = init;
-				};
+				}
 
 				/**
 				 * @brief try to lock
@@ -82,8 +81,7 @@ namespace argo {
 							backend::acquire();
 						}
 						return true;
-					}
-					else {
+					}else {
 						return false;
 					}
 				}
@@ -115,4 +113,4 @@ namespace argo {
 	} // namespace globallock
 } // namespace argo
 
-#endif /* argo_global_tas_lock_hpp */
+#endif // ARGODSM_SRC_SYNCHRONIZATION_GLOBAL_TAS_LOCK_HPP_

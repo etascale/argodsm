@@ -4,10 +4,11 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_first_touch_distribution_hpp
-#define argo_first_touch_distribution_hpp argo_first_touch_distribution_hpp
+#ifndef ARGODSM_SRC_DATA_DISTRIBUTION_FIRST_TOUCH_DISTRIBUTION_HPP_
+#define ARGODSM_SRC_DATA_DISTRIBUTION_FIRST_TOUCH_DISTRIBUTION_HPP_
 
 #include <mutex>
+#include <string>
 
 #include "base_distribution.hpp"
 
@@ -321,4 +322,4 @@ namespace argo {
 	} // namespace data_distribution
 } // namespace argo
 
-#endif /* argo_first_touch_distribution_hpp */
+#endif // ARGODSM_SRC_DATA_DISTRIBUTION_FIRST_TOUCH_DISTRIBUTION_HPP_

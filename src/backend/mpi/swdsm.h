@@ -6,21 +6,18 @@
  * @warning do not rely on functions from this file
  */
 
-#ifndef argo_swdsm_h
-#define argo_swdsm_h argo_swdsm_h
+#ifndef ARGODSM_SRC_BACKEND_MPI_SWDSM_H_
+#define ARGODSM_SRC_BACKEND_MPI_SWDSM_H_
 
-/* Includes */
-#include <cstdint>
-#include <type_traits>
-
+// C headers
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <malloc.h>
 #include <math.h>
 #include <mpi.h>
-#include <pthread.h>
 #include <omp.h>
+#include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
 #include <stdio.h>
@@ -31,6 +28,9 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+// C++ headers
+#include <cstdint>
+#include <type_traits>
 
 #include "argo.h"
 #include "backend/backend.hpp"
@@ -60,14 +60,14 @@
 typedef unsigned char argo_byte;
 
 /** @brief Struct for cache control data */
-typedef struct myControlData //global cache control data / directory
+typedef struct myControlData // global cache control data / directory
 {
 		/** @brief Coherence state, basically only Valid/Invalid now */
-		argo_byte state;    // I/P/SW/MW
+		argo_byte state;	// I/P/SW/MW
 		/** @brief Tracks if page is dirty or clean */
-		argo_byte dirty;   // is this locally dirty?
+		argo_byte dirty;	// is this locally dirty?
 		/** @brief Tracks address of page */
-		std::uintptr_t tag;   // address of global page in distr memory
+		std::uintptr_t tag;	// address of global page in distr memory
 } control_data;
 
 /** @brief Struct containing statistics */
@@ -411,5 +411,4 @@ std::size_t get_classification_index(std::uintptr_t addr);
  * @todo This should be moved in to a dedicated cache class
  */
 bool _is_cached(std::uintptr_t addr);
-#endif /* argo_swdsm_h */
-
+#endif  // ARGODSM_SRC_BACKEND_MPI_SWDSM_H_

@@ -4,16 +4,16 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_argo_hpp
-#define argo_argo_hpp argo_argo_hpp
+#ifndef ARGODSM_SRC_ARGO_HPP_
+#define ARGODSM_SRC_ARGO_HPP_
 
 #include <cstddef>
 
 #include "allocators/allocators.hpp"
 #include "backend/backend.hpp"
-#include "types/types.hpp"
-#include "synchronization/synchronization.hpp"
 #include "data_distribution/data_distribution.hpp"
+#include "synchronization/synchronization.hpp"
+#include "types/types.hpp"
 
 extern "C" {
 #include "argo.h"
@@ -112,4 +112,4 @@ namespace argo {
 	std::size_t get_block_size();
 } // namespace argo
 
-#endif /* argo_argo_hpp */
+#endif  // ARGODSM_SRC_ARGO_HPP_

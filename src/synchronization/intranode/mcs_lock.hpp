@@ -5,8 +5,8 @@
  * @todo namespace use and indentation in this file is inconsistent with other files
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
-#ifndef MCS_LOCK_HPP_LDFPXGTZ
-#define MCS_LOCK_HPP_LDFPXGTZ
+#ifndef ARGODSM_SRC_SYNCHRONIZATION_INTRANODE_MCS_LOCK_HPP_
+#define ARGODSM_SRC_SYNCHRONIZATION_INTRANODE_MCS_LOCK_HPP_
 
 #include <atomic>
 #include <map>
@@ -28,9 +28,7 @@ private:
 	/** @brief Thread nodes for the lock */
 	struct mcs_node {
 		/** @brief Construct a new node */
-		mcs_node()
-			: next(nullptr)
-			, locked(false){};
+		mcs_node() : next(nullptr), locked(false) {}
 
 		/** @brief Node to wakeup at lock release */
 		std::atomic<mcs_node*> next;
@@ -48,8 +46,7 @@ public:
 	/**
 	 * @brief Construct an MCS lock
 	 */
-	mcs_lock()
-		: _tail(nullptr){};
+	mcs_lock() : _tail(nullptr) {}
 
 	/**
 	 * @brief Acquire the MCS lock.
@@ -78,4 +75,4 @@ public:
 } // namespace locallock
 } // namespace argo
 
-#endif /* end of include guard: MCS_LOCK_HPP_LDFPXGTZ */
+#endif // ARGODSM_SRC_SYNCHRONIZATION_INTRANODE_MCS_LOCK_HPP_

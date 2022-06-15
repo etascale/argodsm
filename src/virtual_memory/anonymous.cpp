@@ -4,17 +4,20 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#include <cerrno>
-#include <cstddef>
+// C headers
 #include <fcntl.h>
-#include <iostream>
-#include <string>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/types.h>
-#include <system_error>
 #include <unistd.h>
+// C++ headers
+#include <cerrno>
+#include <cstddef>
+#include <iostream>
+#include <string>
+#include <system_error>
+
 #include "virtual_memory.hpp"
 
 namespace {
@@ -40,7 +43,7 @@ namespace {
 	std::size_t backing_offset;
 	/** @brief the offset within the memory region controlled to the beginning of the virtual address space */
 	std::size_t file_offset;
-}
+} // namespace
 
 namespace argo {
 	namespace virtual_memory {

@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_naive_distribution_hpp
-#define argo_naive_distribution_hpp argo_naive_distribution_hpp
+#ifndef ARGODSM_SRC_DATA_DISTRIBUTION_NAIVE_DISTRIBUTION_HPP_
+#define ARGODSM_SRC_DATA_DISTRIBUTION_NAIVE_DISTRIBUTION_HPP_
 
 #include "base_distribution.hpp"
 
@@ -55,4 +55,4 @@ namespace argo {
 	} // namespace data_distribution
 } // namespace argo
 
-#endif /* argo_naive_distribution_hpp */
+#endif // ARGODSM_SRC_DATA_DISTRIBUTION_NAIVE_DISTRIBUTION_HPP_

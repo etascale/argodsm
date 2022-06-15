@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_virtual_memory_virtual_memory_hpp
-#define argo_virtual_memory_virtual_memory_hpp argo_virtual_memory_virtual_memory_hpp
+#ifndef ARGODSM_SRC_VIRTUAL_MEMORY_VIRTUAL_MEMORY_HPP_
+#define ARGODSM_SRC_VIRTUAL_MEMORY_VIRTUAL_MEMORY_HPP_
 
 #include <utility>
 
@@ -51,4 +51,4 @@ namespace argo {
 	} // namespace virtual_memory
 } // namespace argo
 
-#endif
+#endif // ARGODSM_SRC_VIRTUAL_MEMORY_VIRTUAL_MEMORY_HPP_
