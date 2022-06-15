@@ -6,8 +6,8 @@
  * @warning do not rely on functions from this file
  */
 
-#ifndef SRC_BACKEND_MPI_SWDSM_H_
-#define SRC_BACKEND_MPI_SWDSM_H_
+#ifndef ARGODSM_SRC_BACKEND_MPI_SWDSM_H_
+#define ARGODSM_SRC_BACKEND_MPI_SWDSM_H_
 
 // C headers
 #include <assert.h>
@@ -411,4 +411,4 @@ std::size_t get_classification_index(std::uintptr_t addr);
  * @todo This should be moved in to a dedicated cache class
  */
 bool _is_cached(std::uintptr_t addr);
-#endif // SRC_BACKEND_MPI_SWDSM_H_
+#endif  // ARGODSM_SRC_BACKEND_MPI_SWDSM_H_

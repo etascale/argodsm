@@ -16,8 +16,8 @@
  * memory pool is thread-safe (or safety is otherwise guaranteed).
  */
 
-#ifndef SRC_ALLOCATORS_GENERIC_ALLOCATOR_HPP_
-#define SRC_ALLOCATORS_GENERIC_ALLOCATOR_HPP_
+#ifndef ARGODSM_SRC_ALLOCATORS_GENERIC_ALLOCATOR_HPP_
+#define ARGODSM_SRC_ALLOCATORS_GENERIC_ALLOCATOR_HPP_
 
 #include <map>
 #include <stack>
@@ -302,4 +302,4 @@ namespace argo {
 	} // namespace allocators
 } // namespace argo
 
-#endif // SRC_ALLOCATORS_GENERIC_ALLOCATOR_HPP_
+#endif  // ARGODSM_SRC_ALLOCATORS_GENERIC_ALLOCATOR_HPP_

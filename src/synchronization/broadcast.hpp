@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef SRC_SYNCHRONIZATION_BROADCAST_HPP_
-#define SRC_SYNCHRONIZATION_BROADCAST_HPP_
+#ifndef ARGODSM_SRC_SYNCHRONIZATION_BROADCAST_HPP_
+#define ARGODSM_SRC_SYNCHRONIZATION_BROADCAST_HPP_
 
 #include "../backend/backend.hpp"
 #include "../types/types.hpp"
@@ -46,7 +46,6 @@ namespace argo {
 		}
 #endif
 	} // namespace synchronization
-
 } // namespace argo
 
-#endif // SRC_SYNCHRONIZATION_BROADCAST_HPP_
+#endif // ARGODSM_SRC_SYNCHRONIZATION_BROADCAST_HPP_

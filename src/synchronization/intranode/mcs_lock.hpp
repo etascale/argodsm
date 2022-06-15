@@ -5,8 +5,8 @@
  * @todo namespace use and indentation in this file is inconsistent with other files
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
-#ifndef SRC_SYNCHRONIZATION_INTRANODE_MCS_LOCK_HPP_
-#define SRC_SYNCHRONIZATION_INTRANODE_MCS_LOCK_HPP_
+#ifndef ARGODSM_SRC_SYNCHRONIZATION_INTRANODE_MCS_LOCK_HPP_
+#define ARGODSM_SRC_SYNCHRONIZATION_INTRANODE_MCS_LOCK_HPP_
 
 #include <atomic>
 #include <map>
@@ -75,4 +75,4 @@ public:
 } // namespace locallock
 } // namespace argo
 
-#endif // SRC_SYNCHRONIZATION_INTRANODE_MCS_LOCK_HPP_
+#endif // ARGODSM_SRC_SYNCHRONIZATION_INTRANODE_MCS_LOCK_HPP_

@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef SRC_SIGNAL_SIGNAL_HPP_
-#define SRC_SIGNAL_SIGNAL_HPP_
+#ifndef ARGODSM_SRC_SIGNAL_SIGNAL_HPP_
+#define ARGODSM_SRC_SIGNAL_SIGNAL_HPP_
 
 // C headers
 #include <signal.h>
@@ -137,4 +137,4 @@ namespace argo {
 	} // namespace signal
 } // namespace argo
 
-#endif // SRC_SIGNAL_SIGNAL_HPP_
+#endif // ARGODSM_SRC_SIGNAL_SIGNAL_HPP_

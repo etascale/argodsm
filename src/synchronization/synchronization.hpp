@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_
-#define SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_
+#ifndef ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_
+#define ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_
 
 #include <cstddef>
 
@@ -46,4 +46,4 @@ extern "C" {
 #include "./synchronization.h"
 }
 
-#endif // SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_
+#endif // ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_

@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef SRC_ARGO_HPP_
-#define SRC_ARGO_HPP_
+#ifndef ARGODSM_SRC_ARGO_HPP_
+#define ARGODSM_SRC_ARGO_HPP_
 
 #include <cstddef>
 
@@ -112,4 +112,4 @@ namespace argo {
 	std::size_t get_block_size();
 } // namespace argo
 
-#endif // SRC_ARGO_HPP_
+#endif  // ARGODSM_SRC_ARGO_HPP_

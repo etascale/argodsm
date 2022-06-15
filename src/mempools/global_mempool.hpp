@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_
-#define SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_
+#ifndef ARGODSM_SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_
+#define ARGODSM_SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_
 
 /** @todo Documentation */
 constexpr int PAGESIZE = 4096;
@@ -146,4 +146,4 @@ namespace argo {
 	} // namespace mempools
 } // namespace argo
 
-#endif // SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_
+#endif // ARGODSM_SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_

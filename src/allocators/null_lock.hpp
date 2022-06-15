@@ -6,8 +6,8 @@
  * @internal
  * @details sometimes templates should be used with and without internal locking, this file provides the neccessary dummy class to allow disabling locking
  */
-#ifndef SRC_ALLOCATORS_NULL_LOCK_HPP_
-#define SRC_ALLOCATORS_NULL_LOCK_HPP_
+#ifndef ARGODSM_SRC_ALLOCATORS_NULL_LOCK_HPP_
+#define ARGODSM_SRC_ALLOCATORS_NULL_LOCK_HPP_
 namespace argo {
 	namespace allocators {
 		/**
@@ -28,4 +28,4 @@ namespace argo {
 	} // namespace allocators
 } // namespace argo
 
-#endif // SRC_ALLOCATORS_NULL_LOCK_HPP_
+#endif  // ARGODSM_SRC_ALLOCATORS_NULL_LOCK_HPP_

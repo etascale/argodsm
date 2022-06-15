@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef SRC_SYNCHRONIZATION_SYNCHRONIZATION_H_
-#define SRC_SYNCHRONIZATION_SYNCHRONIZATION_H_
+#ifndef ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_H_
+#define ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_H_
 
 #include <stddef.h>
 
@@ -38,4 +38,4 @@ void argo_barrier_upgrade_writers(size_t threadcount);
  */
 void argo_barrier_upgrade_all(size_t threadcount);
 
-#endif // SRC_SYNCHRONIZATION_SYNCHRONIZATION_H_
+#endif // ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_H_

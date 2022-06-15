@@ -6,8 +6,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef SRC_BACKEND_BACKEND_HPP_
-#define SRC_BACKEND_BACKEND_HPP_
+#ifndef ARGODSM_SRC_BACKEND_BACKEND_HPP_
+#define ARGODSM_SRC_BACKEND_BACKEND_HPP_
 
 #include <cassert>
 #include <cstdint>
@@ -634,4 +634,4 @@ namespace argo {
 	} // namespace backend
 } // namespace argo
 
-#endif // SRC_BACKEND_BACKEND_HPP_
+#endif  // ARGODSM_SRC_BACKEND_BACKEND_HPP_
