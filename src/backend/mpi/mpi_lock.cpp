@@ -9,11 +9,9 @@
 
 mpi_lock::mpi_lock() {
 	pthread_spin_init(&_local_lock, PTHREAD_PROCESS_PRIVATE);
-};
-
+}
 
 void mpi_lock::lock(int lock_type, int target, MPI_Win window){
-
 	// Take the local lock
 	double local_start = MPI_Wtime();
 	pthread_spin_lock(&_local_lock);
@@ -139,13 +137,11 @@ int mpi_lock::get_num_locks(){
 
 void mpi_lock::reset_stats(){
 	_num_locks = 0;
-	
 	// reset local lock statistics
 	_local_lock_time = 0;
 	_max_local_lock_time = 0;
 	_local_hold_time = 0;
 	_max_local_hold_time = 0;
-	
 	// reset MPI lock statistics
 	_mpi_lock_time = 0;
 	_max_mpi_lock_time = 0;

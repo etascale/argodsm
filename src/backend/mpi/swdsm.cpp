@@ -198,7 +198,7 @@ std::size_t peek_offset(std::uintptr_t addr) {
 void load_cache_entry(std::uintptr_t aligned_access_offset) {
 	/* If it's not an ArgoDSM address, do not handle it */
 	if(aligned_access_offset >= size_of_all){
-		//TODO: Must probably unlock here?
+		// XXX: Must probably unlock here?
 		printf("WARNING: UNSAFE CASE!!!\n");
 		return;
 	}
@@ -530,7 +530,7 @@ void handler(int sig, siginfo_t *si, void *context){
 					sharer_op(MPI_LOCK_EXCLUSIVE, owner, classidx,
 							[&](std::size_t win_index){
 							MPI_Accumulate(&id, 1, MPI_LONG, owner, sharer_win_offset,
-									1,MPI_LONG,MPI_BOR,sharer_windows[win_index][owner]);
+									1, MPI_LONG, MPI_BOR, sharer_windows[win_index][owner]);
 							});
 				}
 			}
@@ -641,12 +641,12 @@ void handler(int sig, siginfo_t *si, void *context){
 		sharer_op(MPI_LOCK_SHARED, homenode, classidx+1,
 				[&](std::size_t win_index){
 				MPI_Get_accumulate(&id, 1, MPI_LONG, &writers,
-						1, MPI_LONG,homenode, sharer_win_offset+1,
-						1, MPI_LONG,MPI_BOR, sharer_windows[win_index][homenode]);
+						1, MPI_LONG, homenode, sharer_win_offset+1,
+						1, MPI_LONG, MPI_BOR, sharer_windows[win_index][homenode]);
 				MPI_Get(&sharers, 1, MPI_LONG, homenode, sharer_win_offset,
 						1, MPI_LONG, sharer_windows[win_index][homenode]);
 				});
-				
+
 		/* We get result of accumulation before operation so we need to account for that */
 		writers |= id;
 		/* Just add the (potentially) new sharers fetched to local copy */
@@ -1086,7 +1086,7 @@ void argo_reset_coherence(){
 		cacheControl[i].dirty = CLEAN;
 	}
 
-	for(std::size_t i=0; i<classificationSize; i+=(load_size*2)){
+	for(std::size_t i = 0; i < classificationSize; i += (load_size*2)){
 		sharer_op(MPI_LOCK_EXCLUSIVE, workrank, i, [&](std::size_t){
 				for(std::size_t j = i; j < i+(load_size*2); j++){
 					globalSharers[j] = 0;
@@ -1184,7 +1184,7 @@ void argo_reset_stats(){
 
 void storepageDIFF(std::size_t index, std::uintptr_t addr){
 	int cnt = 0;
-	
+
 	// This might differ depending on allocation policy, must take into account
 	const argo::node_id_t homenode = get_homenode(addr);
 	const std::size_t offset = get_offset(addr);
@@ -1387,7 +1387,7 @@ void print_statistics(){
 		for(argo::num_nodes_t i = 0; i < numtasks; i++){
 			MPI_Barrier(MPI_COMM_WORLD);
 			if(i == workrank){
-				printf("#" YEL "  ### PROCESS ID %d ###\n" RESET,workrank);
+				printf("#" YEL "  ### PROCESS ID %d ###\n" RESET, workrank);
 
 				/* Print remote access info */
 				printf("#  " CYN "# Remote accesses\n" RESET);

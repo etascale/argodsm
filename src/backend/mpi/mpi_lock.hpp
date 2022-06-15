@@ -4,11 +4,11 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_mpi_lock_hpp
-#define argo_mpi_lock_hpp argo_mpi_lock_hpp
+#ifndef ARGODSM_SRC_BACKEND_MPI_MPI_LOCK_HPP_
+#define ARGODSM_SRC_BACKEND_MPI_MPI_LOCK_HPP_
 
-#include <pthread.h>
 #include <mpi.h>
+#include <pthread.h>
 
 /** @brief Provides MPI RMA epoch locking */
 class mpi_lock {
@@ -61,7 +61,7 @@ class mpi_lock {
 		 * @param target    target node of the lock
 		 * @param window    MPI window to lock
 		 */
-		void unlock(int target, MPI_Win window); 
+		void unlock(int target, MPI_Win window);
 
 		/** 
 		 * @brief try to acquire lock
@@ -158,4 +158,4 @@ class mpi_lock {
 		void reset_stats();
 };
 
-#endif /* argo_mpi_lock_hpp */
+#endif  // ARGODSM_SRC_BACKEND_MPI_MPI_LOCK_HPP_
