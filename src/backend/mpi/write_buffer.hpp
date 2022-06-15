@@ -374,7 +374,7 @@ class write_buffer
 
 			// Wait until flush is completed
 			double w_start = MPI_Wtime();
-			while(!w_flag.load(std::memory_order_acquire));
+			while(!w_flag.load(std::memory_order_acquire)) {}
 			double w_end = MPI_Wtime();
 
 			std::lock_guard<std::mutex> stat_lock(_stat_mutex);

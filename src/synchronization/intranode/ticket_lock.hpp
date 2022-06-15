@@ -31,7 +31,7 @@ namespace locallock {
 			 */
 			void lock() {
 				int ticket = in_counter.fetch_add(1, std::memory_order_relaxed);
-				while(out_counter.load(std::memory_order_acquire) != ticket);
+				while(out_counter.load(std::memory_order_acquire) != ticket) {}
 			}
 
 			/**
