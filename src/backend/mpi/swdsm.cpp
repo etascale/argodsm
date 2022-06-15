@@ -856,7 +856,9 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 		vm::map_memory(tmpcache, offsets_tbl_size_bytes, current_offset, PROT_READ|PROT_WRITE);
 	}
 
-	mpi_windows = env::mpi_windows();
+	// Get the number of MPI windows requested and adjust for number of nodes
+	// On a single node, the number of windows defaults to 1 for performance reasons
+	mpi_windows = numtasks > 1 ? env::mpi_windows_per_node()*numtasks : 1;
 
 	// Create one data_window per page chunk
 	data_windows.resize(mpi_windows, std::vector<MPI_Win>(numtasks));

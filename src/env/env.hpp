@@ -46,11 +46,12 @@
  * 			are fetched on each remote load operation. It can be accessed through
  *          @ref argo::env::load_size() after argo::env::init() has been called.
  *
- * @envvar{ARGO_MPI_WINDOWS} request a specific number of MPI Windows
+ * @envvar{ARGO_MPI_WINDOWS_PER_NODE} request a specific number of MPI Windows
  * @details This environment variable determines the amount of MPI windows that are
- * 			used to protect the global data and pyxis data structures. It can be
- * 			accessed through @ref argo::env::mpi_windows() after argo::env::init()
- * 			has been called.
+ * 			used to protect the global data and pyxis data structures. Each structure
+ * 			uses the requested number of MPI windows per node, multiplied by the
+ * 			number of nodes in the system. It can be accessed through
+ * 			@ref argo::env::mpi_windows_per_node() after argo::env::init() has been called.
  *
  * @envvar{ARGO_PRINT_STATISTICS} control the detail of statistics printed at end
  * @details This environment variable determines the amount of statistics printed at once
@@ -125,11 +126,11 @@ namespace argo {
 		std::size_t load_size();
 
 		/**
-		 * @brief get the number of MPI windows per global data structure requested
-		 * @return the number of pages
-		 * @see @ref ARGO_MPI_WINDOWS
+		 * @brief get the number of MPI windows per node requested
+		 * @return the number of MPI windows per node
+		 * @see @ref ARGO_MPI_WINDOWS_PER_NODE
 		 */
-		std::size_t mpi_windows();
+		std::size_t mpi_windows_per_node();
 
 		/**
 		 * @brief Get the requested statistics print level

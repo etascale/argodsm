@@ -60,8 +60,8 @@ namespace argo {
 				"Invalid load size (must be a number bigger than 0)");
 		}
 
-		std::size_t requested_argo_mpi_windows = env::mpi_windows();
-		if(requested_argo_mpi_windows == 0) {
+		std::size_t requested_argo_mpi_windows_per_node = env::mpi_windows_per_node();
+		if(requested_argo_mpi_windows_per_node == 0) {
 			throw std::invalid_argument(
 				"Invalid number of MPI windows (must be a number bigger than 0)");
 		}
