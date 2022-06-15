@@ -887,10 +887,10 @@ TEST_F(backendTest, writeBufferLoad) {
 	argo::barrier();
 
 	// One node at a time, increment random elements num_writes times
-	for(argo::node_id_t i = 0; i < argo::number_of_nodes(); i++){
+	for(argo::num_nodes_t i = 0; i < argo::number_of_nodes(); i++){
 		if(i == argo::node_id()){
-			for(std::size_t j=0; j<num_writes; j++){
-				array[dist(rng)]+=1;
+			for(std::size_t j = 0; j < num_writes; j++){
+				array[dist(rng)] += 1;
 			}
 		}
 		argo::barrier();
@@ -900,7 +900,7 @@ TEST_F(backendTest, writeBufferLoad) {
 	if(argo::node_id() == 0){
 		int count = 0;
 		int expected = num_writes*argo::number_of_nodes();
-		for(std::size_t i=0; i<num_ints; i++){
+		for(std::size_t i = 0; i < num_ints; i++){
 			count += array[i];
 		}
 		ASSERT_EQ(count, expected);
