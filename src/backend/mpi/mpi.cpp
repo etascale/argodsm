@@ -4,9 +4,10 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
+// C headers
 #include <mpi.h>
 #include <semaphore.h>
-
+// C++ headers
 #include <algorithm>
 #include <atomic>
 #include <type_traits>

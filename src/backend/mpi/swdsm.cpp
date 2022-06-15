@@ -929,7 +929,8 @@ void self_upgrade(upgrade_type upgrade) {
 				cacheControl[cache_index].dirty = CLEAN;
 				cacheControl[cache_index].state = INVALID;
 				touchedcache[cache_index] = 0;
-			}else{ // Must protect all pages upgrading to S from writes
+			}else{
+			       	// Must protect all pages upgrading to S from writes
 				if(is_writer) {
 					mprotect(global_addr, block_size, PROT_READ);
 				}

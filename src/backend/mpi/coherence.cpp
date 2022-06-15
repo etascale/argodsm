@@ -7,7 +7,6 @@
 #include "../backend.hpp"
 #include "swdsm.h"
 #include "virtual_memory/virtual_memory.hpp"
-#include "write_buffer.hpp"
 
 namespace argo {
 	namespace backend {

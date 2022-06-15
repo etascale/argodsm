@@ -16,6 +16,8 @@
 #include <cstddef>
 #include <iostream>
 #include <string>
+#include <system_error>
+
 #include "virtual_memory.hpp"
 
 namespace {

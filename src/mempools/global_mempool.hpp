@@ -7,9 +7,6 @@
 #ifndef ARGODSM_SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_
 #define ARGODSM_SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_
 
-/** @todo Documentation */
-constexpr int PAGESIZE = 4096;
-
 // C headers
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -21,10 +18,13 @@ constexpr int PAGESIZE = 4096;
 #include "../data_distribution/global_ptr.hpp"
 #include "../synchronization/global_tas_lock.hpp"
 
+/** @todo Documentation */
+constexpr int PAGESIZE = 4096;
+
 namespace argo {
 	namespace mempools {
 		/**
-		 * @brief Globalally growing memory pool
+		 * @brief Globally growing memory pool
 		 */
 		template<std::size_t chunk_size = 4096>
 		class global_memory_pool {
