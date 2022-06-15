@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-cpplint --root=src --filter=-build/c++11,-build/include,-build/include_alpha,-build/include_what_you_use,+build/header_guard,-build/include_order,-build/namespaces,-build/include_subdir,+readability/braces,-readability/casting,-readability/namespace,-runtime/array,-runtime/explicit,-runtime/indentation_namespace,-runtime/int,-runtime/string,-whitespace/blank_line,-whitespace/braces,-whitespace/comments,-whitespace/indent,-whitespace/line_length,-whitespace/newline,-whitespace/parens,-whitespace/tab --recursive .
