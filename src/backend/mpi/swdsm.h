@@ -493,11 +493,11 @@ size_t argo_get_global_size();
  */
 void initmpi();
 /**
- * @brief Initializes a mpi data structure for writing cacheb control data over the network * @brief 
+ * @brief Initializes an MPI data structure for writing cache control data over the network
  */
 void init_mpi_struct(void);
 /**
- * @brief Initializes a mpi data structure for writing cacheblocks over the network
+ * @brief Initializes an MPI data structure for writing cache blocks over the network
  */
 void init_mpi_cacheblock(void);
 /**
@@ -571,16 +571,14 @@ void sharer_op(int lock_type, int rank, int offset,
 		std::function<void(const std::size_t window_index)> op);
 
 /**
- * @brief Gets the sharer window index based on the classification
- * index
+ * @brief Gets the sharer window index based on the classification index
  * @param classification_index the page classification index
  * @return the sharer window index
  */
 std::size_t get_sharer_win_index(int classification_index);
 
 /**
- * @brief Gets the sharer window offset based on the classification
- * index
+ * @brief Gets the sharer window offset based on the classification index
  * @param classification_index the page classification index
  * @return the offset into the sharer window
  */
@@ -589,17 +587,14 @@ std::size_t get_sharer_win_offset(int classification_index);
 /**
  * @brief Gets the data window index based on the offset into the
  * node's backing store
- * @param offset the page offset into the remote node's backing
- * store
+ * @param offset the page offset into the remote node's backing store
  * @return the data window index
  */
 std::size_t get_data_win_index(std::size_t offset);
 
 /**
- * @brief Gets the sharer window offset based on the classification
- * index
- * @param offset the page offset into the remote node's backing
- * store
+ * @brief Gets the sharer window offset based on the classification index
+ * @param offset the page offset into the remote node's backing store
  * @return the offset into the sharer window
  */
 std::size_t get_data_win_offset(std::size_t offset);
