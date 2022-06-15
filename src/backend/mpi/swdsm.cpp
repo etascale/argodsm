@@ -64,7 +64,7 @@ MPI_Group startgroup;
 MPI_Group workgroup;
 /** @brief Communicator can be replaced with MPI_COMM_WORLD*/
 MPI_Comm workcomm;
-/** @brief The number of mpi windows per remote node */
+/** @brief The number of MPI windows per remote node */
 std::size_t mpi_windows;
 /** @brief MPI window for communicating pyxis directory*/
 std::vector<std::vector<MPI_Win>> sharer_windows;
@@ -85,9 +85,9 @@ MPI_Datatype mpi_control_data;
 /** @brief MPI data structure for a block containing an ArgoDSM cacheline of pages */
 MPI_Datatype cacheblock;
 /** @brief number of MPI processes / ArgoDSM nodes */
-int numtasks;
-/** @brief  rank/process ID in the MPI/ArgoDSM runtime*/
-int rank;
+argo::num_nodes_t numtasks;
+/** @brief rank/process ID in the MPI/ArgoDSM runtime*/
+argo::node_id_t rank;
 /** @brief rank/process ID in the MPI/ArgoDSM runtime*/
 argo::node_id_t workrank;
 
@@ -381,7 +381,7 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 			/* If there is exactly one other owner, and we are not sharer */
 			if(isPowerOf2(owner_id_bit) && owner_id_bit != 0 && local_sharers[i] == 0){
 				std::uintptr_t owner = invalid_node; // initialize to failsafe value
-				for(int n = 0; n < numtasks; n++) {
+				for(argo::num_nodes_t n = 0; n < numtasks; n++) {
 					if((static_cast<std::uintptr_t>(1) << n) == owner_id_bit) {
 						owner = n; //just get rank...
 						break;
@@ -516,7 +516,7 @@ void handler(int sig, siginfo_t *si, void *context){
 			if(sharers != 0 && sharers != id && isPowerOf2(sharers)){
 				std::uint64_t ownid = sharers&invid;
 				argo::node_id_t owner = workrank;
-				for(argo::node_id_t n = 0; n < numtasks; n++){
+				for(argo::num_nodes_t n = 0; n < numtasks; n++){
 					if((static_cast<std::uint64_t>(1) << n) == ownid){
 						owner = n; //just get rank...
 						break;
@@ -557,7 +557,7 @@ void handler(int sig, siginfo_t *si, void *context){
 			/* remote single writer */
 			if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
 				argo::node_id_t owner = 0;
-				for(argo::node_id_t n = 0; n < numtasks; n++){
+				for(argo::num_nodes_t n = 0; n < numtasks; n++){
 					if((static_cast<std::uint64_t>(1) << n) == (writers&invid)){
 						owner = n;  // just get rank...
 						break;
@@ -570,7 +570,7 @@ void handler(int sig, siginfo_t *si, void *context){
 						});
 			}
 			else if(writers == id || writers == 0){
-				for(argo::node_id_t n = 0; n < numtasks; n++){
+				for(argo::num_nodes_t n = 0; n < numtasks; n++){
 					if(n != workrank && ((static_cast<std::uint64_t>(1) << n)&sharers) != 0){
 						sharer_op(MPI_LOCK_EXCLUSIVE, n, classidx,
 								[&](std::size_t win_index){
@@ -658,7 +658,7 @@ void handler(int sig, siginfo_t *si, void *context){
 		/* check if we need to update */
 		if(writers != id && writers != 0 && isPowerOf2(writers&invid)){
 			argo::node_id_t owner = 0;
-			for(argo::node_id_t n = 0; n < numtasks; n++){
+			for(argo::num_nodes_t n = 0; n < numtasks; n++){
 				if((static_cast<std::uint64_t>(1) << n) == (writers&invid)){
 					owner = n;  // just get rank...
 					break;
@@ -671,7 +671,7 @@ void handler(int sig, siginfo_t *si, void *context){
 					});
 		}
 		else if(writers == id || writers == 0){
-			for(argo::node_id_t n = 0; n < numtasks; n++){
+			for(argo::num_nodes_t n = 0; n < numtasks; n++){
 				if(n != workrank && ((static_cast<std::uint64_t>(1) << n)&sharers) != 0){
 					sharer_op(MPI_LOCK_EXCLUSIVE, n, classidx+1,
 							[&](std::size_t win_index){
@@ -710,8 +710,8 @@ void initmpi(){
 		exit(EXIT_FAILURE);
 	}
 
-	MPI_Comm_size(MPI_COMM_WORLD, &numtasks);
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, reinterpret_cast<int*>(&numtasks));
+	MPI_Comm_rank(MPI_COMM_WORLD, reinterpret_cast<int*>(&rank));
 	init_mpi_struct();
 	init_mpi_cacheblock();
 }
@@ -723,7 +723,7 @@ argo::node_id_t argo_get_nid(){
 	return workrank;
 }
 
-unsigned int argo_get_nodes(){
+argo::num_nodes_t argo_get_nodes(){
 	return numtasks;
 }
 unsigned int getThreadCount(){
@@ -773,17 +773,17 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	classificationSize = 2*(argo_size/pagesize);
 	argo_write_buffer = new write_buffer<std::size_t>();
 
-	int *workranks = (int *) malloc(sizeof(int)*numtasks);
+	int *workranks = (int *) malloc(sizeof(argo::num_nodes_t)*numtasks);
 	int workindex = 0;
 
-	for(argo::node_id_t i = 0; i < numtasks; i++){
+	for(argo::num_nodes_t i = 0; i < numtasks; i++){
 		workranks[workindex++] = i;
 	}
 
 	MPI_Comm_group(MPI_COMM_WORLD, &startgroup);
 	MPI_Group_incl(startgroup, numtasks, workranks, &workgroup);
 	MPI_Comm_create(MPI_COMM_WORLD, workgroup, &workcomm);
-	MPI_Group_rank(workgroup, &workrank);
+	MPI_Group_rank(workgroup, reinterpret_cast<int*>(&workrank));
 
 
 	//Allocate local memory for each node,
@@ -861,7 +861,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	// Create one data_window per page chunk
 	data_windows.resize(mpi_windows, std::vector<MPI_Win>(numtasks));
 	for(std::size_t i = 0; i < mpi_windows; i++){
-		for(int j = 0; j < numtasks; j++){
+		for(argo::num_nodes_t j = 0; j < numtasks; j++){
 			MPI_Win_create(globalData, size_of_chunk, 1,
 						   MPI_INFO_NULL, MPI_COMM_WORLD, &data_windows[i][j]);
 		}
@@ -875,7 +875,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size){
 	// Create one sharer_window per page chunk
 	sharer_windows.resize(mpi_windows, std::vector<MPI_Win>(numtasks));
 	for(std::size_t i = 0; i < mpi_windows; i++){
-		for(int j = 0; j < numtasks; j++){
+		for(argo::num_nodes_t j = 0; j < numtasks; j++){
 			MPI_Win_create(globalSharers, gwritersize, sizeof(std::uint64_t),
 						   MPI_INFO_NULL, MPI_COMM_WORLD, &sharer_windows[i][j]);
 		}
@@ -1103,7 +1103,7 @@ void argo_reset_coherence(){
 		MPI_Win_unlock(workrank, owners_dir_window);
 
 		MPI_Win_lock(MPI_LOCK_EXCLUSIVE, workrank, 0, offsets_tbl_window);
-		for(argo::node_id_t n = 0; n < numtasks; n++) {
+		for(argo::num_nodes_t n = 0; n < numtasks; n++) {
 			global_offsets_tbl[n] = 0;
 		}
 		MPI_Win_unlock(workrank, offsets_tbl_window);
@@ -1164,14 +1164,14 @@ void argo_reset_stats(){
 
 	// Clear the sharer lock statistics
 	for(std::size_t i = 0; i < mpi_windows; i++) {
-		for(argo::node_id_t j = 0; j < numtasks; j++) {
+		for(argo::num_nodes_t j = 0; j < numtasks; j++) {
 			mpi_lock_sharer[i][j].reset_stats();
 		}
 	}
 
 	// Clear the data lock statistics
 	for(std::size_t i = 0; i < mpi_windows; i++) {
-		for(argo::node_id_t j = 0; j < numtasks; j++) {
+		for(argo::num_nodes_t j = 0; j < numtasks; j++) {
 			mpi_lock_data[i][j].reset_stats();
 		}
 	}
@@ -1269,7 +1269,7 @@ void print_statistics(){
 	double data_mpi_hold_time(0), data_mpi_avg_hold_time(0), data_mpi_max_hold_time(0);
 
 	for(std::size_t i = 0; i < mpi_windows; i++){
-		for(argo::node_id_t j = 0; j < numtasks; j++){
+		for(argo::num_nodes_t j = 0; j < numtasks; j++){
 			/* Get number of locks */
 			data_num_locks += mpi_lock_data[i][j].get_num_locks();
 
@@ -1317,7 +1317,7 @@ void print_statistics(){
 	double sharer_mpi_hold_time(0), sharer_mpi_avg_hold_time(0), sharer_mpi_max_hold_time(0);
 
 	for(std::size_t i = 0; i < mpi_windows; i++){
-		for(argo::node_id_t j = 0; j < numtasks; j++){
+		for(argo::num_nodes_t j = 0; j < numtasks; j++){
 			/* Get number of locks */
 			sharer_num_locks += mpi_lock_sharer[i][j].get_num_locks();
 
@@ -1383,7 +1383,7 @@ void print_statistics(){
 
 	/* Print node information */
 	if(print_level > 1) {
-		for(argo::node_id_t i = 0; i < numtasks; i++){
+		for(argo::num_nodes_t i = 0; i < numtasks; i++){
 			MPI_Barrier(MPI_COMM_WORLD);
 			if(i == workrank){
 				printf("#" YEL "  ### PROCESS ID %d ###\n" RESET,workrank);
