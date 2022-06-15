@@ -38,7 +38,6 @@
 #include <type_traits>
 #include <vector>
 
-#include "argo.h"
 #include "backend/backend.hpp"
 #include "mpi_lock.hpp"
 
@@ -145,7 +144,7 @@ class alignas(64) cache_lock {
 		/**
 		 * @brief Constructor
 		 */
-		cache_lock() { };
+		cache_lock() {}
 
 		/**
 		 * @brief Copy constructor
@@ -172,7 +171,7 @@ class alignas(64) cache_lock {
 		}
 
 		/** @brief Destructor */
-		~cache_lock() { };
+		~cache_lock() {}
 
 		/** @brief Acquire a cache lock */
 		void lock(){
