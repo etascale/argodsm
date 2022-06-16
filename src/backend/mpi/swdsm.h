@@ -172,7 +172,7 @@ class alignas(64) cache_lock {
 		~cache_lock() {}
 
 		/** @brief Acquire a cache lock */
-		void lock(){
+		void lock() {
 			double start = MPI_Wtime();
 			c_mutex.lock();
 			double end = MPI_Wtime();
@@ -185,7 +185,7 @@ class alignas(64) cache_lock {
 		 * @brief Attempt to acquire a cache lock
 		 * @return True if successful, else false
 		 */
-		bool try_lock(){
+		bool try_lock() {
 			bool is_locked = c_mutex.try_lock();
 			if(is_locked) {
 				acquire_time = MPI_Wtime();
@@ -195,7 +195,7 @@ class alignas(64) cache_lock {
 		}
 
 		/** @brief Release a cache lock */
-		void unlock(){
+		void unlock() {
 			hold_time += MPI_Wtime()-acquire_time;
 			c_mutex.unlock();
 		}

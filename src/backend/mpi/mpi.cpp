@@ -141,7 +141,7 @@ namespace argo {
 			return _is_cached(reinterpret_cast<std::size_t>(addr));
 		}
 
-		void reset_stats(){
+		void reset_stats() {
 			argo_reset_stats();
 		}
 
