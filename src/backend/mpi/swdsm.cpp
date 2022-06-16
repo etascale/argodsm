@@ -396,7 +396,7 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 						if((remote_sharers[j*2]&node_id_inv_bit) == owner_id_bit &&
 								local_sharers[j] == 0) {
 							sharer_bit_mask[j*2] = node_id_bit;
-							handled_pages[j] = true; //Ensure these are marked as completed
+							handled_pages[j] = true;  // Ensure these are marked as completed
 						}
 					}
 				}
