@@ -246,7 +246,7 @@ namespace argo {
 						}
 						try {
 							mempool->grow(aligned_alloc_size);
-						}catch(const std::bad_alloc&){
+						} catch(const std::bad_alloc&) {
 							lock->unlock();
 							throw;
 						}

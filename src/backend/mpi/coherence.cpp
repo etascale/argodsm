@@ -13,9 +13,9 @@
 
 namespace argo {
 	namespace backend {
-		void _selective_acquire(void *addr, std::size_t size){
+		void _selective_acquire(void *addr, std::size_t size) {
 			// Skip selective acquire if the size of the region is 0
-			if(size == 0){
+			if(size == 0) {
 				return;
 			}
 
@@ -34,7 +34,7 @@ namespace argo {
 			// Iterate over all pages to selectively invalidate
 			for(std::size_t page_address = argo_address;
 					page_address < argo_address + page_misalignment + size;
-					page_address += block_size){
+					page_address += block_size) {
 				const node_id_t homenode_id = peek_homenode(page_address);
 				// This page should be skipped in the following cases
 				// 1. The page is node local so no acquire is necessary
@@ -50,9 +50,9 @@ namespace argo {
 				cache_locks[cache_index].lock();
 
 				// If the page is dirty, downgrade it
-				if(cacheControl[cache_index].dirty == DIRTY){
+				if(cacheControl[cache_index].dirty == DIRTY) {
 					mprotect((char*)start_address + page_address, block_size, PROT_READ);
-					for(int i = 0; i <CACHELINE; i++){
+					for(int i = 0; i <CACHELINE; i++) {
 						storepageDIFF(cache_index+i, page_address+page_size*i);
 					}
 					argo_write_buffer->erase(cache_index);
@@ -70,11 +70,11 @@ namespace argo {
 						// No writer and assert that the node is a sharer
 						((globalSharers[classification_index+1] == 0) &&
 						 ((globalSharers[classification_index] & node_id_bit) == node_id_bit))
-				  ){
+				  ) {
 					mpi_lock_sharer[win_index][node_id].unlock(node_id, sharer_windows[win_index][node_id]);
 					touchedcache[cache_index] = 1;
-					//nothing - we keep the pages, SD is done in flushWB
-				}else{ //multiple writer or SO, invalidate the page
+					// nothing - we keep the pages, SD is done in flushWB
+				} else { // multiple writer or SO, invalidate the page
 					mpi_lock_sharer[win_index][node_id].unlock(node_id, sharer_windows[win_index][node_id]);
 					cacheControl[cache_index].dirty = CLEAN;
 					cacheControl[cache_index].state = INVALID;
@@ -93,9 +93,9 @@ namespace argo {
 			stats.ssi_time += t2-t1;
 		}
 
-		void _selective_release(void *addr, std::size_t size){
+		void _selective_release(void *addr, std::size_t size) {
 			// Skip selective release if the size of the region is 0
-			if(size == 0){
+			if(size == 0) {
 				return;
 			}
 
@@ -113,7 +113,7 @@ namespace argo {
 			// Iterate over all pages to selectively downgrade
 			for(std::size_t page_address = argo_address;
 					page_address < argo_address + page_misalignment + size;
-					page_address += block_size){
+					page_address += block_size) {
 				const node_id_t homenode_id = peek_homenode(page_address);
 				// selective_release should be skipped in the following cases
 				// 1. The page is node local so no release is necessary
@@ -128,9 +128,9 @@ namespace argo {
 				cache_locks[cache_index].lock();
 
 				// If the page is dirty, downgrade it
-				if(cacheControl[cache_index].dirty == DIRTY){
+				if(cacheControl[cache_index].dirty == DIRTY) {
 					mprotect((char*)start_address + page_address, block_size, PROT_READ);
-					for(int i = 0; i <CACHELINE; i++){
+					for(int i = 0; i <CACHELINE; i++) {
 						storepageDIFF(cache_index+i, page_address+page_size*i);
 					}
 					argo_write_buffer->erase(cache_index);

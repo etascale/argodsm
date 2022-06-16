@@ -66,8 +66,7 @@
 typedef unsigned char argo_byte;
 
 /** @brief Struct for cache control data */
-typedef struct myControlData // global cache control data / directory
-{
+typedef struct myControlData { // global cache control data / directory
 		/** @brief Coherence state, basically only Valid/Invalid now */
 		argo_byte state;	// I/P/SW/MW
 		/** @brief Tracks if page is dirty or clean */
@@ -77,8 +76,7 @@ typedef struct myControlData // global cache control data / directory
 } control_data;
 
 /** @brief Struct containing statistics */
-typedef struct argo_statistics_struct
-{
+typedef struct argo_statistics_struct {
 		/** @brief Time spent self invalidating */
 		double selfinvtime;
 		/** @brief Time spent loading pages */
