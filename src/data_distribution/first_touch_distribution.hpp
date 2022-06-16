@@ -89,13 +89,13 @@ namespace argo {
 				 * @brief try and claim ownership of a page
 				 * @param addr address in the global address space
 				 */
-				static void first_touch (const std::size_t& addr);
+				static void first_touch(const std::size_t& addr);
 				/**
 				 * @brief perform the necessary directory actions
 				 * @param addr address in the global address space
 				 * @param do_first_touch attempt to first touch if true
 				 */
-				static void update_dirs (const std::size_t& addr, bool do_first_touch = true);
+				static void update_dirs(const std::size_t& addr, bool do_first_touch = true);
 				/** @brief protects the owners directory */
 				std::mutex owners_mutex;
 
@@ -131,7 +131,7 @@ namespace argo {
 					return homenode;
 				}
 
-				virtual node_id_t homenode (char* const ptr) {
+				virtual node_id_t homenode(char* const ptr) {
 					node_id_t homenode = invalid_node_id;
 					static const std::size_t rank = argo::backend::node_id();
 					static const std::size_t global_null = base_distribution<instance>::total_size + 1;
@@ -157,7 +157,7 @@ namespace argo {
 					return homenode;
 				}
 
-				virtual std::size_t peek_local_offset (char* const ptr) {
+				virtual std::size_t peek_local_offset(char* const ptr) {
 					std::size_t page_info[page_info_size];
 					std::size_t offset = invalid_offset;
 					static const std::size_t rank = argo::backend::node_id();
@@ -180,7 +180,7 @@ namespace argo {
 					if(page_info[1] != global_null) {
 						offset = page_info[1] + drift;
 					}
-					if( offset != invalid_offset &&
+					if(offset != invalid_offset &&
 						offset >= base_distribution<instance>::size_per_node) {
 						std::cerr << msg_fetch_offset_fail << std::endl;
 						throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_fetch_offset_fail);
@@ -189,7 +189,7 @@ namespace argo {
 					return offset;
 				}
 
-				virtual std::size_t local_offset (char* const ptr) {
+				virtual std::size_t local_offset(char* const ptr) {
 					std::size_t offset = invalid_offset;
 					static const std::size_t rank = argo::backend::node_id();
 					static const std::size_t global_null = base_distribution<instance>::total_size + 1;
@@ -219,7 +219,7 @@ namespace argo {
 		};
 
 		template<int instance>
-		void first_touch_distribution<instance>::update_dirs (const std::size_t& addr,
+		void first_touch_distribution<instance>::update_dirs(const std::size_t& addr,
 				const bool do_first_touch) {
 			std::size_t ownership;
 			static const std::size_t rank = argo::backend::node_id();
@@ -255,7 +255,7 @@ namespace argo {
 		}
 
 		template<int instance>
-		void first_touch_distribution<instance>::first_touch (const std::size_t& addr) {
+		void first_touch_distribution<instance>::first_touch(const std::size_t& addr) {
 			/* variables for CAS */
 			std::size_t offset, homenode, result;
 			static const std::size_t rank = argo::backend::node_id();

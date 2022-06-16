@@ -51,8 +51,7 @@ namespace argo {
 			/** @todo check desired range is free */
 			constexpr int flags = MAP_ANONYMOUS|MAP_SHARED|MAP_FIXED|MAP_NORESERVE;
 			backing_addr = static_cast<char*>(
-				::mmap((void*)ARGO_START, ARGO_SIZE, PROT_NONE, flags, -1, 0)
-				);
+				::mmap((void*)ARGO_START, ARGO_SIZE, PROT_NONE, flags, -1, 0));
 			if(backing_addr == MAP_FAILED) {
 				std::cerr << msg_main_mmap_fail << std::endl;
 				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);

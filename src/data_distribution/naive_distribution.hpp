@@ -20,7 +20,7 @@ namespace argo {
 		template<int instance>
 		class naive_distribution : public base_distribution<instance> {
 			public:
-				virtual node_id_t homenode (char* const ptr) {
+				virtual node_id_t homenode(char* const ptr) {
 					const std::size_t addr = ptr - base_distribution<instance>::start_address;
 					node_id_t homenode = addr / base_distribution<instance>::size_per_node;
 
@@ -36,7 +36,7 @@ namespace argo {
 					return homenode(ptr);
 				}
 
-				virtual std::size_t local_offset (char* const ptr) {
+				virtual std::size_t local_offset(char* const ptr) {
 					const std::size_t addr = ptr - base_distribution<instance>::start_address;
 					std::size_t offset = addr - (homenode(ptr)) * base_distribution<instance>::size_per_node;
 
@@ -48,7 +48,7 @@ namespace argo {
 					return offset;
 				}
 
-				virtual std::size_t peek_local_offset (char* const ptr) {
+				virtual std::size_t peek_local_offset(char* const ptr) {
 					return local_offset(ptr);
 				}
 		};

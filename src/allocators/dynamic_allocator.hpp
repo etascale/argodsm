@@ -134,8 +134,7 @@ namespace argo {
 				 */
 				pointer allocate(size_type n) {
 					return reinterpret_cast<pointer>(
-						default_dynamic_allocator.allocate(n*sizeof(value_type))
-						);
+						default_dynamic_allocator.allocate(n*sizeof(value_type)));
 				}
 
 				/**
@@ -143,9 +142,7 @@ namespace argo {
 				 * @param ptr the pointer to free
 				 */
 				void free(pointer ptr) {
-					default_dynamic_allocator.free(
-						reinterpret_cast<char*>(ptr)
-						);
+					default_dynamic_allocator.free(reinterpret_cast<char*>(ptr));
 				}
 
 				/**
@@ -154,10 +151,7 @@ namespace argo {
 				 * @param n the number of elements of type T to deallocate
 				 */
 				void deallocate(pointer ptr, size_t n) {
-					default_dynamic_allocator.deallocate(
-						reinterpret_cast<char*>(ptr),
-						n*sizeof(value_type)
-						);
+					default_dynamic_allocator.deallocate(reinterpret_cast<char*>(ptr), n*sizeof(value_type));
 				}
 
 				/**
