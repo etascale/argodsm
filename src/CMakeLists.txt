@@ -26,36 +26,20 @@ foreach(src ${synchronization_sources})
 endforeach(src)
 
 
-# exactly one of these must be enabled. below is some code to ensure this.
-option(ARGO_VM_SHM
-	"Handle virtual addresses using POSIX shared memory. Size-limited." ON)
-option(ARGO_VM_ANONYMOUS
-	"Handle virtual addresses using anonymously-mapped memory. Slow." OFF)
-option(ARGO_VM_MEMFD
-	"Handle virtual addresses using an anonymous memory file. Requires kernel 3.17+." OFF)
-
-set(ARGO_VM_COUNT 0 CACHE INTERNAL "Check for multiple virtual address handlers")
 unset(vm_libs)
 
-if(ARGO_VM_SHM)
+# Exactly one of these must be enabled (or use the default)
+if(ARGO_VM STREQUAL "MEMFD")
+# "Handle virtual addresses using an anonymous memory file. Requires kernel 3.17+."
+	set(vm_sources memfd.cpp)
+elseif(ARGO_VM STREQUAL "ANONYMOUS")
+# "Handle virtual addresses using anonymously-mapped memory. Slow."
+	set(vm_sources anonymous.cpp)
+else()  # default #if(ARGO_VM STREQUAL "SHM")
+# "Handle virtual addresses using POSIX shared memory. Size-limited."
 	set(vm_sources shm.cpp)
 	set(vm_libs rt)
-	math(EXPR ARGO_VM_COUNT "${ARGO_VM_COUNT} + 1")
-endif(ARGO_VM_SHM)
-
-if(ARGO_VM_ANONYMOUS)
-	set(vm_sources anonymous.cpp)
-	math(EXPR ARGO_VM_COUNT "${ARGO_VM_COUNT} + 1")
-endif(ARGO_VM_ANONYMOUS)
-
-if(ARGO_VM_MEMFD)
-	set(vm_sources memfd.cpp)
-	math(EXPR ARGO_VM_COUNT "${ARGO_VM_COUNT} + 1")
-endif(ARGO_VM_MEMFD)
-
-if(NOT ARGO_VM_COUNT EQUAL 1)
-	message(FATAL_ERROR "${ARGO_VM_COUNT} virtual address handlers selected. Please select exactly one virtual address handler.")
-endif(NOT ARGO_VM_COUNT EQUAL 1)
+endif()
 
 foreach(src ${vm_sources})
 	list(APPEND argo_sources virtual_memory/${src})
