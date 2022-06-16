@@ -13,9 +13,6 @@ ArgoDSM uses the CMake build system. In the next section, we will describe how
 to build ArgoDSM from scratch. However, before doing that, some dependencies are
 required.
 
-If you want to build the documentation,
-[doxygen](http://www.stack.nl/~dimitri/doxygen/) is required.
-
 The only distributed backend ArgoDSM currently supports is the MPI one, so a
 compiler and libraries for MPI are required. If you are using OpenMPI, we
 recommend using the latest stable release avaiable for your system.
@@ -27,10 +24,13 @@ ArgoDSM depends on the
 [C++ QD Locking Library](https://github.com/davidklaftenegger/qd_library).
 This is included as a git submodule and is built automatically by CMake,
 requiring both git and an internet connection. For instructions on how to build
-offline, see [building ArgoDSM offline](#Building-ArgoDSM-offline).
+offline, see [building ArgoDSM offline](#building-argodsm-offline).
 
 Additionally, ArgoDSM requires `libnuma` to detect whether it is running on top
 of NUMA systems, and if so how they are structured internally.
+
+If you want to build the documentation,
+[doxygen](https://www.doxygen.nl/) is required.
 
 Finally, C and C++ compilers that support the C17 and C++17 standards
 respectively are required.
