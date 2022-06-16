@@ -9,11 +9,11 @@
 #include <memory>
 #include <vector>
 
+#include "data_distribution/global_ptr.hpp"
 #include "env/env.hpp"
 #include "signal/signal.hpp"
-#include "virtual_memory/virtual_memory.hpp"
-#include "data_distribution/global_ptr.hpp"
 #include "swdsm.h"
+#include "virtual_memory/virtual_memory.hpp"
 
 namespace dd = argo::data_distribution;
 namespace vm = argo::virtual_memory;
