@@ -21,8 +21,8 @@
 
 #include "backend/backend.hpp"
 #include "env/env.hpp"
-#include "virtual_memory/virtual_memory.hpp"
 #include "qd.hpp"
+#include "virtual_memory/virtual_memory.hpp"
 
 /** @brief Block size based on backend definition */
 const std::size_t block_size = page_size*CACHELINE;
@@ -72,7 +72,7 @@ class write_buffer
 		 * @brief	Check if the write buffer is empty
 		 * @return	True if empty, else False
 		 */
-		bool empty() {
+		bool empty() const {
 			return _buffer.empty();
 		}
 
@@ -80,7 +80,7 @@ class write_buffer
 		 * @brief	Get the size of the buffer
 		 * @return	The size of the buffer
 		 */
-		size_t size() {
+		size_t size() const {
 			return _buffer.size();
 		}
 
@@ -89,7 +89,7 @@ class write_buffer
 		 * @param	i The requested buffer index
 		 * @return	The element at index i of type T
 		 */
-		T at(std::size_t i){
+		T at(std::size_t i) const {
 			return _buffer.at(i);
 		}
 
@@ -129,8 +129,9 @@ class write_buffer
 		 * @pre		Require ibsem and cachemutex to be taken
 		 */
 		void write_back_index(std::size_t cache_index) {
+			cache_locks[cache_index].lock();
 			assert(cacheControl[cache_index].dirty == DIRTY);
-			std::uintptr_t page_address = cacheControl[cache_index].tag;
+			const std::uintptr_t page_address = cacheControl[cache_index].tag;
 			void* page_ptr = static_cast<char*>(
 				argo::virtual_memory::start_address()) + page_address;
 
@@ -140,6 +141,7 @@ class write_buffer
 			for(std::size_t i = 0; i < CACHELINE; i++){
 				storepageDIFF(cache_index+i, page_size*i+page_address);
 			}
+			cache_locks[cache_index].unlock();
 		}
 
 		/**
@@ -360,7 +362,6 @@ class write_buffer
 
 		/**
 		 * @brief	Flushes the ArgoDSM write buffer to memory
-		 * @pre		Require ibsem to be taken until parallel MPI
 		 */
 		void flush() {
 			// Use an atomic flag to detect when flush is done
@@ -385,7 +386,6 @@ class write_buffer
 		/**
 		 * @brief	Adds a new element to the write buffer
 		 * @param	val The value of type T to add to the buffer
-		 * @pre		Require ibsem to be taken until parallel MPI
 		 */
 		void add(T val) {
 			double t_start = MPI_Wtime();

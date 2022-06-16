@@ -141,6 +141,10 @@ namespace argo {
 			return _is_cached(reinterpret_cast<std::size_t>(addr));
 		}
 
+		void reset_stats(){
+			argo_reset_stats();
+		}
+
 		void finalize() {
 			argo_finalize();
 		}
@@ -155,9 +159,7 @@ namespace argo {
 
 		template<typename T>
 		void broadcast(node_id_t source, T* ptr) {
-			sem_wait(&ibsem);
 			MPI_Bcast(static_cast<void*>(ptr), sizeof(T), MPI_BYTE, source, workcomm);
-			sem_post(&ibsem);
 		}
 
 		void acquire() {
@@ -174,25 +176,23 @@ namespace argo {
 		namespace atomic {
 			void _exchange(global_ptr<void> obj, void* desired,
 					std::size_t size, void* output_buffer) {
-				sem_wait(&ibsem);
 				MPI_Datatype t_type = fitting_mpi_int(size);
 				// Perform the exchange operation
-				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, obj.node(), 0, globalDataWindow[0]);
-				MPI_Fetch_and_op(desired, output_buffer, t_type, obj.node(), obj.offset(), MPI_REPLACE, globalDataWindow[0]);
-				MPI_Win_unlock(obj.node(), globalDataWindow[0]);
-				// Cleanup
-				sem_post(&ibsem);
+				std::size_t win_index = get_data_win_index(obj.offset());
+				std::size_t win_offset = get_data_win_offset(obj.offset());
+				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_EXCLUSIVE, obj.node(), data_windows[win_index][obj.node()]);
+				MPI_Fetch_and_op(desired, output_buffer, t_type, obj.node(), win_offset, MPI_REPLACE, data_windows[win_index][obj.node()]);
+				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);
 			}
 
 			void _store(global_ptr<void> obj, void* desired, std::size_t size) {
-				sem_wait(&ibsem);
 				MPI_Datatype t_type = fitting_mpi_int(size);
 				// Perform the store operation
-				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, obj.node(), 0, globalDataWindow[0]);
-				MPI_Put(desired, 1, t_type, obj.node(), obj.offset(), 1, t_type, globalDataWindow[0]);
-				MPI_Win_unlock(obj.node(), globalDataWindow[0]);
-				// Cleanup
-				sem_post(&ibsem);
+				std::size_t win_index = get_data_win_index(obj.offset());
+				std::size_t win_offset = get_data_win_offset(obj.offset());
+				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_EXCLUSIVE, obj.node(), data_windows[win_index][obj.node()]);
+				MPI_Put(desired, 1, t_type, obj.node(), win_offset, 1, t_type, data_windows[win_index][obj.node()]);
+				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);
 			}
 
 			void _store_public_owners_dir(const void* desired,
@@ -223,14 +223,13 @@ namespace argo {
 
 			void _load(global_ptr<void> obj, std::size_t size,
 					void* output_buffer) {
-				sem_wait(&ibsem);
 				MPI_Datatype t_type = fitting_mpi_int(size);
 				// Perform the store operation
-				MPI_Win_lock(MPI_LOCK_SHARED, obj.node(), 0, globalDataWindow[0]);
-				MPI_Get(output_buffer, 1, t_type, obj.node(), obj.offset(), 1, t_type, globalDataWindow[0]);
-				MPI_Win_unlock(obj.node(), globalDataWindow[0]);
-				// Cleanup
-				sem_post(&ibsem);
+				std::size_t win_index = get_data_win_index(obj.offset());
+				std::size_t win_offset = get_data_win_offset(obj.offset());
+				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_SHARED, obj.node(), data_windows[win_index][obj.node()]);
+				MPI_Get(output_buffer, 1, t_type, obj.node(), win_offset, 1, t_type, data_windows[win_index][obj.node()]);
+				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);
 			}
 
 			void _load_public_owners_dir(void* output_buffer,
@@ -263,14 +262,13 @@ namespace argo {
 
 			void _compare_exchange(global_ptr<void> obj, void* desired,
 					std::size_t size, void* expected, void* output_buffer) {
-				sem_wait(&ibsem);
 				MPI_Datatype t_type = fitting_mpi_int(size);
 				// Perform the store operation
-				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, obj.node(), 0, globalDataWindow[0]);
-				MPI_Compare_and_swap(desired, expected, output_buffer, t_type, obj.node(), obj.offset(), globalDataWindow[0]);
-				MPI_Win_unlock(obj.node(), globalDataWindow[0]);
-				// Cleanup
-				sem_post(&ibsem);
+				std::size_t win_index = get_data_win_index(obj.offset());
+				std::size_t win_offset = get_data_win_offset(obj.offset());
+				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_EXCLUSIVE, obj.node(), data_windows[win_index][obj.node()]);
+				MPI_Compare_and_swap(desired, expected, output_buffer, t_type, obj.node(), win_offset, data_windows[win_index][obj.node()]);
+				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);
 			}
 
 			void _compare_exchange_owners_dir(const void* desired, const void* expected, void* output_buffer,
@@ -306,13 +304,12 @@ namespace argo {
 			 */
 			void _fetch_add(global_ptr<void> obj, void* value,
 					MPI_Datatype t_type, void* output_buffer) {
-				sem_wait(&ibsem);
 				// Perform the exchange operation
-				MPI_Win_lock(MPI_LOCK_EXCLUSIVE, obj.node(), 0, globalDataWindow[0]);
-				MPI_Fetch_and_op(value, output_buffer, t_type, obj.node(), obj.offset(), MPI_SUM, globalDataWindow[0]);
-				MPI_Win_unlock(obj.node(), globalDataWindow[0]);
-				// Cleanup
-				sem_post(&ibsem);
+				std::size_t win_index = get_data_win_index(obj.offset());
+				std::size_t win_offset = get_data_win_offset(obj.offset());
+				mpi_lock_data[win_index][obj.node()].lock(MPI_LOCK_EXCLUSIVE, obj.node(), data_windows[win_index][obj.node()]);
+				MPI_Fetch_and_op(value, output_buffer, t_type, obj.node(), win_offset, MPI_SUM, data_windows[win_index][obj.node()]);
+				mpi_lock_data[win_index][obj.node()].unlock(obj.node(), data_windows[win_index][obj.node()]);
 			}
 
 			void _fetch_add_int(global_ptr<void> obj, void* value,

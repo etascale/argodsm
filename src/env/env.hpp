@@ -45,6 +45,20 @@
  * @details This environment variable determines the maximum amount of DSM pages that
  * 			are fetched on each remote load operation. It can be accessed through
  *          @ref argo::env::load_size() after argo::env::init() has been called.
+ *
+ * @envvar{ARGO_MPI_WINDOWS_PER_NODE} request a specific number of MPI Windows
+ * @details This environment variable determines the amount of MPI windows that are
+ * 			used to protect the global data and pyxis data structures. Each structure
+ * 			uses the requested number of MPI windows per node, multiplied by the
+ * 			number of nodes in the system. It can be accessed through
+ * 			@ref argo::env::mpi_windows_per_node() after argo::env::init() has been called.
+ *
+ * @envvar{ARGO_PRINT_STATISTICS} control the detail of statistics printed at end
+ * @details This environment variable determines the amount of statistics printed at once
+ * 			ArgoDSM finalizes. 0 prints no statistics, 1 prints general system information,
+ * 			2 in addition prints basic node information, and 3 in addition prints detailed
+ * 			node information. It can be accessed through @ref argo::env::print_statistics()
+ * 			after argo::env::init() has been called.
  */
 
 namespace argo {
@@ -110,6 +124,20 @@ namespace argo {
 		 * @see @ref ARGO_LOAD_SIZE
 		 */
 		std::size_t load_size();
+
+		/**
+		 * @brief get the number of MPI windows per node requested
+		 * @return the number of MPI windows per node
+		 * @see @ref ARGO_MPI_WINDOWS_PER_NODE
+		 */
+		std::size_t mpi_windows_per_node();
+
+		/**
+		 * @brief Get the requested statistics print level
+		 * @return The requested statistics print level
+		 * @see @ref ARGO_PRINT_STATISTICS
+		 */
+		std::size_t print_statistics();
 	} // namespace env
 } // namespace argo
 

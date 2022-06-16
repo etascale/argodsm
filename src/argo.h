@@ -64,7 +64,7 @@ bool argo_is_argo_address(void* addr);
  * been first-touched under the first-touch allocation policy
  * @pre addr must be an address in ArgoDSM memory
  */
-int argo_get_homenode(void* addr);
+argo::node_id_t argo_get_homenode(void* addr);
 
 /**
  * @brief Get the block size of the current allocation policy

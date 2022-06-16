@@ -58,6 +58,18 @@ namespace {
 	const std::size_t default_load_size = 8;
 
 	/**
+	 * @brief default number of MPI windows (if environment variable is unset)
+	 * @see @ref ARGO_MPI_WINDOWS_PER_NODE
+	 */
+	const std::size_t default_mpi_windows_per_node = 4;
+
+	/**
+	 * @brief default requested statistics level (if environment variable is unset)
+	 * @see @ref ARGO_PRINT_STATISTICS
+	 */
+	const std::size_t default_print_statistics = 2; // default 2 is basic node statistics
+
+	/**
 	 * @brief environment variable used for requesting memory size
 	 * @see @ref ARGO_MEMORY_SIZE
 	 */
@@ -98,6 +110,18 @@ namespace {
 	 * @see @ref ARGO_LOAD_SIZE
 	 */
 	const std::string env_load_size = "ARGO_LOAD_SIZE";
+
+	/**
+	 * @brief environment variable used for requesting the number of MPI windows
+	 * @see @ref ARGO_MPI_WINDOWS_PER_NODE
+	 */
+	const std::string env_mpi_windows_per_node = "ARGO_MPI_WINDOWS_PER_NODE";
+
+	/**
+	 * @brief environment variable used for requesting statistics level
+	 * @see @ref ARGO_PRINT_STATISTICS
+	 */
+	const std::string env_print_statistics = "ARGO_PRINT_STATISTICS";
 
 	/** @brief error message string */
 	const std::string msg_uninitialized = "argo::env::init() must be called before accessing environment values";
@@ -141,6 +165,16 @@ namespace {
 	 * @brief load size requested through the environment variable @ref ARGO_LOAD_SIZE
 	 */
 	std::size_t value_load_size;
+
+	/**
+	 * @brief number of MPI windows requested through the environment variable @ref ARGO_MPI_WINDOWS_PER_NODE
+	 */
+	std::size_t value_mpi_windows_per_node;
+
+	/**
+	 * @brief statistics output level requested through the environment variable @ref ARGO_PRINT_STATISTICS
+	 */
+	std::size_t value_print_statistics;
 
 	/** @brief flag to allow checking that environment variables have been read before accessing their values */
 	bool is_initialized = false;
@@ -206,6 +240,8 @@ namespace argo {
 			value_allocation_policy = parse_env<std::size_t>(env_allocation_policy, default_allocation_policy).second;
 			value_allocation_block_size = parse_env<std::size_t>(env_allocation_block_size, default_allocation_block_size).second;
 			value_load_size = parse_env<std::size_t>(env_load_size, default_load_size).second;
+			value_mpi_windows_per_node = parse_env<std::size_t>(env_mpi_windows_per_node, default_mpi_windows_per_node).second;
+			value_print_statistics = parse_env<std::size_t>(env_print_statistics, default_print_statistics).second;
 
 			is_initialized = true;
 		}
@@ -243,6 +279,16 @@ namespace argo {
 		std::size_t load_size() {
 			assert_initialized();
 			return value_load_size;
+		}
+
+		std::size_t mpi_windows_per_node() {
+			assert_initialized();
+			return value_mpi_windows_per_node;
+		}
+
+		std::size_t print_statistics() {
+			assert_initialized();
+			return value_print_statistics;
 		}
 	} // namespace env
 } // namespace argo

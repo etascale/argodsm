@@ -4,6 +4,9 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
+#include <shared_mutex>
+#include <vector>
+
 #include "../backend.hpp"
 #include "swdsm.h"
 #include "virtual_memory/virtual_memory.hpp"
@@ -11,8 +14,8 @@
 namespace argo {
 	namespace backend {
 		void _selective_acquire(void *addr, std::size_t size){
+			// Skip selective acquire if the size of the region is 0
 			if(size == 0){
-				// Nothing to invalidate
 				return;
 			}
 
@@ -26,8 +29,7 @@ namespace argo {
 
 			// Lock relevant mutexes. Start statistics timekeeping
 			double t1 = MPI_Wtime();
-			pthread_mutex_lock(&cachemutex);
-			sem_wait(&ibsem);
+			std::shared_lock lock(sync_lock);
 
 			// Iterate over all pages to selectively invalidate
 			for(std::size_t page_address = argo_address;
@@ -45,6 +47,7 @@ namespace argo {
 
 				const std::size_t cache_index = getCacheIndex(page_address);
 				const std::size_t classification_index = get_classification_index(page_address);
+				cache_locks[cache_index].lock();
 
 				// If the page is dirty, downgrade it
 				if(cacheControl[cache_index].dirty == DIRTY){
@@ -56,9 +59,10 @@ namespace argo {
 					cacheControl[cache_index].dirty = CLEAN;
 				}
 
+				std::size_t win_index = get_sharer_win_index(classification_index);
 				// Optimization to keep pages in cache if they do not
 				// need to be invalidated.
-				MPI_Win_lock(MPI_LOCK_SHARED, node_id, 0, sharerWindow);
+				mpi_lock_sharer[win_index][node_id].lock(MPI_LOCK_SHARED, node_id, sharer_windows[win_index][node_id]);
 				if(
 						// node is single writer
 						(globalSharers[classification_index+1] == node_id_bit)
@@ -67,33 +71,31 @@ namespace argo {
 						((globalSharers[classification_index+1] == 0) &&
 						 ((globalSharers[classification_index] & node_id_bit) == node_id_bit))
 				  ){
-					MPI_Win_unlock(node_id, sharerWindow);
+					mpi_lock_sharer[win_index][node_id].unlock(node_id, sharer_windows[win_index][node_id]);
 					touchedcache[cache_index] = 1;
 					//nothing - we keep the pages, SD is done in flushWB
 				}else{ //multiple writer or SO, invalidate the page
-					MPI_Win_unlock(node_id, sharerWindow);
+					mpi_lock_sharer[win_index][node_id].unlock(node_id, sharer_windows[win_index][node_id]);
 					cacheControl[cache_index].dirty = CLEAN;
 					cacheControl[cache_index].state = INVALID;
 					touchedcache[cache_index] = 0;
 					mprotect((char*)start_address + page_address, block_size, PROT_NONE);
 				}
+				cache_locks[cache_index].unlock();
 			}
-
 			double t2 = MPI_Wtime();
-			stats.ssitime += t2-t1;
 
 			// Poke the MPI system to force progress
 			int flag;
 			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
 
-			// Release relevant mutexes
-			sem_post(&ibsem);
-			pthread_mutex_unlock(&cachemutex);
+			std::lock_guard<std::mutex> ssi_time_lock(stats.ssi_time_mutex);
+			stats.ssi_time += t2-t1;
 		}
 
 		void _selective_release(void *addr, std::size_t size){
+			// Skip selective release if the size of the region is 0
 			if(size == 0){
-				// Nothing to downgrade
 				return;
 			}
 
@@ -106,8 +108,7 @@ namespace argo {
 
 			// Lock relevant mutexes. Start statistics timekeeping
 			double t1 = MPI_Wtime();
-			pthread_mutex_lock(&cachemutex);
-			sem_wait(&ibsem);
+			std::shared_lock lock(sync_lock);
 
 			// Iterate over all pages to selectively downgrade
 			for(std::size_t page_address = argo_address;
@@ -122,7 +123,9 @@ namespace argo {
 					homenode_id == argo::data_distribution::invalid_node_id) {
 					continue;
 				}
+
 				const std::size_t cache_index = getCacheIndex(page_address);
+				cache_locks[cache_index].lock();
 
 				// If the page is dirty, downgrade it
 				if(cacheControl[cache_index].dirty == DIRTY){
@@ -133,18 +136,16 @@ namespace argo {
 					argo_write_buffer->erase(cache_index);
 					cacheControl[cache_index].dirty = CLEAN;
 				}
+				cache_locks[cache_index].unlock();
 			}
-
 			double t2 = MPI_Wtime();
-			stats.ssdtime += t2-t1;
 
 			// Poke the MPI system to force progress
 			int flag;
 			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
 
-			// Release relevant mutexes
-			sem_post(&ibsem);
-			pthread_mutex_unlock(&cachemutex);
+			std::lock_guard<std::mutex> ssd_time_lock(stats.ssd_time_mutex);
+			stats.ssd_time += t2-t1;
 		}
 	} //namespace backend
 } //namespace argo

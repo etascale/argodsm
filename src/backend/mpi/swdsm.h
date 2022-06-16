@@ -29,11 +29,17 @@
 #include <time.h>
 #include <unistd.h>
 // C++ headers
+#include <atomic>
+#include <cmath>
 #include <cstdint>
+#include <functional>
+#include <mutex>
+#include <shared_mutex>
 #include <type_traits>
+#include <vector>
 
-#include "argo.h"
 #include "backend/backend.hpp"
+#include "mpi_lock.hpp"
 
 #ifndef CACHELINE
 /** @brief Size of a ArgoDSM cacheline in number of pages */
@@ -71,37 +77,168 @@ typedef struct myControlData // global cache control data / directory
 } control_data;
 
 /** @brief Struct containing statistics */
-typedef struct argo_statisticsStruct
+typedef struct argo_statistics_struct
 {
-		/** @brief Time spend locking */
-		double locktime;
 		/** @brief Time spent self invalidating */
 		double selfinvtime;
 		/** @brief Time spent loading pages */
-		double loadtime;
+		double load_time;
+		/** @brief Mutex to update load_time */
+		std::mutex load_time_mutex;
 		/** @brief Time spent storing pages */
-		double storetime;
-		/** @brief Time spent writing back from the writebuffer */
-		double writebacktime;
-		/** @brief Time spent flushing the writebuffer */
-		double flushtime;
+		double store_time;
+		/** @brief Mutex to update store_time */
+		std::mutex store_time_mutex;
+		/** @brief Time spent locking the sync lock */
+		double sync_lock_time;
+		/** @brief Mutex to update sync_lock_time */
+		std::mutex sync_lock_time_mutex;
 		/** @brief Time spent in global barrier */
 		double barriertime;
+		/** @brief Time spent initializing ArgoDSM */
+		double inittime;
+		/** @brief Time between init and finalize */
+		double exectime;
 		/** @brief Number of stores */
-		std::size_t stores;
+		std::atomic<std::size_t> write_misses;
 		/** @brief Number of loads */
-		std::size_t loads;
+		std::atomic<std::size_t> read_misses;
 		/** @brief Number of barriers executed */
 		std::size_t barriers;
-		/** @brief Number of writebacks from (full) writebuffer */
-		std::size_t writebacks;
 		/** @brief Number of locks */
 		int locks;
 		/** @brief Time spent performing selective acquire */
-		double ssitime;
+		double ssi_time;
+		/** @brief Mutex to update ssi_time */
+		std::mutex ssi_time_mutex;
 		/** @brief Time spent performing selective release */
-		double ssdtime;
+		double ssd_time;
+		/** @brief Mutex to update ssd_time */
+		std::mutex ssd_time_mutex;
 } argo_statistics;
+
+/**
+ * @brief Simple lock struct
+ * @todo  This should be done in a separate cache class
+ */
+class alignas(64) cache_lock {
+	private:
+		/** 
+		 * @brief Mutex protecting one cache block 
+		 */
+		mutable std::mutex c_mutex;
+
+		/** @brief Time spent waiting for lock */
+		double wait_time{0};
+
+		/** @brief Time spent holding the lock */
+		double hold_time{0};
+
+		/** @brief For timekeeping hold time */
+		double acquire_time{0};
+
+		/** @brief Number of times held */
+		std::size_t num_locks{0};
+
+	public:
+		/**
+		 * @brief Constructor
+		 */
+		cache_lock() {}
+
+		/**
+		 * @brief Copy constructor
+		 * @param _other cache_lock to copy from
+		 */
+		cache_lock(const cache_lock& _other) {
+			std::scoped_lock lock_other(_other.c_mutex);
+			wait_time = _other.wait_time;
+			hold_time = _other.hold_time;
+			acquire_time = _other.acquire_time;
+			num_locks = _other.num_locks;
+		}
+
+		/**
+		 * @brief Move constructor
+		 * @param _other cache_lock to move
+		 */
+		cache_lock(const cache_lock&& _other) {
+			std::scoped_lock lock_other(_other.c_mutex);
+			wait_time = std::move(_other.wait_time);
+			hold_time = std::move(_other.hold_time);
+			acquire_time = std::move(_other.acquire_time);
+			num_locks = std::move(_other.num_locks);
+		}
+
+		/** @brief Destructor */
+		~cache_lock() {}
+
+		/** @brief Acquire a cache lock */
+		void lock(){
+			double start = MPI_Wtime();
+			c_mutex.lock();
+			double end = MPI_Wtime();
+			wait_time += end-start;
+			acquire_time = end;
+			num_locks++;
+		}
+
+		/**
+		 * @brief Attempt to acquire a cache lock
+		 * @return True if successful, else false
+		 */
+		bool try_lock(){
+			bool is_locked = c_mutex.try_lock();
+			if(is_locked) {
+				acquire_time = MPI_Wtime();
+				num_locks++;
+			}
+			return is_locked;
+		}
+
+		/** @brief Release a cache lock */
+		void unlock(){
+			hold_time += MPI_Wtime()-acquire_time;
+			c_mutex.unlock();
+		}
+
+		/**
+		 * @brief	Get the time spent waiting for the lock
+		 * @return	The time in seconds
+		 */
+		double get_lock_time() const {
+			std::scoped_lock lock(c_mutex);
+			return wait_time;
+		}
+
+		/**
+		 * @brief	Get the time spent holding the lock
+		 * @return	The time in seconds
+		 */
+		double get_hold_time() const {
+			std::scoped_lock lock(c_mutex);
+			return hold_time;
+		}
+
+		/**
+		 * @brief	Get the number of times this lock was held
+		 * @return	The number of times this lock was held
+		 */
+		std::size_t get_num_locks() const {
+			std::scoped_lock lock(c_mutex);
+			return num_locks;
+		}
+
+		/**
+		 * @brief Clear all recorded statistics
+		 */
+		void reset_stats(){
+			std::scoped_lock lock(c_mutex);
+			wait_time = 0;
+			hold_time = 0;
+			num_locks = 0;
+		}
+};
 
 /*constants for control values*/
 /** @brief Constant for invalid states */
@@ -131,38 +268,46 @@ constexpr std::size_t page_size = 4096;
  */
 extern control_data* cacheControl;
 /**
+ * @brief A vector containing cache locks
+ * @deprecated Should eventually be handled by a cache module
+ */
+extern std::vector<cache_lock> cache_locks;
+/**
+ * @brief A sync lock that must be taken as writer (std::unique_lock) by
+ * threads that perform global synchronization operations.
+ */
+extern std::shared_mutex sync_lock;
+/**
  * @brief globalSharers is needed to access and modify the pyxis directory
  * @deprecated Should eventually be handled by a cache module
  * @see swdsm.cpp
  */
 extern std::uint64_t* globalSharers;
 /**
- * @brief A cache mutex protects all operations on cacheControl
- * @deprecated Should eventually be handled by a cache module
+ * @brief sharer_windows protects the pyxis directory
+ * @deprecated Should not be needed once the pyxis directory is
+ * managed from elsewhere through a cache module.
  * @see swdsm.cpp
  */
-extern pthread_mutex_t cachemutex;
+extern std::vector<std::vector<MPI_Win>> sharer_windows;
 /**
- * @brief ibsem is used to serialize all Infiniband (MPI) operations
- * @deprecated Should not be needed once the cache module or a parallel
- * MPI communication is allowed.
- * @see swdsm.cpp
+ * @brief sharer locks that protect concurrent access from the same node
+ * @deprecated Should be done in a cache module
  */
-extern sem_t ibsem;
+extern mpi_lock **mpi_lock_sharer;
 /**
  * @todo MPI communication channel for exclusive accesses
  * @deprecated MPI communication should be handled by a module and
  * accessed through a proper API
  * @see swdsm.cpp
  */
-extern MPI_Win* globalDataWindow;
+extern std::vector<std::vector<MPI_Win>>  data_windows;
 /**
- * @brief sharerWindow protects the pyxis directory
- * @deprecated Should not be needed once the pyxis directory is
- * managed from elsewhere through a cache module.
+ * @brief locks to protect data windows from unlawful access
+ * @see swdsm.h
  * @see swdsm.cpp
  */
-extern MPI_Win sharerWindow;
+extern mpi_lock **mpi_lock_data;
 /**
  * @brief Needed to update argo statistics
  * @deprecated Should be replaced by API calls to a stats module
@@ -287,14 +432,14 @@ void argo_acq_rel();
 
 /*Statistics*/
 /**
- * @brief Clears out all statistics
+ * @brief Resets all ArgoDSM statistics
  */
-void clearStatistics();
+void argo_reset_stats();
 
 /**
  * @brief Prints collected statistics
  */
-void printStatistics();
+void print_statistics();
 
 /**
  * @brief Resets current ArgoDSM coherence
@@ -347,11 +492,11 @@ size_t argo_get_global_size();
  */
 void initmpi();
 /**
- * @brief Initializes a mpi data structure for writing cacheb control data over the network * @brief 
+ * @brief Initializes an MPI data structure for writing cache control data over the network
  */
 void init_mpi_struct(void);
 /**
- * @brief Initializes a mpi data structure for writing cacheblocks over the network
+ * @brief Initializes an MPI data structure for writing cache blocks over the network
  */
 void init_mpi_cacheblock(void);
 /**
@@ -408,7 +553,48 @@ std::size_t get_classification_index(std::uintptr_t addr);
  * @param addr Address in the global address space
  * @return true if cached or locally backed, else false
  * @warning This is strictly meant for testing prefetching
- * @todo This should be moved in to a dedicated cache class
+ * @todo This should be moved into a dedicated cache class
  */
 bool _is_cached(std::uintptr_t addr);
+
+/**
+ * @brief Locks the correct mpi_lock_sharer, performs operation
+ * op and then unlocks the locked mpi_lock_sharer
+ * @param lock_type MPI lock type
+ * @param rank remote node to perform op on
+ * @param offset the offset into the remote node's globalSharer
+ * data structure
+ * @param op A function to execute
+ */
+void sharer_op(int lock_type, int rank, int offset,
+		std::function<void(const std::size_t window_index)> op);
+
+/**
+ * @brief Gets the sharer window index based on the classification index
+ * @param classification_index the page classification index
+ * @return the sharer window index
+ */
+std::size_t get_sharer_win_index(int classification_index);
+
+/**
+ * @brief Gets the sharer window offset based on the classification index
+ * @param classification_index the page classification index
+ * @return the offset into the sharer window
+ */
+std::size_t get_sharer_win_offset(int classification_index);
+
+/**
+ * @brief Gets the data window index based on the offset into the
+ * node's backing store
+ * @param offset the page offset into the remote node's backing store
+ * @return the data window index
+ */
+std::size_t get_data_win_index(std::size_t offset);
+
+/**
+ * @brief Gets the sharer window offset based on the classification index
+ * @param offset the page offset into the remote node's backing store
+ * @return the offset into the sharer window
+ */
+std::size_t get_data_win_offset(std::size_t offset);
 #endif  // ARGODSM_SRC_BACKEND_MPI_SWDSM_H_

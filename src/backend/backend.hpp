@@ -100,6 +100,11 @@ namespace argo {
 		bool is_cached(void* addr);
 
 		/**
+		 * @brief Resets statistics for the ArgoDSM backend in use
+		 */
+		void reset_stats();
+
+		/**
 		 * @brief global memory space address
 		 * @deprecated prototype implementation detail
 		 */

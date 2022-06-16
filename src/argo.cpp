@@ -54,6 +54,24 @@ namespace argo {
 				"Invalid page block size (must be a number bigger than 0)");
 		}
 
+		std::size_t requested_argo_load_size = env::load_size();
+		if(requested_argo_load_size == 0) {
+			throw std::invalid_argument(
+				"Invalid load size (must be a number bigger than 0)");
+		}
+
+		std::size_t requested_argo_mpi_windows_per_node = env::mpi_windows_per_node();
+		if(requested_argo_mpi_windows_per_node == 0) {
+			throw std::invalid_argument(
+				"Invalid number of MPI windows (must be a number bigger than 0)");
+		}
+
+		std::size_t requested_argo_print_level = env::print_statistics();
+		if(requested_argo_print_level > 3) {
+			throw std::invalid_argument(
+				"Invalid statistics level (must be a number between 0 and 3)");
+		}
+
 		/* note: the backend must currently initialize before the mempool can be set */
 		backend::init(requested_argo_size, requested_cache_size);
 		default_global_mempool = new mp();
@@ -88,12 +106,12 @@ namespace argo {
 		backend::barrier();
 	}
 
-	int node_id() {
-		return static_cast<int>(argo::backend::node_id());
+	argo::node_id_t node_id() {
+		return argo::backend::node_id();
 	}
 
-	int number_of_nodes() {
-		return static_cast<int>(argo::backend::number_of_nodes());
+	argo::num_nodes_t number_of_nodes() {
+		return argo::backend::number_of_nodes();
 	}
 
 	std::size_t get_block_size() {
@@ -126,7 +144,7 @@ extern "C" {
 		return argo::is_argo_address(addr);
 	}
 
-	int argo_get_homenode(void* addr) {
+	argo::node_id_t argo_get_homenode(void* addr) {
 		return argo::get_homenode(addr);
 	}
 
