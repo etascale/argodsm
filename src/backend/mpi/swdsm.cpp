@@ -58,14 +58,6 @@ std::shared_mutex sync_lock;
 write_buffer<std::size_t>* argo_write_buffer;
 
 /*MPI and Comm*/
-/** @brief  A copy of MPI_COMM_WORLD group to split up processes into smaller groups*/
-/** @todo This can be removed now when we are only running 1 process per ArgoDSM node */
-MPI_Group startgroup;
-/** @brief  A group of all processes that are executing the main thread */
-/** @todo This can be removed now when we are only running 1 process per ArgoDSM node */
-MPI_Group workgroup;
-/** @brief Communicator can be replaced with MPI_COMM_WORLD*/
-MPI_Comm workcomm;
 /** @brief The number of MPI windows per remote node */
 std::size_t mpi_windows;
 /** @brief MPI window for communicating pyxis directory*/
@@ -88,8 +80,6 @@ MPI_Datatype mpi_control_data;
 MPI_Datatype cacheblock;
 /** @brief number of MPI processes / ArgoDSM nodes */
 argo::num_nodes_t numtasks;
-/** @brief rank/process ID in the MPI/ArgoDSM runtime*/
-argo::node_id_t rank;
 /** @brief rank/process ID in the MPI/ArgoDSM runtime*/
 argo::node_id_t workrank;
 
@@ -208,7 +198,7 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 	assert((aligned_access_offset % block_size) == 0);
 
 	/* Assign node bit IDs */
-	const std::uint64_t node_id_bit = static_cast<std::uint64_t>(1) << getID();
+	const std::uint64_t node_id_bit = static_cast<std::uint64_t>(1) << workrank;
 	const std::uint64_t node_id_inv_bit = ~node_id_bit;
 
 	/* Calculate start values and store some parameters */
@@ -489,7 +479,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 	argo::node_id_t homenode = get_homenode(aligned_access_offset);
 	std::size_t offset = get_offset(aligned_access_offset);
 
-	std::uint64_t id = static_cast<std::uint64_t>(1) << getID();
+	std::uint64_t id = static_cast<std::uint64_t>(1) << workrank;
 	std::uint64_t invid = ~id;
 	std::size_t sharer_win_offset = get_sharer_win_offset(classidx);
 
@@ -504,7 +494,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 	cache_locks[startIndex].lock();
 
 	/* page is local */
-	if(homenode == (getID())) {
+	if(homenode == workrank) {
 		std::uint64_t sharers, prevsharer;
 		sharer_op(MPI_LOCK_SHARED, workrank, classidx, [&](std::size_t) {
 				prevsharer = (globalSharers[classidx])&id;
@@ -711,15 +701,12 @@ void initmpi() {
 	}
 
 	MPI_Comm_size(MPI_COMM_WORLD, reinterpret_cast<int*>(&numtasks));
-	MPI_Comm_rank(MPI_COMM_WORLD, reinterpret_cast<int*>(&rank));
+	MPI_Comm_rank(MPI_COMM_WORLD, reinterpret_cast<int*>(&workrank));
 	init_mpi_struct();
 	init_mpi_cacheblock();
 }
 
-argo::node_id_t getID() {
-	return workrank;
-}
-argo::node_id_t argo_get_nid() {
+argo::node_id_t argo_get_node_id() {
 	return workrank;
 }
 
@@ -772,19 +759,6 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 
 	classificationSize = 2*(argo_size/pagesize);
 	argo_write_buffer = new write_buffer<std::size_t>();
-
-	int *workranks = (int *) malloc(sizeof(argo::num_nodes_t)*numtasks);
-	int workindex = 0;
-
-	for(argo::num_nodes_t i = 0; i < numtasks; i++) {
-		workranks[workindex++] = i;
-	}
-
-	MPI_Comm_group(MPI_COMM_WORLD, &startgroup);
-	MPI_Group_incl(startgroup, numtasks, workranks, &workgroup);
-	MPI_Comm_create(MPI_COMM_WORLD, workgroup, &workcomm);
-	MPI_Group_rank(workgroup, reinterpret_cast<int*>(&workrank));
-
 
 	//Allocate local memory for each node,
 	size_of_all = argo_size; //total distr. global memory
@@ -909,7 +883,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 
 void argo_finalize() {
 	swdsm_argo_barrier(1);
-	if(getID() == 0) {
+	if(workrank == 0) {
 		printf("ArgoDSM shutting down\n");
 	}
 	swdsm_argo_barrier(1);
@@ -948,14 +922,13 @@ void argo_finalize() {
 	}
 	delete[] mpi_lock_data;
 
-	MPI_Comm_free(&workcomm);
 	MPI_Finalize();
 	return;
 }
 
 void self_invalidation() {
 	int flushed = 0;
-	std::uint64_t id = static_cast<std::uint64_t>(1) << getID();
+	std::uint64_t id = static_cast<std::uint64_t>(1) << workrank;
 
 	double t1 = MPI_Wtime();
 	for(std::size_t i = 0; i < cachesize; i+=CACHELINE) {
@@ -998,7 +971,7 @@ void self_invalidation() {
 void self_upgrade(upgrade_type upgrade) {
 	assert(upgrade == upgrade_type::upgrade_writers ||
 		   upgrade == upgrade_type::upgrade_all);
-	const std::uint64_t node_id_bit = static_cast<std::uint64_t>(1) << getID();
+	const std::uint64_t node_id_bit = static_cast<std::uint64_t>(1) << workrank;
 
 	for(std::size_t i = 0; i < classificationSize; i+=2) {
 		std::size_t page_index = i/2;
@@ -1056,13 +1029,13 @@ void swdsm_argo_barrier(int n, upgrade_type upgrade) {
 
 		// Perform SD followed by SI
 		argo_write_buffer->flush();
-		MPI_Barrier(workcomm);
+		MPI_Barrier(MPI_COMM_WORLD);
 		self_invalidation();
 
 		// Perform upgrade if requested
 		if (upgrade != upgrade_type::upgrade_none) {
 			self_upgrade(upgrade);
-			MPI_Barrier(workcomm);
+			MPI_Barrier(MPI_COMM_WORLD);
 		}
 	}
 
@@ -1124,7 +1097,7 @@ void argo_acquire() {
 	// Sync lock can only be held by one so no lock_guard required
 	stats.sync_lock_time += t2-t1;
 	self_invalidation();
-	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
+	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, MPI_STATUS_IGNORE);
 }
 
 
@@ -1136,7 +1109,7 @@ void argo_release() {
 	// Sync lock can only be held by one so no lock_guard required
 	stats.sync_lock_time += t2-t1;
 	argo_write_buffer->flush();
-	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
+	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, MPI_STATUS_IGNORE);
 }
 
 void argo_acq_rel() {
@@ -1464,7 +1437,7 @@ bool _is_cached(std::uintptr_t addr) {
 	std::size_t cache_index = getCacheIndex(aligned_address);
 
 	// Return true for pages which are either local or already cached
-	return ((homenode == getID()) || (cacheControl[cache_index].tag == aligned_address &&
+	return ((homenode == workrank) || (cacheControl[cache_index].tag == aligned_address &&
 				cacheControl[cache_index].state == VALID));
 }
 

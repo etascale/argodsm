@@ -318,12 +318,6 @@ extern argo_statistics stats;
  */
 extern argo_byte* touchedcache;
 /**
- * @brief MPI communicator for node processes
- * @deprecated prototype implementation detail
- * @see swdsm.cpp
- */
-extern MPI_Comm workcomm;
-/**
  * @brief MPI window for the first-touch data distribution
  * @see swdsm.cpp
  * @see first_touch_distribution.hpp
@@ -445,19 +439,12 @@ void print_statistics();
  */
 void argo_reset_coherence();
 
-/**
- * @brief Gives the ArgoDSM node id for the local process
- * @return Returns the ArgoDSM node id for the local process
- * @deprecated Should use argo_get_nid() instead and eventually remove this
- * @see argo_get_nid()
- */
-argo::node_id_t getID();
 
 /**
  * @brief Gives the ArgoDSM node id for the local process
  * @return Returns the ArgoDSM node id for the local process
  */
-argo::node_id_t argo_get_nid();
+argo::node_id_t argo_get_node_id();
 
 /**
  * @brief Gives number of ArgoDSM nodes

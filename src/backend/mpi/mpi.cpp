@@ -122,7 +122,7 @@ namespace argo {
 		}
 
 		node_id_t node_id() {
-			return argo_get_nid();
+			return argo_get_node_id();
 		}
 
 		node_id_t number_of_nodes() {
@@ -159,7 +159,7 @@ namespace argo {
 
 		template<typename T>
 		void broadcast(node_id_t source, T* ptr) {
-			MPI_Bcast(static_cast<void*>(ptr), sizeof(T), MPI_BYTE, source, workcomm);
+			MPI_Bcast(static_cast<void*>(ptr), sizeof(T), MPI_BYTE, source, MPI_COMM_WORLD);
 		}
 
 		void acquire() {

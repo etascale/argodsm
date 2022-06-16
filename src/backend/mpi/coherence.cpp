@@ -87,7 +87,7 @@ namespace argo {
 
 			// Poke the MPI system to force progress
 			int flag;
-			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
+			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, MPI_STATUS_IGNORE);
 
 			std::lock_guard<std::mutex> ssi_time_lock(stats.ssi_time_mutex);
 			stats.ssi_time += t2-t1;
@@ -142,7 +142,7 @@ namespace argo {
 
 			// Poke the MPI system to force progress
 			int flag;
-			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
+			MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, MPI_STATUS_IGNORE);
 
 			std::lock_guard<std::mutex> ssd_time_lock(stats.ssd_time_mutex);
 			stats.ssd_time += t2-t1;
