@@ -81,7 +81,7 @@ namespace argo {
 							backend::acquire();
 						}
 						return true;
-					}else {
+					} else {
 						return false;
 					}
 				}

@@ -233,7 +233,7 @@ namespace argo {
 					env_write_buffer_write_back_size,
 					default_write_buffer_write_back_size).second;
 			// Limit the write buffer write back size to the write buffer size
-			if(value_write_buffer_write_back_size > value_write_buffer_size){
+			if(value_write_buffer_write_back_size > value_write_buffer_size) {
 				value_write_buffer_write_back_size = value_write_buffer_size;
 			}
 

@@ -152,11 +152,11 @@ namespace argo {
 					max_size = alloc_size;
 					offset = 0;
 
-					try{
+					try {
 						if(do_grow<growth_mode>()) {
 							memory = allocator->allocate(alloc_size);
 						}
-					}catch(const std::bad_alloc&){
+					} catch(const std::bad_alloc&) {
 						memory = nullptr;
 					}
 					synchronize<growth_mode>(&memory);
