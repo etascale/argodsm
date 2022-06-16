@@ -16,7 +16,6 @@
 #include <iterator>
 #include <mutex>
 #include <utility>
-#include <vector>
 
 #include "swdsm.h"
 
