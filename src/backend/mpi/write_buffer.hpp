@@ -33,8 +33,7 @@ const std::size_t block_size = page_size*CACHELINE;
  * @tparam	T the type of the write buffer
  */
 template<typename T>
-class write_buffer
-{
+class write_buffer {
 	private:
 		/** @brief This container holds cache indexes that should be written back */
 		std::deque<T> _buffer;
@@ -138,7 +137,7 @@ class write_buffer
 			// Write back the page
 			mprotect(page_ptr, block_size, PROT_READ);
 			cacheControl[cache_index].dirty = CLEAN;
-			for(std::size_t i = 0; i < CACHELINE; i++){
+			for(std::size_t i = 0; i < CACHELINE; i++) {
 				storepageDIFF(cache_index+i, page_size*i+page_address);
 			}
 			cache_locks[cache_index].unlock();
@@ -183,7 +182,7 @@ class write_buffer
 			assert(!has(val));
 
 			// If the buffer is full, write back _write_back_size indices
-			if(size() >= _max_size){
+			if(size() >= _max_size) {
 				flush_partial();
 			}
 
@@ -212,7 +211,7 @@ class write_buffer
 			typename std::deque<T>::iterator it =
 				std::find(_buffer.begin(), _buffer.end(), val);
 			// If found, erase it
-			if(it != _buffer.end()){
+			if(it != _buffer.end()) {
 				_buffer.erase(it);
 			}
 		}

@@ -46,10 +46,10 @@ namespace argo {
 				global_ptr(T* ptr, const bool compute_homenode = true,
 									const bool compute_offset = true)
 						: homenode(invalid_node_id), local_offset(invalid_offset), access_ptr(ptr) {
-					if(compute_homenode){
+					if(compute_homenode) {
 						homenode = policy()->homenode(reinterpret_cast<char*>(ptr));
 					}
-					if(compute_offset){
+					if(compute_offset) {
 						local_offset = policy()->local_offset(reinterpret_cast<char*>(ptr));
 					}
 				}

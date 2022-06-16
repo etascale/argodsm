@@ -117,7 +117,7 @@ static MPI_Datatype fitting_mpi_float(std::size_t size) {
 
 namespace argo {
 	namespace backend {
-		void init(std::size_t argo_size, std::size_t cache_size){
+		void init(std::size_t argo_size, std::size_t cache_size) {
 			argo_initialize(argo_size, cache_size);
 		}
 
@@ -141,7 +141,7 @@ namespace argo {
 			return _is_cached(reinterpret_cast<std::size_t>(addr));
 		}
 
-		void reset_stats(){
+		void reset_stats() {
 			argo_reset_stats();
 		}
 

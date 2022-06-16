@@ -75,10 +75,10 @@ void singlenode_handler(int sig, siginfo_t*, void*) {
 	std::signal(sig, SIG_DFL);
 	std::raise(sig);
 }
+
 namespace argo {
 	namespace backend {
-
-		void init(std::size_t argo_size, std::size_t cache_size){
+		void init(std::size_t argo_size, std::size_t cache_size) {
 			/** @todo the cache_size parameter is not needed
 			 *        and should not be part of the backend interface */
 			(void)(cache_size);
@@ -319,29 +319,25 @@ namespace argo {
 				memcpy(output_buffer, obj.get(), size);
 				// ewwww...
 				switch (size) {
-					case 1:
-						{
+					case 1: {
 							char *ptr = static_cast<char*>(obj.get());
 							char *val = static_cast<char*>(value);
 							*ptr += *val;
 							break;
 						}
-					case 2:
-						{
+					case 2: {
 							int16_t *ptr = static_cast<int16_t*>(obj.get());
 							int16_t *val = static_cast<int16_t*>(value);
 							*ptr += *val;
 							break;
 						}
-					case 4:
-						{
+					case 4: {
 							int32_t *ptr = static_cast<int32_t*>(obj.get());
 							int32_t *val = static_cast<int32_t*>(value);
 							*ptr += *val;
 							break;
 						}
-					case 8:
-						{
+					case 8: {
 							int64_t *ptr = static_cast<int64_t*>(obj.get());
 							int64_t *val = static_cast<int64_t*>(value);
 							*ptr += *val;
@@ -360,29 +356,25 @@ namespace argo {
 				memcpy(output_buffer, obj.get(), size);
 				// ewwww...
 				switch (size) {
-					case 1:
-						{
+					case 1: {
 							unsigned char *ptr = static_cast<unsigned char*>(obj.get());
 							unsigned char *val = static_cast<unsigned char*>(value);
 							*ptr += *val;
 							break;
 						}
-					case 2:
-						{
+					case 2: {
 							uint16_t *ptr = static_cast<uint16_t*>(obj.get());
 							uint16_t *val = static_cast<uint16_t*>(value);
 							*ptr += *val;
 							break;
 						}
-					case 4:
-						{
+					case 4: {
 							uint32_t *ptr = static_cast<uint32_t*>(obj.get());
 							uint32_t *val = static_cast<uint32_t*>(value);
 							*ptr += *val;
 							break;
 						}
-					case 8:
-						{
+					case 8: {
 							uint64_t *ptr = static_cast<uint64_t*>(obj.get());
 							uint64_t *val = static_cast<uint64_t*>(value);
 							*ptr += *val;
@@ -401,22 +393,19 @@ namespace argo {
 				memcpy(output_buffer, obj.get(), size);
 				// ewwww...
 				switch (size) {
-					case sizeof(float):
-						{
+					case sizeof(float): {
 							float *ptr = static_cast<float*>(obj.get());
 							float *val = static_cast<float*>(value);
 							*ptr += *val;
 							break;
 						}
-					case sizeof(double):
-						{
+					case sizeof(double): {
 							double *ptr = static_cast<double*>(obj.get());
 							double *val = static_cast<double*>(value);
 							*ptr += *val;
 							break;
 						}
-					case sizeof(long double):
-						{
+					case sizeof(long double): {
 							long double *ptr = static_cast<long double*>(obj.get());
 							long double *val = static_cast<long double*>(value);
 							*ptr += *val;

@@ -121,8 +121,7 @@ namespace argo {
 					nodelockowner(NO_OWNER),
 					global_lock_field(argo::conew_<typename global_lock_type::internal_field_type>()),
 					global_lock(new global_lock_type(global_lock_field)),
-					node_lock(new argo::locallock::ticket_lock())
-				{
+					node_lock(new argo::locallock::ticket_lock()) {
 					int num_cpus = sysconf(_SC_NPROCESSORS_CONF); // sane default
 					numa_mapping.resize(num_cpus, 0);
 					#ifdef ARGO_USE_LIBNUMA
@@ -141,7 +140,7 @@ namespace argo {
 				}
 
 				/** @todo Documentation */
-				~cohort_lock(){
+				~cohort_lock() {
 					codelete_(global_lock_field);
 					delete global_lock;
 					delete[] local_lock;
@@ -154,18 +153,18 @@ namespace argo {
 				 */
 				void unlock() {
 					/* Check if we can hand over the lock locally */
-					if(local_lock[node].is_contended() && handovers[node] < MAX_HANDOVER){
+					if(local_lock[node].is_contended() && handovers[node] < MAX_HANDOVER) {
 						handovers[node]++;
-					}else{
+					} else {
 						/* Cant hand over locally in the NUMA node - releases the NUMA lock */
 						handovers[node] = 0;
 						nodelockowner = NO_OWNER;
 
 						/* check if we should hand over to another NUMA node or ArgoDSM node */
-						if(node_lock->is_contended() && numahandover < MAX_HANDOVER_NODELOCK){
+						if(node_lock->is_contended() && numahandover < MAX_HANDOVER_NODELOCK) {
 							/* Hand over to another NUMA node */
 							numahandover++;
-						}else{
+						} else {
 							/* hand over to another ArgoDSM node */
 							has_global_lock = false;
 							numahandover = 0;
@@ -185,12 +184,12 @@ namespace argo {
 					/* Take the local lock for your NUMA node */
 					local_lock[node].lock();
 					/* Checks if this NUMA node already has the node_lock or not */
-					if(node != nodelockowner){
+					if(node != nodelockowner) {
 						/* Take the node_lock and set that this NUMA node has the node_lock */
 						node_lock->lock();
 						nodelockowner = node;
 						/* Check if this ArgoDSM node has the global lock or not */
-						if(!has_global_lock){
+						if(!has_global_lock) {
 							/* Take the global lock */
 							global_lock->lock();
 							has_global_lock = true;

@@ -70,14 +70,14 @@ namespace argo {
 
 					// Home node makes sure that offset points to Argo's starting address
 					global_ptr<char> gptr(&memory[max_size]);
-					if(backend::node_id() == gptr.node()){
+					if(backend::node_id() == gptr.node()) {
 						*offset = static_cast<std::ptrdiff_t>(0);
 					}
 					backend::barrier();
 				}
 
 				/** @todo Documentation */
-				~global_memory_pool(){
+				~global_memory_pool() {
 					delete global_tas_lock;
 					backend::finalize();
 				}
@@ -87,7 +87,7 @@ namespace argo {
 				 *Resets the memory pool to the initial state instead of de-allocating and (re)allocating all buffers again.
 				 *Any allocator or memory pool depending on this memory pool now has undefined behaviour.
 				 */
-				void reset(){
+				void reset() {
 					backend::barrier();
 					memory = backend::global_base();
 					// Move back one page as the last page is left for internal use
@@ -96,7 +96,7 @@ namespace argo {
 					// Home node makes sure that offset points to Argo's starting address
 					using namespace data_distribution;
 					global_ptr<char> gptr(&memory[max_size]);
-					if(backend::node_id() == gptr.node()){
+					if(backend::node_id() == gptr.node()) {
 						*offset = static_cast<std::ptrdiff_t>(0);
 					}
 					backend::barrier();

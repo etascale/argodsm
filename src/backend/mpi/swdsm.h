@@ -66,8 +66,7 @@
 typedef unsigned char argo_byte;
 
 /** @brief Struct for cache control data */
-typedef struct myControlData // global cache control data / directory
-{
+typedef struct myControlData { // global cache control data / directory
 		/** @brief Coherence state, basically only Valid/Invalid now */
 		argo_byte state;	// I/P/SW/MW
 		/** @brief Tracks if page is dirty or clean */
@@ -77,8 +76,7 @@ typedef struct myControlData // global cache control data / directory
 } control_data;
 
 /** @brief Struct containing statistics */
-typedef struct argo_statistics_struct
-{
+typedef struct argo_statistics_struct {
 		/** @brief Time spent self invalidating */
 		double selfinvtime;
 		/** @brief Time spent loading pages */
@@ -174,7 +172,7 @@ class alignas(64) cache_lock {
 		~cache_lock() {}
 
 		/** @brief Acquire a cache lock */
-		void lock(){
+		void lock() {
 			double start = MPI_Wtime();
 			c_mutex.lock();
 			double end = MPI_Wtime();
@@ -187,7 +185,7 @@ class alignas(64) cache_lock {
 		 * @brief Attempt to acquire a cache lock
 		 * @return True if successful, else false
 		 */
-		bool try_lock(){
+		bool try_lock() {
 			bool is_locked = c_mutex.try_lock();
 			if(is_locked) {
 				acquire_time = MPI_Wtime();
@@ -197,7 +195,7 @@ class alignas(64) cache_lock {
 		}
 
 		/** @brief Release a cache lock */
-		void unlock(){
+		void unlock() {
 			hold_time += MPI_Wtime()-acquire_time;
 			c_mutex.unlock();
 		}
