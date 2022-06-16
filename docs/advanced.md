@@ -232,9 +232,9 @@ ArgoDSM now requires and utilizes multi-threaded MPI. Please ensure that
 your MPI installation supports `MPI_THREAD_MULTIPLE`.
 
 ArgoDSM uses multiple MPI windows in order to achieve parallelism between
-simultaneous MPI operations. Greater possible parallelism can be achieved
+simultaneous MPI operations. Increased parallelism can be achieved
 by increasing the amount of MPI windows used, but creating too many windows
-incurs an initialization and finalization time penalty. The number of MPI
+incurs an initialization and finalization overhead. The number of MPI
 windows used can be controlled by setting the `ARGO_MPI_WINDOWS_PER_NODE`
 environment variable to the desired setting.
 
