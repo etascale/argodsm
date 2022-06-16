@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <atomic>
 #include <type_traits>
-#include <vector>
 
 #include "swdsm.h"
 #include "../backend.hpp"
