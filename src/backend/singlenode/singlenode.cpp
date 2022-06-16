@@ -4,12 +4,12 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
+#include "../backend.hpp"
 #include "data_distribution/global_ptr.hpp"
 #include "signal/signal.hpp"
 #include "synchronization/global_tas_lock.hpp"
 #include "types/types.hpp"
 #include "virtual_memory/virtual_memory.hpp"
-#include "../backend.hpp"
 
 #include <atomic>
 #include <condition_variable>
