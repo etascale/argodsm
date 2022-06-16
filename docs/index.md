@@ -17,10 +17,11 @@ If you want to build the documentation,
 [doxygen](http://www.stack.nl/~dimitri/doxygen/) is required.
 
 The only distributed backend ArgoDSM currently supports is the MPI one, so a
-compiler and libraries for MPI are required. If you are using OpenMPI, make sure
-you are running at least version 1.8.4. Installing OpenMPI is [fairly
-easy](https://www.open-mpi.org/faq/?category=building#easy-build), but you
-should contact your system administrator if you are uncertain about it.
+compiler and libraries for MPI are required. If you are using OpenMPI, we
+recommend using the latest stable release avaiable for your system.
+Installing OpenMPI is
+[fairly easy](https://www.open-mpi.org/faq/?category=building#easy-build), but
+you should contact your system administrator if you are uncertain about it.
 
 ArgoDSM depends on the
 [C++ QD Locking Library](https://github.com/davidklaftenegger/qd_library).
@@ -139,22 +140,28 @@ details. If you are using OpenMPI on a cluster with InfiniBand interconnects, we
 recommend the following:
 
 ``` bash
-mpirun --map-by ppr:1:node      \
-       --mca mpi_leave_pinned 1 \
-       --mca btl openib,self,sm \
-       -n ${NNODES}             \
+mpirun --map-by ppr:1:node  \
+       --mca pml ucx        \
+       --mca osc ucx        \
        ${EXECUTABLE}
 ```
 
-`${NNODES}` is the number of hardware nodes you have available and
-`${EXECUTABLE}` is the application to run. If you are not using InfiniBand, you
-can use the default OpenMPI transports by skipping the `--mca btl
-openib,self,sm` part  of the command.
+The number of nodes is controlled by your job scheduling system or by supplying
+`mpirun` with a nodelist, and `${EXECUTABLE}` is the application to run.
 
 If you are running on a cluster, please consult your system administrator for
 details on how to access the cluster's resources. We recommend running ArgoDSM
 applications with one ArgoDSM node per hardware node. We also strongly recommend
-InfiniBand interconnects when using the MPI backend.
+InfiniBand interconnects when using the MPI backend. If you are not using
+InfiniBand, you can use the default OpenMPI transports by excluding the `--mca`
+parameters.
+
+If you are not running on a cluster, you can instead specify the number of
+ArgoDSM nodes to run by passing `-n ${NNODES}` to mpirun as:
+
+``` bash
+mpirun -n ${NNODES} ${EXECUTABLE}
+```
 
 We **strongly recommend** running all of the MPI tests on at least two nodes
 before continueing working with ArgoDSM, to ensure that your system is

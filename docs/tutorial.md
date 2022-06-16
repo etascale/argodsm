@@ -196,8 +196,9 @@ support office. A generic example with OpenMPI on a cluster utilizing Slurm
 might look like this:
 
 ``` bash
-mpirun --map-by ppr:1:node                                               \
-	--mca mpi_leave_pinned 1 --mca btl openib,self,sm -n ${SLURM_NNODES} \
-	./argo_example
+mpirun --map-by ppr:1:node  \
+       --mca pml ucx        \
+       --mca osc ucx        \
+       ./argo_example
 ```
 
