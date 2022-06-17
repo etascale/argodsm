@@ -5,6 +5,7 @@
  */
 
 #include "../backend/backend.hpp"
+#include "synchronization.hpp"
 
 namespace argo {
 	void barrier(std::size_t threadcount) {
