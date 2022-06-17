@@ -51,8 +51,8 @@ namespace argo {
 
 				// If the page is dirty, downgrade it
 				if(cacheControl[cache_index].dirty == DIRTY) {
-					mprotect((char*)start_address + page_address, block_size, PROT_READ);
-					for(int i = 0; i <CACHELINE; i++) {
+					mprotect(reinterpret_cast<char*>(start_address) + page_address, block_size, PROT_READ);
+					for(int i = 0; i < CACHELINE; i++) {
 						storepageDIFF(cache_index+i, page_address+page_size*i);
 					}
 					argo_write_buffer->erase(cache_index);
@@ -79,7 +79,7 @@ namespace argo {
 					cacheControl[cache_index].dirty = CLEAN;
 					cacheControl[cache_index].state = INVALID;
 					touchedcache[cache_index] = 0;
-					mprotect((char*)start_address + page_address, block_size, PROT_NONE);
+					mprotect(reinterpret_cast<char*>(start_address) + page_address, block_size, PROT_NONE);
 				}
 				cache_locks[cache_index].unlock();
 			}
@@ -129,7 +129,7 @@ namespace argo {
 
 				// If the page is dirty, downgrade it
 				if(cacheControl[cache_index].dirty == DIRTY) {
-					mprotect((char*)start_address + page_address, block_size, PROT_READ);
+					mprotect(reinterpret_cast<char*>(start_address) + page_address, block_size, PROT_READ);
 					for(int i = 0; i <CACHELINE; i++) {
 						storepageDIFF(cache_index+i, page_address+page_size*i);
 					}
