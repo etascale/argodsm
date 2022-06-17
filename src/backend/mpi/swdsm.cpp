@@ -810,7 +810,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 	cacheData = static_cast<char*>(vm::allocate_mappable(pagesize, cachesize*pagesize));
 	cacheControl = static_cast<control_data*>(vm::allocate_mappable(pagesize, cacheControlSize));
 
-	touchedcache = static_cast<argo_byte *>(malloc(cachesize));
+	touchedcache = static_cast<argo_byte*>(malloc(cachesize));
 	if(touchedcache == NULL) {
 		printf("malloc error out of memory\n");
 		exit(EXIT_FAILURE);
@@ -1189,8 +1189,8 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr) {
 	const std::size_t win_index = get_data_win_index(offset);
 	const std::size_t win_offset = get_data_win_offset(offset);
 
-	char * copy = static_cast<char *>(pagecopy + index*pagesize);
-	char * real = static_cast<char *>(startAddr)+addr;
+	char* copy = static_cast<char*>(pagecopy + index*pagesize);
+	char* real = static_cast<char*>(startAddr)+addr;
 	size_t drf_unit = sizeof(char);
 
 	mpi_lock_data[win_index][homenode].lock(MPI_LOCK_EXCLUSIVE, homenode, data_windows[win_index][homenode]);
