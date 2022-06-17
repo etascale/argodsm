@@ -49,63 +49,63 @@ namespace {
 } // namespace
 
 namespace argo {
-	namespace virtual_memory {
-		void init() {
-			/* find maximum filesize */
-			struct statvfs b;
-			statvfs("/dev/shm", &b);
-			avail = b.f_bavail * b.f_bsize;
-			if(avail > static_cast<std::size_t>(ARGO_SIZE_LIMIT)) {
-				avail = ARGO_SIZE_LIMIT;
-			}
-			std::string filename = "/argocache" + std::to_string(getpid());
-			fd = shm_open(filename.c_str(), O_RDWR|O_CREAT, 0644);
-			if(shm_unlink(filename.c_str())) {
-				std::cerr << msg_main_mmap_fail << std::endl;
-				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
-				exit(EXIT_FAILURE);
-			}
-			if(ftruncate(fd, avail)) {
-				std::cerr << msg_main_mmap_fail << std::endl;
-				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
-				exit(EXIT_FAILURE);
-			}
-			/** @todo check desired range is free */
-			constexpr int flags = MAP_ANONYMOUS|MAP_SHARED|MAP_FIXED;
-			start_addr = ::mmap(static_cast<void*>(ARGO_START), avail, PROT_NONE, flags, -1, 0);
-			if(start_addr == MAP_FAILED) {
-				std::cerr << msg_main_mmap_fail << std::endl;
-				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
-				exit(EXIT_FAILURE);
-			}
+namespace virtual_memory {
+	void init() {
+		/* find maximum filesize */
+		struct statvfs b;
+		statvfs("/dev/shm", &b);
+		avail = b.f_bavail * b.f_bsize;
+		if(avail > static_cast<std::size_t>(ARGO_SIZE_LIMIT)) {
+			avail = ARGO_SIZE_LIMIT;
 		}
+		std::string filename = "/argocache" + std::to_string(getpid());
+		fd = shm_open(filename.c_str(), O_RDWR|O_CREAT, 0644);
+		if(shm_unlink(filename.c_str())) {
+			std::cerr << msg_main_mmap_fail << std::endl;
+			throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
+			exit(EXIT_FAILURE);
+		}
+		if(ftruncate(fd, avail)) {
+			std::cerr << msg_main_mmap_fail << std::endl;
+			throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
+			exit(EXIT_FAILURE);
+		}
+		/** @todo check desired range is free */
+		constexpr int flags = MAP_ANONYMOUS|MAP_SHARED|MAP_FIXED;
+		start_addr = ::mmap(static_cast<void*>(ARGO_START), avail, PROT_NONE, flags, -1, 0);
+		if(start_addr == MAP_FAILED) {
+			std::cerr << msg_main_mmap_fail << std::endl;
+			throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
+			exit(EXIT_FAILURE);
+		}
+	}
 
-		void* start_address() {
-			return start_addr;
-		}
+	void* start_address() {
+		return start_addr;
+	}
 
-		std::size_t size() {
-			return avail;
-		}
+	std::size_t size() {
+		return avail;
+	}
 
-		void* allocate_mappable(std::size_t alignment, std::size_t size) {
-			void* p;
-			auto r = posix_memalign(&p, alignment, size);
-			if(r || p == nullptr) {
-				std::cerr << msg_alloc_fail << std::endl;
-				throw std::system_error(std::make_error_code(static_cast<std::errc>(r)), msg_alloc_fail);
-				return nullptr;
-			}
-			return p;
+	void* allocate_mappable(std::size_t alignment, std::size_t size) {
+		void* p;
+		auto r = posix_memalign(&p, alignment, size);
+		if(r || p == nullptr) {
+			std::cerr << msg_alloc_fail << std::endl;
+			throw std::system_error(std::make_error_code(static_cast<std::errc>(r)), msg_alloc_fail);
+			return nullptr;
 		}
+		return p;
+	}
 
-		void map_memory(void* addr, std::size_t size, std::size_t offset, int prot) {
-			auto p = ::mmap(addr, size, prot, MAP_SHARED|MAP_FIXED, fd, offset);
-			if(p == MAP_FAILED) {
-				std::cerr << msg_mmap_fail << std::endl;
-				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_mmap_fail);
-				exit(EXIT_FAILURE);
-			}
+	void map_memory(void* addr, std::size_t size, std::size_t offset, int prot) {
+		auto p = ::mmap(addr, size, prot, MAP_SHARED|MAP_FIXED, fd, offset);
+		if(p == MAP_FAILED) {
+			std::cerr << msg_mmap_fail << std::endl;
+			throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_mmap_fail);
+			exit(EXIT_FAILURE);
 		}
-	} // namespace virtual_memory
+	}
+} // namespace virtual_memory
 } // namespace argo

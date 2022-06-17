@@ -222,73 +222,75 @@ namespace {
 } // unnamed namespace
 
 namespace argo {
-	namespace env {
-		void init() {
-			value_memory_size = parse_env<std::size_t>(env_memory_size, default_memory_size).second;
-			value_cache_size = parse_env<std::size_t>(env_cache_size, default_cache_size).second;
-			value_write_buffer_size = parse_env<std::size_t>(
-					env_write_buffer_size,
-					default_write_buffer_size).second;
-			value_write_buffer_write_back_size = parse_env<std::size_t>(
-					env_write_buffer_write_back_size,
-					default_write_buffer_write_back_size).second;
-			// Limit the write buffer write back size to the write buffer size
-			if(value_write_buffer_write_back_size > value_write_buffer_size) {
-				value_write_buffer_write_back_size = value_write_buffer_size;
-			}
+namespace env {
 
-			value_allocation_policy = parse_env<std::size_t>(env_allocation_policy, default_allocation_policy).second;
-			value_allocation_block_size = parse_env<std::size_t>(env_allocation_block_size, default_allocation_block_size).second;
-			value_load_size = parse_env<std::size_t>(env_load_size, default_load_size).second;
-			value_mpi_windows_per_node = parse_env<std::size_t>(env_mpi_windows_per_node, default_mpi_windows_per_node).second;
-			value_print_statistics = parse_env<std::size_t>(env_print_statistics, default_print_statistics).second;
+void init() {
+	value_memory_size = parse_env<std::size_t>(env_memory_size, default_memory_size).second;
+	value_cache_size = parse_env<std::size_t>(env_cache_size, default_cache_size).second;
+	value_write_buffer_size = parse_env<std::size_t>(
+			env_write_buffer_size,
+			default_write_buffer_size).second;
+	value_write_buffer_write_back_size = parse_env<std::size_t>(
+			env_write_buffer_write_back_size,
+			default_write_buffer_write_back_size).second;
+	// Limit the write buffer write back size to the write buffer size
+	if(value_write_buffer_write_back_size > value_write_buffer_size) {
+		value_write_buffer_write_back_size = value_write_buffer_size;
+	}
 
-			is_initialized = true;
-		}
+	value_allocation_policy = parse_env<std::size_t>(env_allocation_policy, default_allocation_policy).second;
+	value_allocation_block_size = parse_env<std::size_t>(env_allocation_block_size, default_allocation_block_size).second;
+	value_load_size = parse_env<std::size_t>(env_load_size, default_load_size).second;
+	value_mpi_windows_per_node = parse_env<std::size_t>(env_mpi_windows_per_node, default_mpi_windows_per_node).second;
+	value_print_statistics = parse_env<std::size_t>(env_print_statistics, default_print_statistics).second;
 
-		std::size_t memory_size() {
-			assert_initialized();
-			return value_memory_size;
-		}
+	is_initialized = true;
+}
 
-		std::size_t cache_size() {
-			assert_initialized();
-			return value_cache_size;
-		}
+std::size_t memory_size() {
+	assert_initialized();
+	return value_memory_size;
+}
 
-		std::size_t write_buffer_size() {
-			assert_initialized();
-			return value_write_buffer_size;
-		}
+std::size_t cache_size() {
+	assert_initialized();
+	return value_cache_size;
+}
 
-		std::size_t write_buffer_write_back_size() {
-			assert_initialized();
-			return value_write_buffer_write_back_size;
-		}
+std::size_t write_buffer_size() {
+	assert_initialized();
+	return value_write_buffer_size;
+}
 
-		std::size_t allocation_policy() {
-			assert_initialized();
-			return value_allocation_policy;
-		}
+std::size_t write_buffer_write_back_size() {
+	assert_initialized();
+	return value_write_buffer_write_back_size;
+}
 
-		std::size_t allocation_block_size() {
-			assert_initialized();
-			return value_allocation_block_size;
-		}
+std::size_t allocation_policy() {
+	assert_initialized();
+	return value_allocation_policy;
+}
 
-		std::size_t load_size() {
-			assert_initialized();
-			return value_load_size;
-		}
+std::size_t allocation_block_size() {
+	assert_initialized();
+	return value_allocation_block_size;
+}
 
-		std::size_t mpi_windows_per_node() {
-			assert_initialized();
-			return value_mpi_windows_per_node;
-		}
+std::size_t load_size() {
+	assert_initialized();
+	return value_load_size;
+}
 
-		std::size_t print_statistics() {
-			assert_initialized();
-			return value_print_statistics;
-		}
-	} // namespace env
-} // namespace argo
+std::size_t mpi_windows_per_node() {
+	assert_initialized();
+	return value_mpi_windows_per_node;
+}
+
+std::size_t print_statistics() {
+	assert_initialized();
+	return value_print_statistics;
+}
+
+}  // namespace env
+}  // namespace argo
