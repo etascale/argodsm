@@ -74,13 +74,13 @@ TEST_F(ompTest, WriteAndRead) {
 		for(i = 0; i < MAX_THREADS; i++) { // Up to MAX_THREADS, threads
 			omp_set_num_threads(i);
 
-#pragma omp parallel for
+			#pragma omp parallel for
 			for(j = start; j < end; j++) {
 				arr[j] = (i+42); // Each entry written
 			}
 			argo::barrier();
 
-#pragma omp parallel for
+			#pragma omp parallel for
 			for(j = 0; j < amount; j++) {
 				EXPECT_EQ(arr[j], (i+42)); // Each thread checks for correctness
 			}
