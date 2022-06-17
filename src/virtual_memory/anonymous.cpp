@@ -23,7 +23,7 @@
 namespace {
 	/* file constants */
 	/** @todo hardcoded start address */
-	const char* ARGO_START = (char*) 0x200000000000l;
+	char* const ARGO_START = reinterpret_cast<char*>(0x200000000000l);
 	/** @todo hardcoded size */
 	const ptrdiff_t ARGO_SIZE = 0x80000000000l;
 
@@ -51,13 +51,13 @@ namespace argo {
 			/** @todo check desired range is free */
 			constexpr int flags = MAP_ANONYMOUS|MAP_SHARED|MAP_FIXED|MAP_NORESERVE;
 			backing_addr = static_cast<char*>(
-				::mmap((void*)ARGO_START, ARGO_SIZE, PROT_NONE, flags, -1, 0));
+				::mmap(static_cast<void*>(ARGO_START), ARGO_SIZE, PROT_NONE, flags, -1, 0));
 			if(backing_addr == MAP_FAILED) {
 				std::cerr << msg_main_mmap_fail << std::endl;
 				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
 				exit(EXIT_FAILURE);
 			}
-			char* virtual_addr = (char*) ARGO_START + ARGO_SIZE/2l;
+			char* virtual_addr = ARGO_START + ARGO_SIZE/2l;
 			backing_offset = 0;
 			file_offset = virtual_addr - backing_addr;
 		}
