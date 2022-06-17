@@ -112,7 +112,9 @@ TEST_F(LockTest, TAS_trylock_all) {
 	argo::codelete_array(did_increment);
 }
 
-/** @brief Checks locking is working by implementing a custom barrier */
+/**
+ * @brief Checks locking is working by implementing a custom barrier
+ */
 TEST_F(LockTest, TAS_lock_custom_barrier) {
 	unsigned int tmp;
 
@@ -148,10 +150,10 @@ TEST_F(LockTest, TAS_lock_custom_barrier) {
 }
 
 /**
- *@brief increments a shared counter to test locks
- *@param lock The lock to test
- *@param counter The counter to increment
- *@tparam LockType The type of the lock being tested
+ * @brief increments a shared counter to test locks
+ * @param lock The lock to test
+ * @param counter The counter to increment
+ * @tparam LockType The type of the lock being tested
  */
 template <typename LockType>
 void increment_counter(LockType* lock, int* counter) {
@@ -165,11 +167,11 @@ void increment_counter(LockType* lock, int* counter) {
 }
 
 /**
- *@brief Increments a shared counter to test multiple locks
- *@param l1 The lock to test
- *@param l2 The lock to test
- *@param counter The counter to increment
- *@tparam LockType The type of the lock being tested
+ * @brief Increments a shared counter to test multiple locks
+ * @param l1 The lock to test
+ * @param l2 The lock to test
+ * @param counter The counter to increment
+ * @tparam LockType The type of the lock being tested
  */
 template <typename LockType>
 void increment_counter2(LockType* l1, LockType* l2, int* counter) {
@@ -184,7 +186,9 @@ void increment_counter2(LockType* l1, LockType* l2, int* counter) {
 	}
 }
 
-/** @brief Checks if locking is working by incrementing a shared counter */
+/**
+ * @brief Checks if locking is working by incrementing a shared counter
+ */
 TEST_F(LockTest, StressMCSLock) {
 	std::thread threads[nThreads];
 	counter = new int(0);
@@ -206,7 +210,9 @@ TEST_F(LockTest, StressMCSLock) {
 	delete mcs_lock;
 }
 
-/** @brief Checks if locking of multiple locks is working by incrementing a shared counter */
+/**
+ * @brief Checks if locking of multiple locks is working by incrementing a shared counter
+ */
 TEST_F(LockTest, StressMCSMultipleLocks) {
 	std::thread threads[nThreads];
 	int locks = 4;
@@ -231,7 +237,9 @@ TEST_F(LockTest, StressMCSMultipleLocks) {
 	delete global_lock;
 }
 
-/** @brief Checks locking is working by decrementing a shared counter */
+/**
+ * @brief Checks locking is working by decrementing a shared counter
+ */
 TEST_F(LockTest, StressCohortLock) {
 	std::thread threads[nThreads];
 	counter = argo::conew_<int>(0);

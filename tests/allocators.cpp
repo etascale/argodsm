@@ -197,7 +197,6 @@ TEST_F(AllocatorTest, DynamicAllocExceedLimit) {
 /**
  * @brief Unittest that checks that allocating more memory than what is available dynamically
  */
-
 TEST_F(AllocatorTest, DynamicAllocLoopExceedLimit) {
 	std::size_t allocsize = 7;
 	while(default_global_mempool->available() >= 2*allocsize && argo::node_id() == 0) {
@@ -239,7 +238,7 @@ TEST_F(AllocatorTest, DynamicAllocAllNodes) {
 const int entries = 10;
 
 /**
- *@brief mixes dynamic and collective allocation and stores dynamic arrays in a collective arrays to communicate values, also stresses allocation.
+ * @brief mixes dynamic and collective allocation and stores dynamic arrays in a collective arrays to communicate values, also stresses allocation.
  */
 TEST_F(AllocatorTest, StoringDynamicArrayInCollective) {
 	int *dynamic_arr = argo::new_array<int>(entries);
