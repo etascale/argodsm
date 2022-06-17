@@ -54,7 +54,6 @@ class ompTest : public testing::Test {
  * @brief Unittest that checks that data written 1 OpenMP thread per node by all threads after an ArgoDSM barrier
  */
 TEST_F(ompTest, WriteAndRead) {
-	int i, j, n;
 	int *arr = argo::conew_array<int>(amount);
 	int node_id = argo_node_id(); // Node id
 	int nodecount = argo_number_of_nodes(); // Number of nodes
@@ -70,18 +69,18 @@ TEST_F(ompTest, WriteAndRead) {
 	}
 	argo::barrier();
 
-	for(n = 0; n < ITER; n++) { // Run ITER times
-		for(i = 0; i < MAX_THREADS; i++) { // Up to MAX_THREADS, threads
+	for(int n = 0; n < ITER; n++) { // Run ITER times
+		for(int i = 0; i < MAX_THREADS; i++) { // Up to MAX_THREADS, threads
 			omp_set_num_threads(i);
 
 			#pragma omp parallel for
-			for(j = start; j < end; j++) {
+			for(int j = start; j < end; j++) {
 				arr[j] = (i+42); // Each entry written
 			}
 			argo::barrier();
 
 			#pragma omp parallel for
-			for(j = 0; j < amount; j++) {
+			for(int j = 0; j < amount; j++) {
 				EXPECT_EQ(arr[j], (i+42)); // Each thread checks for correctness
 			}
 			argo::barrier();

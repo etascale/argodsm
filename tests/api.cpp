@@ -79,9 +79,7 @@ TEST_F(APITest, GetHomeNode) {
 	char* end = start + argo::backend::global_size();
 
 	/* Touch an equal (+/- 1) number of pages per node */
-	for(std::size_t s = page_size*node_id;
-			s < alloc_size-1;
-			s += page_size*num_nodes) {
+	for(std::size_t s = page_size*node_id; s < alloc_size-1; s += page_size*num_nodes) {
 		tmp[s] = c_const;
 	}
 	argo::barrier();

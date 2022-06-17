@@ -119,7 +119,7 @@ TEST_F(LockTest, TAS_lock_custom_barrier) {
 	unsigned int tmp;
 
 	/* Checks this many times if barrier was successful */
-	std::size_t deadlock_threshold = 100000;
+	int deadlock_threshold = 100000;
 
 	counter = argo::conew_<int>();
 	/* Init a counter to 0 */
