@@ -754,7 +754,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 	printf("maximum virtual memory: %ld GiB\n", vm::size() >> 30);
 #endif
 
-	threadbarrier = (pthread_barrier_t *) malloc(sizeof(pthread_barrier_t)*(NUM_THREADS+1));
+	threadbarrier = static_cast<pthread_barrier_t *>(malloc(sizeof(pthread_barrier_t)*(NUM_THREADS+1)));
 	for(std::size_t i = 1; i <= NUM_THREADS; i++) {
 		pthread_barrier_init(&threadbarrier[i], NULL, i);
 	}
@@ -785,11 +785,10 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 	MPI_Comm_create(MPI_COMM_WORLD, workgroup, &workcomm);
 	MPI_Group_rank(workgroup, reinterpret_cast<int*>(&workrank));
 
-
-	//Allocate local memory for each node,
-	size_of_all = argo_size; //total distr. global memory
+	// Allocate local memory for each node
+	size_of_all = argo_size;	// total distr. global memory
 	GLOBAL_NULL = size_of_all+1;
-	size_of_chunk = argo_size/(numtasks); //part on each node
+	size_of_chunk = argo_size/(numtasks);  // part on each node
 	sig::signal_handler<SIGSEGV>::install_argo_handler(&handler);
 
 	std::size_t cacheControlSize = sizeof(control_data)*cachesize;
@@ -811,7 +810,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 	cacheData = static_cast<char*>(vm::allocate_mappable(pagesize, cachesize*pagesize));
 	cacheControl = static_cast<control_data*>(vm::allocate_mappable(pagesize, cacheControlSize));
 
-	touchedcache = (argo_byte *)malloc(cachesize);
+	touchedcache = static_cast<argo_byte*>(malloc(cachesize));
 	if(touchedcache == NULL) {
 		printf("malloc error out of memory\n");
 		exit(EXIT_FAILURE);
@@ -958,7 +957,7 @@ void self_invalidation() {
 	std::uint64_t id = static_cast<std::uint64_t>(1) << getID();
 
 	double t1 = MPI_Wtime();
-	for(std::size_t i = 0; i < cachesize; i+=CACHELINE) {
+	for(std::size_t i = 0; i < cachesize; i += CACHELINE) {
 		if(touchedcache[i] != 0) {
 			std::uintptr_t distrAddr = cacheControl[i].tag;
 			std::uintptr_t lineAddr = distrAddr/(CACHELINE*pagesize);
@@ -987,7 +986,7 @@ void self_invalidation() {
 				cacheControl[i].dirty = CLEAN;
 				cacheControl[i].state = INVALID;
 				touchedcache[i] = 0;
-				mprotect((char*)startAddr + lineAddr, pagesize*CACHELINE, PROT_NONE);
+				mprotect(static_cast<char*>(startAddr) + lineAddr, pagesize*CACHELINE, PROT_NONE);
 			}
 		}
 	}
@@ -1000,7 +999,7 @@ void self_upgrade(upgrade_type upgrade) {
 		   upgrade == upgrade_type::upgrade_all);
 	const std::uint64_t node_id_bit = static_cast<std::uint64_t>(1) << getID();
 
-	for(std::size_t i = 0; i < classificationSize; i+=2) {
+	for(std::size_t i = 0; i < classificationSize; i += 2) {
 		std::size_t page_index = i/2;
 		std::uintptr_t page_addr = page_index*pagesize*CACHELINE;
 		void* global_addr = static_cast<char*>(startAddr) + page_addr;
@@ -1190,8 +1189,8 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr) {
 	const std::size_t win_index = get_data_win_index(offset);
 	const std::size_t win_offset = get_data_win_offset(offset);
 
-	char * copy = (char *)(pagecopy + index*pagesize);
-	char * real = (char *)startAddr+addr;
+	char* copy = static_cast<char*>(pagecopy + index*pagesize);
+	char* real = static_cast<char*>(startAddr)+addr;
 	size_t drf_unit = sizeof(char);
 
 	mpi_lock_data[win_index][homenode].lock(MPI_LOCK_EXCLUSIVE, homenode, data_windows[win_index][homenode]);
@@ -1206,7 +1205,7 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr) {
 			}
 		}
 		if(branchval != 0) {
-			cnt+=drf_unit;
+			cnt += drf_unit;
 		} else {
 			if(cnt > 0) {
 				MPI_Put(&real[i-cnt], cnt, MPI_BYTE, homenode, win_offset+(i-cnt), cnt, MPI_BYTE, data_windows[win_index][homenode]);
