@@ -58,6 +58,8 @@ std::shared_mutex sync_lock;
 write_buffer<std::size_t>* argo_write_buffer;
 
 /*MPI and Comm*/
+/** @brief A communicator to isolate ArgoDSM communication */
+MPI_Comm argo_comm;
 /** @brief The number of MPI windows per remote node */
 std::size_t mpi_windows;
 /** @brief MPI window for communicating pyxis directory*/
@@ -700,8 +702,9 @@ void initmpi() {
 		exit(EXIT_FAILURE);
 	}
 
-	MPI_Comm_size(MPI_COMM_WORLD, reinterpret_cast<int*>(&numtasks));
-	MPI_Comm_rank(MPI_COMM_WORLD, reinterpret_cast<int*>(&workrank));
+	MPI_Comm_dup(MPI_COMM_WORLD, &argo_comm);
+	MPI_Comm_size(argo_comm, reinterpret_cast<int*>(&numtasks));
+	MPI_Comm_rank(argo_comm, reinterpret_cast<int*>(&workrank));
 	init_mpi_struct();
 	init_mpi_cacheblock();
 }
@@ -803,7 +806,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 	int name_len;
 	MPI_Get_processor_name(processor_name, &name_len);
 
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(argo_comm);
 
 	void* tmpcache;
 	tmpcache = cacheData;
@@ -839,7 +842,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 	for(std::size_t i = 0; i < mpi_windows; i++) {
 		for(argo::num_nodes_t j = 0; j < numtasks; j++) {
 			MPI_Win_create(globalData, size_of_chunk, 1,
-						   MPI_INFO_NULL, MPI_COMM_WORLD, &data_windows[i][j]);
+						   MPI_INFO_NULL, argo_comm, &data_windows[i][j]);
 		}
 	}
 	// Locks to protect the data_windows from concurrent local access
@@ -853,7 +856,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 	for(std::size_t i = 0; i < mpi_windows; i++) {
 		for(argo::num_nodes_t j = 0; j < numtasks; j++) {
 			MPI_Win_create(globalSharers, gwritersize, sizeof(std::uint64_t),
-						   MPI_INFO_NULL, MPI_COMM_WORLD, &sharer_windows[i][j]);
+						   MPI_INFO_NULL, argo_comm, &sharer_windows[i][j]);
 		}
 	}
 	// Locks to protect the sharer windows from concurrent local access
@@ -864,9 +867,9 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 
 	if (dd::is_first_touch_policy()) {
 		MPI_Win_create(global_owners_dir, owners_dir_size_bytes, sizeof(std::uintptr_t),
-									 MPI_INFO_NULL, MPI_COMM_WORLD, &owners_dir_window);
+									 MPI_INFO_NULL, argo_comm, &owners_dir_window);
 		MPI_Win_create(global_offsets_tbl, offsets_tbl_size_bytes, sizeof(std::uintptr_t),
-									 MPI_INFO_NULL, MPI_COMM_WORLD, &offsets_tbl_window);
+									 MPI_INFO_NULL, argo_comm, &offsets_tbl_window);
 	}
 
 	for(std::size_t i = 0; i < cachesize; i++) {
@@ -889,11 +892,11 @@ void argo_finalize() {
 	swdsm_argo_barrier(1);
 	stats.exectime = MPI_Wtime() - stats.exectime;
 	mprotect(startAddr, size_of_all, PROT_WRITE|PROT_READ);
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(argo_comm);
 
 	print_statistics();
 
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(argo_comm);
 
 	// Free data windows
 	for(auto& win_index : data_windows) {
@@ -922,6 +925,7 @@ void argo_finalize() {
 	}
 	delete[] mpi_lock_data;
 
+	MPI_Comm_free(&argo_comm);
 	MPI_Finalize();
 	return;
 }
@@ -1029,13 +1033,13 @@ void swdsm_argo_barrier(int n, upgrade_type upgrade) {
 
 		// Perform SD followed by SI
 		argo_write_buffer->flush();
-		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Barrier(argo_comm);
 		self_invalidation();
 
 		// Perform upgrade if requested
 		if (upgrade != upgrade_type::upgrade_none) {
 			self_upgrade(upgrade);
-			MPI_Barrier(MPI_COMM_WORLD);
+			MPI_Barrier(argo_comm);
 		}
 	}
 
@@ -1097,7 +1101,7 @@ void argo_acquire() {
 	// Sync lock can only be held by one so no lock_guard required
 	stats.sync_lock_time += t2-t1;
 	self_invalidation();
-	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, MPI_STATUS_IGNORE);
+	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, argo_comm, &flag, MPI_STATUS_IGNORE);
 }
 
 
@@ -1109,7 +1113,7 @@ void argo_release() {
 	// Sync lock can only be held by one so no lock_guard required
 	stats.sync_lock_time += t2-t1;
 	argo_write_buffer->flush();
-	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &flag, MPI_STATUS_IGNORE);
+	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, argo_comm, &flag, MPI_STATUS_IGNORE);
 }
 
 void argo_acq_rel() {
@@ -1327,7 +1331,7 @@ void print_statistics() {
 	sharer_mpi_avg_hold_time 		= sharer_mpi_hold_time / sharer_num_locks;
 
 	/** Nicely format and print the results */
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(argo_comm);
 	if(workrank == 0) {
 		/** Adjust memory size */
 		double mem_size_readable = size_of_all;
@@ -1356,7 +1360,7 @@ void print_statistics() {
 	/* Print node information */
 	if(print_level > 1) {
 		for(argo::num_nodes_t i = 0; i < numtasks; i++) {
-			MPI_Barrier(MPI_COMM_WORLD);
+			MPI_Barrier(argo_comm);
 			if(i == workrank) {
 				printf("#" YEL "  ### PROCESS ID %d ###\n" RESET, workrank);
 
@@ -1419,7 +1423,7 @@ void print_statistics() {
 			}
 		}
 	}
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(argo_comm);
 }
 
 void *argo_get_global_base() { return startAddr; }

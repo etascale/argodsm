@@ -159,7 +159,7 @@ namespace argo {
 
 		template<typename T>
 		void broadcast(node_id_t source, T* ptr) {
-			MPI_Bcast(static_cast<void*>(ptr), sizeof(T), MPI_BYTE, source, MPI_COMM_WORLD);
+			MPI_Bcast(static_cast<void*>(ptr), sizeof(T), MPI_BYTE, source, argo_comm);
 		}
 
 		void acquire() {

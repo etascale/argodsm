@@ -276,6 +276,11 @@ extern std::vector<cache_lock> cache_locks;
  */
 extern std::shared_mutex sync_lock;
 /**
+ * @brief Communicator to isolate ArgoDSM communication
+ * @see swdsm.cpp
+ */
+extern MPI_Comm argo_comm;
+/**
  * @brief globalSharers is needed to access and modify the pyxis directory
  * @deprecated Should eventually be handled by a cache module
  * @see swdsm.cpp
