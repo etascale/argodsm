@@ -31,6 +31,7 @@ extern "C" {
 
 namespace argo {
 namespace globallock {
+
 /**
  * @brief a global  'cohort' lock - needs to be called collectively
  * @details Locks in levels and tries to hand over the lock as locally
@@ -196,7 +197,8 @@ class cohort_lock {
 				}
 			}
 		}
-}; // class cohort_lock
+};
+
 }  // namespace globallock
 }  // namespace argo
 

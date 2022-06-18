@@ -41,13 +41,13 @@ enum x86_pf_error_code {
 #endif /* REG_ERR */
 
 namespace {
-	/** @brief typedef for signal handlers */
-	using sig_handler = struct sigaction;
-	/** @brief typedef for function type used by ArgoDSM */
-	using handler_ftype = void(*)(int, siginfo_t*, void*);
+/** @brief typedef for signal handlers */
+using sig_handler = struct sigaction;
+/** @brief typedef for function type used by ArgoDSM */
+using handler_ftype = void(*)(int, siginfo_t*, void*);
 
-	/** @brief error message string */
-	const std::string msg_argo_unitialized = "ArgoDSM must be configured to capture a signal before application handlers can be installed";
+/** @brief error message string */
+const std::string msg_argo_unitialized = "ArgoDSM must be configured to capture a signal before application handlers can be installed";
 }  // namespace
 
 namespace argo {
@@ -131,7 +131,7 @@ class signal_handler {
 				return;
 			}
 		}
-}; // class signal_handler
+};
 
 template<int S> handler_ftype signal_handler<S>::argo_handler = nullptr;
 template<int S> sig_handler signal_handler<S>::application_handler;

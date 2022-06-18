@@ -14,7 +14,10 @@
 
 namespace argo {
 namespace globallock {
-/** @brief a global test-and-set lock */
+
+/**
+ * @brief a global test-and-set lock
+ */
 class global_tas_lock {
 	private:
 		/** @brief constant signifying lock is in an initial state and free */
@@ -109,7 +112,8 @@ class global_tas_lock {
 		 *       user code must use this type alias
 		 */
 		using internal_field_type = std::size_t;
-}; // class global_tas_lock
+};
+
 }  // namespace globallock
 }  // namespace argo
 

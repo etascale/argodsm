@@ -12,6 +12,7 @@
 
 namespace argo {
 namespace allocators {
+
 /**
  * @internal
  * @brief a lock for when no locking is needed
@@ -26,7 +27,8 @@ class null_lock {
 		void lock() {}
 		/** @brief do nothing */
 		void unlock() {}
-}; // class null_lock
+};
+
 }  // namespace allocators
 }  // namespace argo
 

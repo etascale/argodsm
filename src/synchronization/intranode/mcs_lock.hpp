@@ -24,7 +24,7 @@ namespace locallock {
  * @warning The MCS need to be locked and unlocked by the same thread.
  */
 class mcs_lock {
-private:
+ private:
 	/** @brief Thread nodes for the lock */
 	struct mcs_node {
 		/** @brief Construct a new node */
@@ -42,7 +42,7 @@ private:
 	/** @brief Local nodes for the different locks each thread can have */
 	thread_local static std::map<mcs_lock*, mcs_node> selfs;
 
-public:
+ public:
 	/**
 	 * @brief Construct an MCS lock
 	 */
@@ -72,7 +72,7 @@ public:
 	bool is_contended();
 };
 
-} // namespace locallock
-} // namespace argo
+}  // namespace locallock
+}  // namespace argo
 
 #endif // ARGODSM_SRC_SYNCHRONIZATION_INTRANODE_MCS_LOCK_HPP_

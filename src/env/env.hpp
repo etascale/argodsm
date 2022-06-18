@@ -139,7 +139,7 @@ std::size_t mpi_windows_per_node();
  */
 std::size_t print_statistics();
 
-} // namespace env
-} // namespace argo
+}  // namespace env
+}  // namespace argo
 
 #endif // ARGODSM_SRC_ENV_ENV_HPP_

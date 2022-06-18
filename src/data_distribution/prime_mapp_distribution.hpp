@@ -11,6 +11,7 @@
 
 namespace argo {
 namespace data_distribution {
+
 /**
  * @brief the prime-mapp data distribution
  * @details distributes blocks of pages using a two-phase round-robin strategy.

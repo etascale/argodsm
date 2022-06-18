@@ -168,7 +168,8 @@ class dynamic_memory_pool {
 		std::size_t available() {
 			return max_size - offset;
 		}
-}; // class dynamic_memory_pool
+};
+
 }  // namespace mempools
 }  // namespace argo
 

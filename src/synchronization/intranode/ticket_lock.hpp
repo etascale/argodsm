@@ -11,7 +11,10 @@
 
 namespace argo {
 namespace locallock {
-/** @brief a global test-and-set lock */
+
+/**
+ * @brief a global ticket lock
+ */
 class ticket_lock {
 	private:
 		/** @brief Amount of threads wanting the lock */
@@ -51,7 +54,8 @@ class ticket_lock {
 			local_out = out_counter.load(std::memory_order_relaxed);
 			return (local_in - local_out) > 1;
 		}
-}; // class ticket_lock
+};
+
 }  // namespace locallock
 }  // namespace argo
 

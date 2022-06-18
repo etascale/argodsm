@@ -23,6 +23,7 @@ constexpr int PAGESIZE = 4096;
 
 namespace argo {
 namespace mempools {
+
 /**
  * @brief Globally growing memory pool
  */
@@ -141,7 +142,8 @@ class global_memory_pool {
 			global_tas_lock->unlock();
 			return avail;
 		}
-}; // class global_memory_pool
+};
+
 }  // namespace mempools
 }  // namespace argo
 

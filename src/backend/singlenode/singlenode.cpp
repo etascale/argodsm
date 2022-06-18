@@ -70,8 +70,7 @@ std::uintptr_t *global_owners_dir;
  */
 void singlenode_handler(int sig, siginfo_t*, void*) {
 	printf("A segfault was encountered in ArgoDSM memory. "
-		"This should never happen, as the singlenode backend is in use.\n"
-	);
+		"This should never happen, as the singlenode backend is in use.\n");
 	std::signal(sig, SIG_DFL);
 	std::raise(sig);
 }

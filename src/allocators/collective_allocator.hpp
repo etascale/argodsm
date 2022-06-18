@@ -41,15 +41,16 @@ extern "C" {
 
 namespace argo {
 namespace allocators {
-	/**
-	 * @brief type alias for collective allocator: allocate from dynamically growing pool (backed by global memory allocator) without locking
-	 */
-	using collective_allocator = generic_allocator<char, mempools::dynamic_memory_pool<global_allocator, mempools::NODE_ZERO_ONLY>, null_lock>;
 
-	/**
-	 * @brief default collective allocator, using bytes as base unit
-	 */
-	extern collective_allocator default_collective_allocator;
+/**
+ * @brief type alias for collective allocator: allocate from dynamically growing pool (backed by global memory allocator) without locking
+ */
+using collective_allocator = generic_allocator<char, mempools::dynamic_memory_pool<global_allocator, mempools::NODE_ZERO_ONLY>, null_lock>;
+
+/**
+ * @brief default collective allocator, using bytes as base unit
+ */
+extern collective_allocator default_collective_allocator;
 
 } // namespace allocators
 
@@ -285,6 +286,7 @@ void codelete_array(T* ptr) {
 	}
 	collective_free(static_cast<void*>(ptr));
 }
-} // namespace argo
+
+}  // namespace argo
 
 #endif  // ARGODSM_SRC_ALLOCATORS_COLLECTIVE_ALLOCATOR_HPP_

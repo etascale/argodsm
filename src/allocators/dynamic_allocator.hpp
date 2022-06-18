@@ -355,6 +355,6 @@ void delete_array(T* ptr) {
 	dynamic_free(static_cast<void*>(ptr));
 }
 
-} // namespace argo
+}  // namespace argo
 
 #endif  // ARGODSM_SRC_ALLOCATORS_DYNAMIC_ALLOCATOR_HPP_
