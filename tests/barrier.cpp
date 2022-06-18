@@ -4,11 +4,13 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#include "argo.hpp"
-#include "gtest/gtest.h"
-
-#include<vector>
+// C++ headers
 #include<list>
+#include<vector>
+// ArgoDSM headers
+#include "argo.hpp"
+// GoogleTest headers
+#include "gtest/gtest.h"
 
 /** @brief ArgoDSM memory size */
 constexpr std::size_t size = 1<<30;
@@ -33,7 +35,6 @@ class barrierTest : public testing::Test, public ::testing::WithParamInterface<i
 			argo::barrier();
 		}
 };
-
 
 
 /**
@@ -223,7 +224,7 @@ TEST_P(barrierTest, threadBarrier) {
 		t = std::thread([=, &node_local]{
 			for(int i = 0; i < GetParam(); i++) {
 				ASSERT_NO_THROW(argo::barrier(GetParam()));
-				if(cnt == i) { 
+				if(cnt == i) {
 					node_local++;
 					ASSERT_EQ(node_local, cnt);
 				}

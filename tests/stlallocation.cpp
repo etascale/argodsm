@@ -4,11 +4,13 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#include "argo.hpp"
-#include "gtest/gtest.h"
-
-#include<vector>
+// C++ headers
 #include<list>
+#include<vector>
+// ArgoDSM headers
+#include "argo.hpp"
+// GoogleTest headers
+#include "gtest/gtest.h"
 
 /** @brief ArgoDSM memory size */
 constexpr std::size_t size = 1<<30;
@@ -30,7 +32,6 @@ class cppTest : public testing::Test {
 };
 
 
-
 /**
  * @brief Unittest that checks that an STL list can be allocated globally and populated
  */
@@ -42,7 +43,7 @@ TEST_F(cppTest, simpleList) {
 
 	my_list* l = conew_<my_list>();
 
-	for(int i=0; i<argo_number_of_nodes(); i++){
+	for(int i = 0; i < argo_number_of_nodes(); i++) {
 		if(argo_node_id() == i) {
 			ASSERT_NO_THROW(l->push_back(i));
 		}
@@ -50,13 +51,11 @@ TEST_F(cppTest, simpleList) {
 	}
 
 	int id = 0;
-	for (auto elem : *l){
-		ASSERT_EQ(elem,id);
+	for (auto elem : *l) {
+		ASSERT_EQ(elem, id);
 		id++;
 	}
 }
-
-
 
 /**
  * @brief Unittest that checks that an STL vector can be allocated globally and populated
@@ -69,7 +68,7 @@ TEST_F(cppTest, simpleVector) {
 
 	my_vector* v = conew_<my_vector>();
 
-	for(int i=0; i<argo_number_of_nodes(); i++){
+	for(int i = 0; i < argo_number_of_nodes(); i++) {
 		if(argo_node_id() == i) {
 			ASSERT_NO_THROW(v->push_back(i));
 		}
@@ -77,8 +76,8 @@ TEST_F(cppTest, simpleVector) {
 	}
 
 	int id = 0;
-	for (auto elem : *v){
-		ASSERT_EQ(elem,id);
+	for (auto elem : *v) {
+		ASSERT_EQ(elem, id);
 		id++;
 	}
 }

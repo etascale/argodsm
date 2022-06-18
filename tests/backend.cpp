@@ -4,15 +4,17 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
+// C headers
+#include <mpi.h>
+// C++ headers
 #include <algorithm>
 #include <chrono>
-#include <mpi.h>
 #include <numeric>
 #include <random>
-
+// ArgoDSM headers
 #include "argo.hpp"
 #include "data_distribution/global_ptr.hpp"
-
+// GoogleTest headers
 #include "gtest/gtest.h"
 
 /** @brief Global pointer to char */
@@ -58,6 +60,7 @@ class backendTest : public testing::Test, public ::testing::WithParamInterface<i
 			argo::barrier();
 		}
 };
+
 
 /**
  * @brief Test if atomic exchange writes the correct values
@@ -410,7 +413,7 @@ TEST_F(backendTest, selectiveSpin) {
 		argo::backend::selective_release(flag, sizeof(unsigned));
 	}
 	// Wait for the flag change to be visible on every node
-	while(*flag != 1){
+	while(*flag != 1) {
 		ASSERT_LT(std::chrono::system_clock::now(), max_time);
 		argo::backend::selective_acquire(flag, sizeof(unsigned));
 	}
@@ -427,34 +430,33 @@ TEST_F(backendTest, selectiveArray) {
 		std::chrono::system_clock::now() + deadlock_threshold;
 
 	// Initialize
-	if(argo::node_id() == 0){
-		for(std::size_t i=0; i<array_size; i++){
+	if(argo::node_id() == 0) {
+		for(std::size_t i = 0; i < array_size; i++) {
 			array[i] = 0;
 		}
 	}
 	argo::barrier();
 
-	// Set each array element on node 0, then set flag
-	if(argo::node_id() == 0){
-		for(std::size_t i=0; i<array_size; i++){
+	if(argo::node_id() == 0) {
+		// Set each array element on node 0, then set flag
+		for(std::size_t i = 0; i < array_size; i++) {
 			array[i] = i_const;
 		}
 		argo::backend::selective_release(array, array_size*sizeof(int));
 		*flag = 1;
 		argo::backend::selective_release(flag, sizeof(unsigned));
-	}
-	// Read each element on remote nodes to ensure they are cached
-	else {
+	} else {
+		// Read each element on remote nodes to ensure they are cached
 		int tmp;
 		const int max_total = i_const*array_size;
-		for(std::size_t i=0; i<array_size; i++){
+		for(std::size_t i = 0; i < array_size; i++) {
 			tmp = array[i];
 		}
 		ASSERT_LE(tmp, max_total);
 	}
 
 	// Wait for the flag change to be visible on every node
-	while(*flag != 1){
+	while(*flag != 1) {
 		ASSERT_LT(std::chrono::system_clock::now(), max_time);
 		argo::backend::selective_acquire(flag, sizeof(unsigned));
 	}
@@ -463,7 +465,7 @@ TEST_F(backendTest, selectiveArray) {
 	argo::backend::selective_acquire(array, array_size*sizeof(int));
 	int count = 0;
 	const int expected = i_const*array_size;
-	for(std::size_t i=0; i<array_size; i++){
+	for(std::size_t i = 0; i < array_size; i++) {
 		count += array[i];
 	}
 	ASSERT_EQ(count, expected);
@@ -484,17 +486,17 @@ TEST_F(backendTest, selectiveUnaligned) {
 		std::chrono::system_clock::now() + deadlock_threshold;
 
 	// Initialize
-	if(argo::node_id() == 0){
-		for(std::size_t i=0; i<array_size; i++){
+	if(argo::node_id() == 0) {
+		for(std::size_t i = 0; i < array_size; i++) {
 			array[i] = 0;
 		}
 	}
 	argo::barrier();
 
-	// Set array elements on node 0, then set flag
-	if(argo::node_id() == 0){
+	if(argo::node_id() == 0) {
+		// Set array elements on node 0, then set flag
 		// Write an unaligned chunk crossing a (remote node) boundary
-		for(std::size_t i=ua_chunk_size*1807; i<ua_chunk_size*1809; i++){
+		for(std::size_t i = ua_chunk_size*1807; i < ua_chunk_size*1809; i++) {
 			array[i] = i_const;
 		}
 		argo::backend::selective_release(&array[ua_chunk_size*1807],
@@ -502,20 +504,19 @@ TEST_F(backendTest, selectiveUnaligned) {
 
 		*flag = 1;
 		argo::backend::selective_release(flag, sizeof(unsigned));
-	}
-	// Read the set values on every other node to make sure that some
-	// version of the pages involved are already cached
-	else{
+	} else {
+		// Read the set values on every other node to make sure that some
+		// version of the pages involved are already cached
 		int tmp = 0;
 		const int max_total = i_const*ua_chunk_size*2;
-		for(std::size_t i=ua_chunk_size*1807; i<ua_chunk_size*1809; i++){
+		for(std::size_t i = ua_chunk_size*1807; i < ua_chunk_size*1809; i++) {
 			tmp = array[i];
 		}
 		ASSERT_LE(tmp, max_total);
 	}
 
 	// Wait for the flag change to be visible on every node
-	while(*flag != 1){
+	while(*flag != 1) {
 		ASSERT_LT(std::chrono::system_clock::now(), max_time);
 		argo::backend::selective_acquire(flag, sizeof(unsigned));
 	}
@@ -525,7 +526,7 @@ TEST_F(backendTest, selectiveUnaligned) {
 			(ua_chunk_size*2)*sizeof(int));
 	int count = 0;
 	const int expected = i_const*ua_chunk_size*2;
-	for(std::size_t i=0; i<array_size; i++){
+	for(std::size_t i = 0; i < array_size; i++) {
 		count += array[i];
 	}
 	ASSERT_EQ(count, expected);
@@ -876,20 +877,20 @@ TEST_F(backendTest, writeBufferLoad) {
 	// random ordering between writebacks to different nodes
 	std::random_device rd;
 	std::mt19937 rng(rd());
-	std::uniform_int_distribution<int> dist(0,num_ints-1);
+	std::uniform_int_distribution<int> dist(0, num_ints-1);
 
 	// Initialize write buffer
-	if(argo::node_id() == 0){
-		for(std::size_t i=0; i<num_ints; i++){
+	if(argo::node_id() == 0) {
+		for(std::size_t i = 0; i < num_ints; i++) {
 			array[i] = 0;
 		}
 	}
 	argo::barrier();
 
 	// One node at a time, increment random elements num_writes times
-	for(argo::num_nodes_t i = 0; i < argo::number_of_nodes(); i++){
-		if(i == argo::node_id()){
-			for(std::size_t j = 0; j < num_writes; j++){
+	for(argo::num_nodes_t i = 0; i < argo::number_of_nodes(); i++) {
+		if(i == argo::node_id()) {
+			for(std::size_t j = 0; j < num_writes; j++) {
 				array[dist(rng)] += 1;
 			}
 		}
@@ -897,10 +898,10 @@ TEST_F(backendTest, writeBufferLoad) {
 	}
 
 	// Check that each node incremented num_writes elements
-	if(argo::node_id() == 0){
+	if(argo::node_id() == 0) {
 		int count = 0;
 		int expected = num_writes*argo::number_of_nodes();
-		for(std::size_t i = 0; i < num_ints; i++){
+		for(std::size_t i = 0; i < num_ints; i++) {
 			count += array[i];
 		}
 		ASSERT_EQ(count, expected);
@@ -908,6 +909,7 @@ TEST_F(backendTest, writeBufferLoad) {
 	// Clean up
 	argo::codelete_array(array);
 }
+
 
 /**
  * @brief The main function that runs the tests

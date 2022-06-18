@@ -4,17 +4,19 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#include <iostream>
-#include <tuple>
-
+// C headers
 #include <limits.h>
 #include <unistd.h>
-
+// C++ headers
+#include <iostream>
+#include <tuple>
+// ArgoDSM headers
 #include "argo.hpp"
-#include "allocators/generic_allocator.hpp"
 #include "allocators/collective_allocator.hpp"
+#include "allocators/generic_allocator.hpp"
 #include "allocators/null_lock.hpp"
 #include "backend/backend.hpp"
+// GoogleTest headers
 #include "gtest/gtest.h"
 
 /** @brief ArgoDSM memory size */
@@ -29,7 +31,6 @@ extern mem::global_memory_pool<>* default_global_mempool;
  * @brief Class for the gtests fixture tests. Will reset the allocators to a clean state for every test
  */
 class AllocatorTest : public testing::Test {
-
 	protected:
 		AllocatorTest() {
 			argo::reset();
@@ -41,13 +42,11 @@ class AllocatorTest : public testing::Test {
 };
 
 
-
-
 /**
  * @brief Unittest that checks that the global address space is at least as large as requested
  */
 TEST_F(AllocatorTest, InitialSize) {
-	ASSERT_GE(default_global_mempool->available(),size - mem::global_memory_pool<>::reserved);
+	ASSERT_GE(default_global_mempool->available(), size - mem::global_memory_pool<>::reserved);
 }
 
 /**
@@ -87,7 +86,7 @@ TEST_F(AllocatorTest, Collective200MBTwiceAlloc) {
  */
 TEST_F(AllocatorTest, CollectiveAllocRequestedSize) {
 	ASSERT_NO_THROW(collective_alloc(size - mem::global_memory_pool<>::reserved));
-	ASSERT_GE(default_global_mempool->available(),std::size_t{0});
+	ASSERT_GE(default_global_mempool->available(), std::size_t{0});
 }
 
 /**
@@ -97,9 +96,6 @@ TEST_F(AllocatorTest, CollectiveAllocAll) {
 	ASSERT_NO_THROW(collective_alloc(default_global_mempool->available()));
 }
 
-
-
-
 /**
  * @brief Unittest that checks that allocating all memory available collectively and then checks that allocating  more bytes will throw an exception
  */
@@ -108,7 +104,6 @@ TEST_F(AllocatorTest, CollectiveAllocAllAndExceedLimit) {
 	ASSERT_NO_THROW(collective_alloc(0));
 	ASSERT_ANY_THROW(collective_alloc(1));
 }
-
 
 /**
  * @brief Unittest that checks that allocating more memory than what is available collectively
@@ -121,10 +116,9 @@ TEST_F(AllocatorTest, CollectiveAllocExceedLimit) {
 /**
  * @brief Unittest that checks that allocating more memory than what is available collectively
  */
-
 TEST_F(AllocatorTest, CollectiveAllocLoopExceedLimit) {
-	std::size_t allocsize=7;
-	while(default_global_mempool->available() >= allocsize){
+	std::size_t allocsize = 7;
+	while(default_global_mempool->available() >= allocsize) {
 		ASSERT_NO_THROW(collective_alloc(allocsize));
 		allocsize *= 2;
 	}
@@ -132,9 +126,7 @@ TEST_F(AllocatorTest, CollectiveAllocLoopExceedLimit) {
 	ASSERT_ANY_THROW(collective_alloc(1));
 }
 
-
 /* Tests using dynamic allocator */
-
 
 /**
  * @brief Unittest that checks that allocating 0 bytes dynamically by all nodes is allowed
@@ -154,7 +146,7 @@ TEST_F(AllocatorTest, DynamicAllocOneByteDynamically) {
  * @brief Unittest that checks that allocating a few different sizes by all nodes dynamically
  */
 TEST_F(AllocatorTest, DynamicCommonAlloc) {
-	if(static_cast<unsigned int>(argo::number_of_nodes())*1111 >= default_global_mempool->available()){
+	if(static_cast<unsigned int>(argo::number_of_nodes())*1111 >= default_global_mempool->available()) {
 		ASSERT_NO_THROW(dynamic_alloc(1));
 		ASSERT_NO_THROW(dynamic_alloc(10));
 		ASSERT_NO_THROW(dynamic_alloc(100));
@@ -166,35 +158,33 @@ TEST_F(AllocatorTest, DynamicCommonAlloc) {
  * @brief Unittest that checks that node 0  allocating the whole requested memory space dynamically - also checks that the remaining memory is non-negative
  */
 TEST_F(AllocatorTest, DynamicAllocRequestedSize) {
-	if(argo::node_id() == 0){
+	if(argo::node_id() == 0) {
 		ASSERT_NO_THROW(dynamic_alloc(size - mem::global_memory_pool<>::reserved));
 	}
 	argo::barrier();
-	ASSERT_GE(default_global_mempool->available(),std::size_t{0});
+	ASSERT_GE(default_global_mempool->available(), std::size_t{0});
 }
 
 /**
  * @brief Unittest that checks that node N-1 allocating all memory available dynamically does not throw exceptions
  */
 TEST_F(AllocatorTest, DynamicAllocAll) {
-	if(argo::node_id() == argo::number_of_nodes()-1){
+	if(argo::node_id() == argo::number_of_nodes()-1) {
 		ASSERT_NO_THROW(dynamic_alloc(default_global_mempool->available()));
 	}
 }
-
 
 /**
  * @brief Unittest that checks that node N-1 allocating all memory available dynamically and then checks that allocating more bytes will throw an exception
  */
 TEST_F(AllocatorTest, DynamicAllocAllAndExceedLimit) {
-		if(argo::node_id() == argo::number_of_nodes()*0+1-1){
+		if(argo::node_id() == argo::number_of_nodes()*0+1-1) {
 		ASSERT_NO_THROW(dynamic_alloc(default_global_mempool->available()));
 		}
-	//	ASSERT_NO_THROW(dynamic_alloc(0)); /* Should always be legal */
+	// ASSERT_NO_THROW(dynamic_alloc(0)); /* Should always be legal */
 	argo::barrier();
 		ASSERT_ANY_THROW(dynamic_alloc(1));
 }
-
 
 /**
  * @brief Unittest that checks that allocating more memory than what is available dynamically
@@ -207,10 +197,9 @@ TEST_F(AllocatorTest, DynamicAllocExceedLimit) {
 /**
  * @brief Unittest that checks that allocating more memory than what is available dynamically
  */
-
 TEST_F(AllocatorTest, DynamicAllocLoopExceedLimit) {
-	std::size_t allocsize=7;
-	while(default_global_mempool->available() >= 2*allocsize && argo::node_id()==0){
+	std::size_t allocsize = 7;
+	while(default_global_mempool->available() >= 2*allocsize && argo::node_id() == 0) {
 		ASSERT_NO_THROW(dynamic_alloc(allocsize));
 		allocsize *= 2;
 	}
@@ -221,7 +210,6 @@ TEST_F(AllocatorTest, DynamicAllocLoopExceedLimit) {
 	argo::barrier();
 	ASSERT_ANY_THROW(dynamic_alloc(1));
 	argo::barrier();
-
 }
 
 /**
@@ -229,17 +217,16 @@ TEST_F(AllocatorTest, DynamicAllocLoopExceedLimit) {
  * available memory dynamically
  */
 TEST_F(AllocatorTest, DynamicAllocAllNodes) {
-	std::size_t allocsize=7;
+	std::size_t allocsize = 7;
 
 	/* Node N-1*/
 	if(argo::node_id() == argo::number_of_nodes()-1) {
-		while(default_global_mempool->available() > allocsize){
+		while(default_global_mempool->available() > allocsize) {
 			ASSERT_NO_THROW(dynamic_alloc(allocsize));
 			allocsize *= 2;
 		}
 		ASSERT_NO_THROW(dynamic_alloc(default_global_mempool->available()));
 		ASSERT_ANY_THROW(dynamic_alloc(1));
-
 	}
 }
 
@@ -251,12 +238,12 @@ TEST_F(AllocatorTest, DynamicAllocAllNodes) {
 const int entries = 10;
 
 /**
- *@brief mixes dynamic and collective allocation and stores dynamic arrays in a collective arrays to communicate values, also stresses allocation.
+ * @brief mixes dynamic and collective allocation and stores dynamic arrays in a collective arrays to communicate values, also stresses allocation.
  */
-TEST_F(AllocatorTest, StoringDynamicArrayInCollective){
+TEST_F(AllocatorTest, StoringDynamicArrayInCollective) {
 	int *dynamic_arr = argo::new_array<int>(entries);
 
-	for(int i = 0; i < entries; i++){
+	for(int i = 0; i < entries; i++) {
 		dynamic_arr[i] = argo::node_id()+i*10;
 	}
 
@@ -265,8 +252,8 @@ TEST_F(AllocatorTest, StoringDynamicArrayInCollective){
 	collective_arr[argo::node_id()] = dynamic_arr;
 	argo::barrier();
 
-	for(argo::num_nodes_t i = 0; i < argo::number_of_nodes(); i++){
-		for(unsigned int j = 0; j < entries; j++){
+	for(argo::num_nodes_t i = 0; i < argo::number_of_nodes(); i++) {
+		for(unsigned int j = 0; j < entries; j++) {
 			if(argo::node_id() == 0) {
 				ASSERT_TRUE(collective_arr[i][j] == static_cast<int>(i+j*10));
 			}
@@ -278,7 +265,7 @@ TEST_F(AllocatorTest, StoringDynamicArrayInCollective){
 	argo::delete_array(dynamic_arr);
 
 	argo::barrier();
-	for(int i = 0; i < 100; i++){
+	for(int i = 0; i < 100; i++) {
 		dynamic_arr = argo::new_array<int>(i*10);
 		collective_arr = argo::conew_array<int *>(10);
 		argo::delete_array(dynamic_arr);
@@ -293,18 +280,18 @@ TEST_F(AllocatorTest, StoringDynamicArrayInCollective){
 	int *collective_arr2 = argo::conew_array<int>(entries);
 
 	argo::barrier();
-	for(int i = 0; i < entries; i++){
+	for(int i = 0; i < entries; i++) {
 		dynamic_arr[i] = argo::node_id()+i*11;
-		if((i%argo::number_of_nodes()) == argo::node_id()){
-				collective_arr2[i]=i;
+		if((i%argo::number_of_nodes()) == argo::node_id()) {
+				collective_arr2[i] = i;
 		}
 	}
 
 	collective_arr[argo::node_id()] = dynamic_arr;
 	argo::barrier();
-	for(argo::num_nodes_t i = 0; i < argo::number_of_nodes(); i++){
-		for(unsigned int j = 0; j < entries; j++){
-			//			std::cout << "collective_arr : " << j << "," << i << " => "<< collective_arr[i][j] << " i+j*11 " << i+(j*11)<< std::endl;
+	for(argo::num_nodes_t i = 0; i < argo::number_of_nodes(); i++) {
+		for(unsigned int j = 0; j < entries; j++) {
+			//std::cout << "collective_arr : " << j << "," << i << " => "<< collective_arr[i][j] << " i+j*11 " << i+(j*11)<< std::endl;
 			//std::cout << "collective_arr2 : " << j << " => "<< collective_arr2[j] << std::endl;
 			ASSERT_TRUE(collective_arr[i][j] == static_cast<int>(i+j*11));
 			ASSERT_TRUE(collective_arr2[j] == static_cast<int>(j));

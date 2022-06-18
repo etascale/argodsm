@@ -4,16 +4,18 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#include <iostream>
-
+// C headers
 #include <limits.h>
 #include <unistd.h>
-
+// C++ headers
+#include <iostream>
+// ArgoDSM headers
 #include "argo.hpp"
 #include "allocators/collective_allocator.hpp"
 #include "backend/backend.hpp"
-#include "env/env.hpp"
 #include "data_distribution/data_distribution.hpp"
+#include "env/env.hpp"
+// GoogleTest headers
 #include "gtest/gtest.h"
 
 /** @brief ArgoDSM memory size */
@@ -36,7 +38,6 @@ constexpr char c_const = 'a';
  * @brief Class for the gtests fixture tests. Will reset the allocators to a clean state for every test
  */
 class APITest : public testing::Test {
-
 	protected:
 		APITest() {
 			argo::reset();
@@ -46,7 +47,6 @@ class APITest : public testing::Test {
 			argo::barrier();
 		}
 };
-
 
 
 /**
@@ -79,9 +79,7 @@ TEST_F(APITest, GetHomeNode) {
 	char* end = start + argo::backend::global_size();
 
 	/* Touch an equal (+/- 1) number of pages per node */
-	for(std::size_t s=page_size*node_id;
-			s<alloc_size-1;
-			s+=page_size*num_nodes) {
+	for(std::size_t s = page_size*node_id; s < alloc_size-1; s += page_size*num_nodes) {
 		tmp[s] = c_const;
 	}
 	argo::barrier();
@@ -89,14 +87,14 @@ TEST_F(APITest, GetHomeNode) {
 	/* Test that the number of pages owned by each node is equal (+/- 1) */
 	std::size_t counter = 0;
 	std::vector<std::size_t> node_counters(num_nodes);
-	for(char* c = start; c<end; c+=page_size) {
+	for(char* c = start; c < end; c += page_size) {
 		node_counters[argo::get_homenode(c)]++;
 		counter++;
 	}
 	std::size_t pages_per_node = counter/num_nodes;
 	for(std::size_t& count : node_counters) {
 		// The owner of the reserved internal page will own
-		// one more page, some other node will own one less 
+		// one more page, some other node will own one less
 		ASSERT_TRUE((count >= pages_per_node-1) && (count <= pages_per_node+1));
 	}
 }
@@ -112,12 +110,13 @@ TEST_F(APITest, GetBlockSize) {
 	std::size_t size_per_node = argo::backend::global_size()/argo::number_of_nodes();
 	if(dd::is_cyclic_policy()) {
 		ASSERT_EQ(api_block_size, env_block_size*page_size);
-	}else if(dd::is_first_touch_policy()){
+	} else if (dd::is_first_touch_policy()) {
 		ASSERT_EQ(api_block_size, page_size);
-	}else{
+	} else {
 		ASSERT_EQ(api_block_size, size_per_node);
 	}
 }
+
 
 /**
  * @brief The main function that runs the tests

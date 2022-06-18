@@ -4,8 +4,10 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
+// ArgoDSM headers
 #include "argo.hpp"
 #include "backend/backend.hpp"
+// GoogleTest headers
 #include "gtest/gtest.h"
 
 /** @brief ArgoDSM memory size */
@@ -20,7 +22,6 @@ extern mem::global_memory_pool<>* default_global_mempool;
  * @brief Class for the gtests fixture tests. Will reset the allocators to a clean state for every test
  */
 class UninitializedAccessTest : public testing::Test {
-
 	protected:
 		UninitializedAccessTest() {
 			argo::reset();
@@ -30,6 +31,7 @@ class UninitializedAccessTest : public testing::Test {
 			argo::barrier();
 		}
 };
+
 
 /**
  * @brief Unittest that checks that there is no error when reading uninitialized coallocated memory.
@@ -44,6 +46,7 @@ TEST_F(UninitializedAccessTest, ReadUninitializedSinglenode) {
 		}
 	}
 }
+
 
 /**
  * @brief The main function that runs the tests
