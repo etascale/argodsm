@@ -15,13 +15,15 @@ The ArgoDSM Programming Guidelines
 2. There are no specific rules for where lines should break, as long as the
    formatting makes sense.
 
-3. The code follows the C/C++11 standards
+3. The code follows the C/C++17 standards
 
 ## Spacing
 
-1. Tabs should be used both for indentation and for alignment
+1. Tabs should be used both for indentation and for alignment.
 
-2. Namespaces, as well as public/private/protected labels should be indented
+2. Public/private/protected labels should be indented.
+
+3. Namespaces should not be indented.
 
 ## Naming
 
