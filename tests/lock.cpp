@@ -11,10 +11,10 @@
 #include <iostream>
 #include <thread>
 // ArgoDSM headers
-#include "argo.hpp"
 #include "allocators/collective_allocator.hpp"
 #include "allocators/generic_allocator.hpp"
 #include "allocators/null_lock.hpp"
+#include "argo.hpp"
 #include "backend/backend.hpp"
 #include "data_distribution/global_ptr.hpp"
 #include "synchronization/cohort_lock.hpp"

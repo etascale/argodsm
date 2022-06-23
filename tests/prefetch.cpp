@@ -11,10 +11,10 @@
 #include <atomic>
 #include <iostream>
 // ArgoDSM headers
-#include "argo.hpp"
 #include "allocators/collective_allocator.hpp"
 #include "allocators/generic_allocator.hpp"
 #include "allocators/null_lock.hpp"
+#include "argo.hpp"
 #include "backend/backend.hpp"
 #include "env/env.hpp"
 // GoogleTest headers

@@ -10,8 +10,8 @@
 // C++ headers
 #include <iostream>
 // ArgoDSM headers
-#include "argo.hpp"
 #include "allocators/collective_allocator.hpp"
+#include "argo.hpp"
 #include "backend/backend.hpp"
 #include "data_distribution/data_distribution.hpp"
 #include "env/env.hpp"
