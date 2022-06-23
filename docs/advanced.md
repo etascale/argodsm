@@ -15,6 +15,7 @@ ArgoDSM.
 - [Remote Page Loading and Prefetching](#remote-page-loading-and-prefetching)
 - [Write-buffer Tuning](#write-buffer-tuning)
 - [Multi-threaded MPI Support](#multi-threaded-mpi-support)
+- [ArgoDSM statistics](#argodsm-statistics)
 
 
 ## Allocation Parameters
@@ -229,3 +230,45 @@ export ARGO_WRITE_BUFFER_WRITE_BACK_SIZE=64
 
 ArgoDSM now requires and utilizes multi-threaded MPI. Please ensure that
 your MPI installation supports `MPI_THREAD_MULTIPLE`.
+
+ArgoDSM uses multiple MPI windows in order to achieve parallelism between
+simultaneous MPI operations. Increased parallelism can be achieved
+by increasing the amount of MPI windows used, but creating too many windows
+incurs an initialization and finalization overhead. The number of MPI
+windows used can be controlled by setting the `ARGO_MPI_WINDOWS_PER_NODE`
+environment variable to the desired setting.
+
+```sh
+export ARGO_MPI_WINDOWS_PER_NODE=8
+```
+
+The default value of this environment variable is `4` when multiple
+ArgoDSM nodes are used, and `1` in a single node setting. Note that the
+total number of MPI windows created depends on the number of ArgoDSM nodes
+(MPI processes) for a total of `ARGO_MPI_WINDOWS_PER_NODE*$NNODES*$NNODES*2`
+MPI windows created per node. Your system may impose a hard limit on the
+number of MPI windows created, and while the default value should be suitable
+for most systems, if you experience significant startup times or crashes
+during startup, consider lowering the number of MPI windows per node.
+
+
+## ArgoDSM Statistics
+
+ArgoDSM prints basic statistics after shutting down in order to give the
+user an idea of how ArgoDSM behaves and to identify areas of improvement in
+ArgoDSM utilization and tuning. The detail of the statistics printed can be
+controlled by the `ARGO_PRINT_STATISTICS` environment variable as follows:
+
+```sh
+export ARGO_PRINT_STATISTICS=3
+```
+
+The different options available are detailed below.
+- 0: Disable the statistics printout
+- 1: Print overall system statistics
+- 2: In addition to 1, print basic statistics for each ArgoDSM node
+- 3: In addition to 2, print detailed statistics for each ArgoDSM node
+
+Finally, it may be convenient to record statistics from a certain point
+in the user code, such as after data initialization. To achieve this, the
+ArgoDSM statistics can be reset by calling `argo::backend::reset_stats()`.

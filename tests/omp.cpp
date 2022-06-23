@@ -4,15 +4,19 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#include <iostream>
-#include <unistd.h>
-#include <omp.h>
-#include "argo.hpp"
-#include "allocators/generic_allocator.hpp"
-#include "allocators/collective_allocator.hpp"
-#include "allocators/null_lock.hpp"
-#include "backend/backend.hpp"
+// C headers
 #include <limits.h>
+#include <omp.h>
+#include <unistd.h>
+// C++ headers
+#include <iostream>
+// ArgoDSM headers
+#include "allocators/collective_allocator.hpp"
+#include "allocators/generic_allocator.hpp"
+#include "allocators/null_lock.hpp"
+#include "argo.hpp"
+#include "backend/backend.hpp"
+// GoogleTest headers
 #include "gtest/gtest.h"
 
 /** @brief Maximum number of OMP threads to run */
@@ -27,7 +31,6 @@ constexpr std::size_t cache_size = size/8;
 
 namespace mem = argo::mempools;
 extern mem::global_memory_pool<>* default_global_mempool;
-
 
 /** @brief Array size for testing */
 int amount = 100000;
@@ -51,40 +54,40 @@ class ompTest : public testing::Test {
  * @brief Unittest that checks that data written 1 OpenMP thread per node by all threads after an ArgoDSM barrier
  */
 TEST_F(ompTest, WriteAndRead) {
-	int i,j,n;
 	int *arr = argo::conew_array<int>(amount);
 	int node_id = argo_node_id(); // Node id
 	int nodecount = argo_number_of_nodes(); // Number of nodes
 
-	ASSERT_GT(nodecount,0); //More than 0 nodes
-	ASSERT_GE(node_id,0); //Node id non-negative
+	ASSERT_GT(nodecount, 0); // More than 0 nodes
+	ASSERT_GE(node_id, 0); // Node id non-negative
 
 	int chunk = amount / nodecount;
 	int start = chunk*node_id;
 	int end = start+chunk;
-	if(argo_node_id() == (argo_number_of_nodes()-1)){ // Last node always iterates to the end of the array
+	if(argo_node_id() == (argo_number_of_nodes()-1)) { // Last node always iterates to the end of the array
 		end = amount;
 	}
 	argo::barrier();
 
-	for(n=0; n<ITER; n++){ //Run ITER times
-		for(i=0; i<MAX_THREADS; i++){ //Up to MAX_THREADS, threads
+	for(int n = 0; n < ITER; n++) { // Run ITER times
+		for(int i = 0; i < MAX_THREADS; i++) { // Up to MAX_THREADS, threads
 			omp_set_num_threads(i);
 
-#pragma omp parallel for
-			for(j=start; j<end; j++){   
-				arr[j]=(i+42); //Each entry written
+			#pragma omp parallel for
+			for(int j = start; j < end; j++) {
+				arr[j] = (i+42); // Each entry written
 			}
 			argo::barrier();
 
-#pragma omp parallel for
-			for(j=0; j<amount; j++){
-				EXPECT_EQ(arr[j],(i+42)); //Each thread checks for correctness
+			#pragma omp parallel for
+			for(int j = 0; j < amount; j++) {
+				EXPECT_EQ(arr[j], (i+42)); // Each thread checks for correctness
 			}
 			argo::barrier();
 		}
 	}
 }
+
 
 /**
  * @brief The main function that runs the tests

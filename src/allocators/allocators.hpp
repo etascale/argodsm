@@ -11,10 +11,10 @@
 #include "dynamic_allocator.hpp"
 
 namespace argo {
-	/**
-	 * @brief namespace for ArgoDSM's own allocators
-	 */
-	namespace allocators { }
-} // namespace argo
+/**
+ * @brief namespace for ArgoDSM's own allocators
+ */
+namespace allocators {}
+}  // namespace argo
 
 #endif  // ARGODSM_SRC_ALLOCATORS_ALLOCATORS_HPP_

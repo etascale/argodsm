@@ -4,18 +4,20 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#include <iostream>
-#include <atomic>
-
+// C headers
 #include <limits.h>
 #include <unistd.h>
-
-#include "argo.hpp"
-#include "allocators/generic_allocator.hpp"
+// C++ headers
+#include <atomic>
+#include <iostream>
+// ArgoDSM headers
 #include "allocators/collective_allocator.hpp"
+#include "allocators/generic_allocator.hpp"
 #include "allocators/null_lock.hpp"
+#include "argo.hpp"
 #include "backend/backend.hpp"
 #include "env/env.hpp"
+// GoogleTest headers
 #include "gtest/gtest.h"
 
 /** @brief ArgoDSM memory size */
@@ -38,7 +40,6 @@ constexpr char c_const = 'a';
  * @brief Class for the gtests fixture tests. Will reset the allocators to a clean state for every test
  */
 class PrefetchTest : public testing::Test {
-
 	protected:
 		PrefetchTest() {
 			argo::reset();
@@ -50,7 +51,6 @@ class PrefetchTest : public testing::Test {
 };
 
 
-
 /**
  * @brief Unittest that checks that there is no error when accessing
  * the first byte of the allocation.
@@ -58,7 +58,7 @@ class PrefetchTest : public testing::Test {
 TEST_F(PrefetchTest, FirstPage) {
 	std::size_t alloc_size = default_global_mempool->available();
 	char *tmp = static_cast<char*>(collective_alloc(alloc_size));
-	if(argo::node_id()==0){
+	if(argo::node_id() == 0) {
 		tmp[0] = c_const;
 	}
 	argo::barrier();
@@ -72,7 +72,7 @@ TEST_F(PrefetchTest, FirstPage) {
 TEST_F(PrefetchTest, OutOfBounds) {
 	std::size_t alloc_size = default_global_mempool->available();
 	char *tmp = static_cast<char*>(collective_alloc(alloc_size));
-	if(argo::node_id()==0){
+	if(argo::node_id() == 0) {
 		tmp[alloc_size-1] = c_const;
 	}
 	argo::barrier();
@@ -87,7 +87,7 @@ TEST_F(PrefetchTest, PageBoundaries) {
 	std::size_t alloc_size = default_global_mempool->available();
 	char *tmp = static_cast<char*>(collective_alloc(alloc_size));
 	std::size_t load_size = env::load_size();
-	if(argo::node_id()==0){
+	if(argo::node_id() == 0) {
 		tmp[(page_size*load_size)-1] = c_const;
 		tmp[page_size*load_size] = c_const;
 	}
@@ -95,7 +95,6 @@ TEST_F(PrefetchTest, PageBoundaries) {
 	ASSERT_EQ(c_const, tmp[(page_size*load_size)-1]);
 	ASSERT_EQ(c_const, tmp[page_size*load_size]);
 }
-
 
 /**
  * @brief Unittest that checks that pages are correctly prefetched.
@@ -131,7 +130,7 @@ TEST_F(PrefetchTest, AccessPrefetched) {
 	/* We can only test prefetching if stride is larger than 1 (page) */
 	if(stride > 1) {
 		/* On node 0, initialize one fetchable block of pages */
-		if(argo::node_id()==0){
+		if(argo::node_id() == 0) {
 			for(std::size_t page_num = start_page;
 							page_num < end_page;
 							page_num++) {
@@ -146,7 +145,6 @@ TEST_F(PrefetchTest, AccessPrefetched) {
 				 * the first-touch allocation policy.
 				 */
 				std::atomic_thread_fence(std::memory_order_seq_cst);
-
 			}
 		}
 		/* Wait for init to finish */
@@ -171,6 +169,7 @@ TEST_F(PrefetchTest, AccessPrefetched) {
 		}
 	}
 }
+
 
 /**
  * @brief The main function that runs the tests

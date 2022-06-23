@@ -62,83 +62,84 @@
  */
 
 namespace argo {
-	/**
-	 * @brief namespace for environment variable handling functionality
-	 * @note argo::env::init() must be called before other functions in this
-	 *       namespace work correctly
-	 */
-	namespace env {
-		/**
-		 * @brief read and store environment variables used by ArgoDSM
-		 * @details the environment is only read once, to avoid having
-		 *          to check that values are not changing later
-		 */
-		void init();
+/**
+ * @brief namespace for environment variable handling functionality
+ * @note argo::env::init() must be called before other functions in this
+ *       namespace work correctly
+ */
+namespace env {
+/**
+ * @brief read and store environment variables used by ArgoDSM
+ * @details the environment is only read once, to avoid having
+ *          to check that values are not changing later
+ */
+void init();
 
-		/**
-		 * @brief get the memory size requested by environment variable
-		 * @return the requested memory size in bytes
-		 * @see @ref ARGO_MEMORY_SIZE
-		 */
-		std::size_t memory_size();
+/**
+ * @brief get the memory size requested by environment variable
+ * @return the requested memory size in bytes
+ * @see @ref ARGO_MEMORY_SIZE
+ */
+std::size_t memory_size();
 
-		/**
-		 * @brief get the cache size requested by environment variable
-		 * @return the requested cache size in bytes
-		 * @see @ref ARGO_CACHE_SIZE
-		 */
-		std::size_t cache_size();
+/**
+ * @brief get the cache size requested by environment variable
+ * @return the requested cache size in bytes
+ * @see @ref ARGO_CACHE_SIZE
+ */
+std::size_t cache_size();
 
-		/**
-		 * @brief get the write buffer size requested by environment variable
-		 * @return the requested write buffer size in cache blocks
-		 * @see @ref ARGO_WRITE_BUFFER_SIZE
-		 */
-		std::size_t write_buffer_size();
+/**
+ * @brief get the write buffer size requested by environment variable
+ * @return the requested write buffer size in cache blocks
+ * @see @ref ARGO_WRITE_BUFFER_SIZE
+ */
+std::size_t write_buffer_size();
 
-		/**
-		 * @brief get the write buffer write back size requested by environment variable
-		 * @return the requested write buffer write back size in cache blocks
-		 * @see @ref ARGO_WRITE_BUFFER_WRITE_BACK_SIZE
-		 */
-		std::size_t write_buffer_write_back_size();
+/**
+ * @brief get the write buffer write back size requested by environment variable
+ * @return the requested write buffer write back size in cache blocks
+ * @see @ref ARGO_WRITE_BUFFER_WRITE_BACK_SIZE
+ */
+std::size_t write_buffer_write_back_size();
 
-		/**
-		 * @brief get the allocation policy requested by environment variable
-		 * @return the requested allocation policy as a number
-		 * @see @ref ARGO_ALLOCATION_POLICY
-		 */
-		std::size_t allocation_policy();
+/**
+ * @brief get the allocation policy requested by environment variable
+ * @return the requested allocation policy as a number
+ * @see @ref ARGO_ALLOCATION_POLICY
+ */
+std::size_t allocation_policy();
 
-		/**
-		 * @brief get the allocation block size requested by environment variable
-		 * @return the requested allocation block size as a number of pages
-		 * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
-		 */
-		std::size_t allocation_block_size();
+/**
+ * @brief get the allocation block size requested by environment variable
+ * @return the requested allocation block size as a number of pages
+ * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
+ */
+std::size_t allocation_block_size();
 
-		/**
-		 * @brief get the number of pages fetched remotely per load requested
-		 * by environment variable
-		 * @return the number of pages
-		 * @see @ref ARGO_LOAD_SIZE
-		 */
-		std::size_t load_size();
+/**
+ * @brief get the number of pages fetched remotely per load requested
+ * by environment variable
+ * @return the number of pages
+ * @see @ref ARGO_LOAD_SIZE
+ */
+std::size_t load_size();
 
-		/**
-		 * @brief get the number of MPI windows per node requested
-		 * @return the number of MPI windows per node
-		 * @see @ref ARGO_MPI_WINDOWS_PER_NODE
-		 */
-		std::size_t mpi_windows_per_node();
+/**
+ * @brief get the number of MPI windows per node requested
+ * @return the number of MPI windows per node
+ * @see @ref ARGO_MPI_WINDOWS_PER_NODE
+ */
+std::size_t mpi_windows_per_node();
 
-		/**
-		 * @brief Get the requested statistics print level
-		 * @return The requested statistics print level
-		 * @see @ref ARGO_PRINT_STATISTICS
-		 */
-		std::size_t print_statistics();
-	} // namespace env
-} // namespace argo
+/**
+ * @brief Get the requested statistics print level
+ * @return The requested statistics print level
+ * @see @ref ARGO_PRINT_STATISTICS
+ */
+std::size_t print_statistics();
+
+}  // namespace env
+}  // namespace argo
 
 #endif // ARGODSM_SRC_ENV_ENV_HPP_
