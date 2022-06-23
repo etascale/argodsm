@@ -18,6 +18,7 @@
 #include <string>
 #include <system_error>
 
+#include "backend/backend.hpp"
 #include "virtual_memory.hpp"
 
 namespace {
@@ -97,8 +98,7 @@ void* allocate_mappable(std::size_t alignment, std::size_t size) {
 }
 
 void map_memory(void* addr, std::size_t size, std::size_t offset, int prot) {
-	/**@todo move pagesize 4096 to hw module */
-	int err = remap_file_pages(addr, size, 0, (file_offset + offset)/4096, 0);
+	int err = remap_file_pages(addr, size, 0, (file_offset + offset)/PAGE_SIZE, 0);
 	if(err) {
 		std::cerr << msg_invalid_remap << std::endl;
 		throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_invalid_remap);

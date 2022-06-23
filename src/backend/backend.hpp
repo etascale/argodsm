@@ -16,6 +16,11 @@
 #include "../data_distribution/global_ptr.hpp"
 #include "../types/types.hpp"
 
+/**
+ * @brief The size of a hardware memory page
+ */
+constexpr std::size_t PAGE_SIZE = 4096;
+
 namespace argo {
 /**
  * @brief namespace for backend functionality

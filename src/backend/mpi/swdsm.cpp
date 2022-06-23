@@ -94,8 +94,6 @@ char* globalData;
 std::size_t size_of_all;
 /** @brief  Size of this process part of global address space*/
 std::size_t size_of_chunk;
-/** @brief  size of a page */
-static const unsigned int pagesize = 4096;
 /** @brief  Magic value for invalid cacheindices */
 std::uintptr_t GLOBAL_NULL;
 /** @brief  Statistics */
@@ -124,7 +122,7 @@ std::size_t isPowerOf2(std::size_t x) {
 }
 
 std::size_t getCacheIndex(std::uintptr_t addr) {
-	std::size_t index = (addr/pagesize) % cachesize;
+	std::size_t index = (addr/PAGE_SIZE) % cachesize;
 	return index;
 }
 
@@ -143,7 +141,7 @@ void init_mpi_struct(void) {
 
 void init_mpi_cacheblock(void) {
 	//init our struct coherence unit to work in mpi.
-	MPI_Type_contiguous(pagesize*CACHELINE, MPI_BYTE, &cacheblock);
+	MPI_Type_contiguous(PAGE_SIZE*CACHELINE, MPI_BYTE, &cacheblock);
 	MPI_Type_commit(&cacheblock);
 }
 
@@ -185,7 +183,7 @@ std::size_t peek_offset(std::uintptr_t addr) {
 /**
  * @brief load into cache helper function
  * @param aligned_access_offset memory offset to load into the cache
- * @pre aligned_access_offset must be aligned as CACHELINE*pagesize
+ * @pre aligned_access_offset must be aligned as CACHELINE*PAGE_SIZE
  */
 void load_cache_entry(std::uintptr_t aligned_access_offset) {
 	/* If it's not an ArgoDSM address, do not handle it */
@@ -195,7 +193,7 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 		return;
 	}
 
-	const std::size_t block_size = pagesize*CACHELINE;
+	const std::size_t block_size = PAGE_SIZE*CACHELINE;
 	/* Check that the precondition holds true */
 	assert((aligned_access_offset % block_size) == 0);
 
@@ -266,7 +264,7 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 	/* Store updates to be made to remote Pyxis directory */
 	std::vector<std::uintptr_t> sharer_bit_mask(classification_size);
 	/* Temporarily store remotely fetched cache data */
-	std::vector<char> temp_data(fetch_size*pagesize);
+	std::vector<char> temp_data(fetch_size*PAGE_SIZE);
 
 	/* Write back existing cache entries if needed */
 	for(std::size_t idx = start_index, p = 0; idx < end_index; idx+=CACHELINE, p+=CACHELINE) {
@@ -296,7 +294,7 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 			if(cacheControl[idx].dirty == DIRTY) {
 				mprotect(old_ptr, block_size, PROT_READ);
 				for(std::size_t j = 0; j < CACHELINE; j++) {
-					storepageDIFF(idx+j, pagesize*j+(cacheControl[idx].tag));
+					storepageDIFF(idx+j, PAGE_SIZE*j+(cacheControl[idx].tag));
 				}
 				argo_write_buffer->erase(idx);
 			}
@@ -305,7 +303,7 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 			cacheControl[idx].state = INVALID;
 			cacheControl[idx].tag = temp_addr;
 			cacheControl[idx].dirty = CLEAN;
-			vm::map_memory(temp_ptr, block_size, pagesize*idx, PROT_NONE);
+			vm::map_memory(temp_ptr, block_size, PAGE_SIZE*idx, PROT_NONE);
 			mprotect(old_ptr, block_size, PROT_NONE);
 		}
 	}
@@ -424,7 +422,7 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 
 			/* If this is the first time inserting in to this index, perform vm map */
 			if(cacheControl[idx].tag == GLOBAL_NULL) {
-				vm::map_memory(temp_ptr, block_size, pagesize*idx, PROT_READ);
+				vm::map_memory(temp_ptr, block_size, PAGE_SIZE*idx, PROT_READ);
 				cacheControl[idx].tag = temp_addr;
 			} else {
 				/* Else, just mprotect the region */
@@ -470,7 +468,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 #endif /* REG_ERR */
 
 	/* align access offset to cacheline */
-	const std::size_t aligned_access_offset = align_backwards(access_offset, CACHELINE*pagesize);
+	const std::size_t aligned_access_offset = align_backwards(access_offset, CACHELINE*PAGE_SIZE);
 	std::size_t classidx = get_classification_index(aligned_access_offset);
 
 	/* compute start pointer of cacheline. char* has byte-wise arithmetics */
@@ -528,7 +526,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 			}
 			/* set page to permit reads and map it to the page cache */
 			/** @todo Set cache offset to a variable instead of calculating it here */
-			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ);
+			vm::map_memory(aligned_access_ptr, PAGE_SIZE*CACHELINE, cacheoffset+offset, PROT_READ);
 		} else {
 			/* Do not register as writer if this is a confirmed read miss */
 			if(miss_type == sig::access_type::read) {
@@ -573,7 +571,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 			}
 
 			/* set page to permit read/write and map it to the page cache */
-			vm::map_memory(aligned_access_ptr, pagesize*CACHELINE, cacheoffset+offset, PROT_READ|PROT_WRITE);
+			vm::map_memory(aligned_access_ptr, PAGE_SIZE*CACHELINE, cacheoffset+offset, PROT_READ|PROT_WRITE);
 		}
 		/* Unlock shared sync lock and cache index lock */
 		cache_locks[startIndex].unlock();
@@ -674,9 +672,9 @@ void handler(int sig, siginfo_t *si, void *context) {
 			}
 		}
 	}
-	unsigned char* copy = reinterpret_cast<unsigned char*>(pagecopy + line*pagesize);
-	memcpy(copy, aligned_access_ptr, CACHELINE*pagesize);
-	mprotect(aligned_access_ptr, pagesize*CACHELINE, PROT_WRITE|PROT_READ);
+	unsigned char* copy = reinterpret_cast<unsigned char*>(pagecopy + line*PAGE_SIZE);
+	memcpy(copy, aligned_access_ptr, PAGE_SIZE*CACHELINE);
+	mprotect(aligned_access_ptr, PAGE_SIZE*CACHELINE, PROT_WRITE|PROT_READ);
 	cache_locks[startIndex].unlock();
 	double t2 = MPI_Wtime();
 	argo_write_buffer->add(startIndex);
@@ -736,8 +734,8 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 	double init_start = MPI_Wtime();
 
 	/** Standardise the ArgoDSM memory space */
-	argo_size = std::max(argo_size, static_cast<std::size_t>(pagesize*numtasks));
-	argo_size = align_forwards(argo_size, pagesize*CACHELINE*numtasks*dd::policy_padding());
+	argo_size = std::max(argo_size, static_cast<std::size_t>(PAGE_SIZE*numtasks));
+	argo_size = align_forwards(argo_size, PAGE_SIZE*CACHELINE*numtasks*dd::policy_padding());
 
 	startAddr = vm::start_address();
 #ifdef ARGO_PRINT_STATISTICS
@@ -754,13 +752,13 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 	/** Limit cache_size to at most argo_size */
 	cachesize = std::min(argo_size, cache_size);
 	/** Round the number of cache pages upwards */
-	cachesize = align_forwards(cachesize, pagesize*CACHELINE);
+	cachesize = align_forwards(cachesize, PAGE_SIZE*CACHELINE);
 	/** At least two pages are required to prevent endless eviction loops */
-	cachesize = std::max(cachesize, static_cast<std::size_t>(pagesize*CACHELINE*2));
-	cachesize /= pagesize;
+	cachesize = std::max(cachesize, static_cast<std::size_t>(PAGE_SIZE*CACHELINE*2));
+	cachesize /= PAGE_SIZE;
 	cache_locks.resize(cachesize);
 
-	classificationSize = 2*(argo_size/pagesize);
+	classificationSize = 2*(argo_size/PAGE_SIZE);
 	argo_write_buffer = new write_buffer<std::size_t>();
 
 	// Allocate local memory for each node
@@ -771,22 +769,22 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 
 	std::size_t cacheControlSize = sizeof(control_data)*cachesize;
 	std::size_t gwritersize = classificationSize*sizeof(std::uint64_t);
-	cacheControlSize = align_forwards(cacheControlSize, pagesize);
-	gwritersize = align_forwards(gwritersize, pagesize);
+	cacheControlSize = align_forwards(cacheControlSize, PAGE_SIZE);
+	gwritersize = align_forwards(gwritersize, PAGE_SIZE);
 
-	owners_dir_size = 3*(argo_size/pagesize);
+	owners_dir_size = 3*(argo_size/PAGE_SIZE);
 	std::size_t owners_dir_size_bytes = owners_dir_size*sizeof(std::size_t);
-	owners_dir_size_bytes = align_forwards(owners_dir_size_bytes, pagesize);
+	owners_dir_size_bytes = align_forwards(owners_dir_size_bytes, PAGE_SIZE);
 
 	std::size_t offsets_tbl_size = numtasks;
 	std::size_t offsets_tbl_size_bytes = offsets_tbl_size*sizeof(std::size_t);
-	offsets_tbl_size_bytes = align_forwards(offsets_tbl_size_bytes, pagesize);
+	offsets_tbl_size_bytes = align_forwards(offsets_tbl_size_bytes, PAGE_SIZE);
 
-	cacheoffset = pagesize*cachesize+cacheControlSize;
+	cacheoffset = PAGE_SIZE*cachesize+cacheControlSize;
 
-	globalData = static_cast<char*>(vm::allocate_mappable(pagesize, size_of_chunk));
-	cacheData = static_cast<char*>(vm::allocate_mappable(pagesize, cachesize*pagesize));
-	cacheControl = static_cast<control_data*>(vm::allocate_mappable(pagesize, cacheControlSize));
+	globalData = static_cast<char*>(vm::allocate_mappable(PAGE_SIZE, size_of_chunk));
+	cacheData = static_cast<char*>(vm::allocate_mappable(PAGE_SIZE, cachesize*PAGE_SIZE));
+	cacheControl = static_cast<control_data*>(vm::allocate_mappable(PAGE_SIZE, cacheControlSize));
 
 	touchedcache = static_cast<argo_byte*>(malloc(cachesize));
 	if(touchedcache == NULL) {
@@ -794,12 +792,12 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 		exit(EXIT_FAILURE);
 	}
 
-	pagecopy = static_cast<char*>(vm::allocate_mappable(pagesize, cachesize*pagesize));
-	globalSharers = static_cast<std::uint64_t*>(vm::allocate_mappable(pagesize, gwritersize));
+	pagecopy = static_cast<char*>(vm::allocate_mappable(PAGE_SIZE, cachesize*PAGE_SIZE));
+	globalSharers = static_cast<std::uint64_t*>(vm::allocate_mappable(PAGE_SIZE, gwritersize));
 
 	if (dd::is_first_touch_policy()) {
-		global_owners_dir = static_cast<std::uintptr_t*>(vm::allocate_mappable(pagesize, owners_dir_size_bytes));
-		global_offsets_tbl = static_cast<std::uintptr_t*>(vm::allocate_mappable(pagesize, offsets_tbl_size_bytes));
+		global_owners_dir = static_cast<std::uintptr_t*>(vm::allocate_mappable(PAGE_SIZE, owners_dir_size_bytes));
+		global_offsets_tbl = static_cast<std::uintptr_t*>(vm::allocate_mappable(PAGE_SIZE, offsets_tbl_size_bytes));
 	}
 
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
@@ -810,9 +808,9 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 
 	void* tmpcache;
 	tmpcache = cacheData;
-	vm::map_memory(tmpcache, pagesize*cachesize, 0, PROT_READ|PROT_WRITE);
+	vm::map_memory(tmpcache, PAGE_SIZE*cachesize, 0, PROT_READ|PROT_WRITE);
 
-	std::size_t current_offset = pagesize*cachesize;
+	std::size_t current_offset = PAGE_SIZE*cachesize;
 	tmpcache = cacheControl;
 	vm::map_memory(tmpcache, cacheControlSize, current_offset, PROT_READ|PROT_WRITE);
 
@@ -938,8 +936,8 @@ void self_invalidation() {
 	for(std::size_t i = 0; i < cachesize; i += CACHELINE) {
 		if(touchedcache[i] != 0) {
 			std::uintptr_t distrAddr = cacheControl[i].tag;
-			std::uintptr_t lineAddr = distrAddr/(CACHELINE*pagesize);
-			lineAddr*=(pagesize*CACHELINE);
+			std::uintptr_t lineAddr = distrAddr/(PAGE_SIZE*CACHELINE);
+			lineAddr *= (PAGE_SIZE*CACHELINE);
 			std::size_t classidx = get_classification_index(lineAddr);
 			argo_byte dirty = cacheControl[i].dirty;
 
@@ -964,7 +962,7 @@ void self_invalidation() {
 				cacheControl[i].dirty = CLEAN;
 				cacheControl[i].state = INVALID;
 				touchedcache[i] = 0;
-				mprotect(static_cast<char*>(startAddr) + lineAddr, pagesize*CACHELINE, PROT_NONE);
+				mprotect(static_cast<char*>(startAddr) + lineAddr, PAGE_SIZE*CACHELINE, PROT_NONE);
 			}
 		}
 	}
@@ -979,7 +977,7 @@ void self_upgrade(upgrade_type upgrade) {
 
 	for(std::size_t i = 0; i < classificationSize; i += 2) {
 		std::size_t page_index = i/2;
-		std::uintptr_t page_addr = page_index*pagesize*CACHELINE;
+		std::uintptr_t page_addr = page_index*PAGE_SIZE*CACHELINE;
 		void* global_addr = static_cast<char*>(startAddr) + page_addr;
 		bool is_cached = _is_cached(reinterpret_cast<std::uintptr_t>(global_addr));
 		bool is_sharer = globalSharers[i]&node_id_bit;
@@ -1167,14 +1165,14 @@ void storepageDIFF(std::size_t index, std::uintptr_t addr) {
 	const std::size_t win_index = get_data_win_index(offset);
 	const std::size_t win_offset = get_data_win_offset(offset);
 
-	char* copy = static_cast<char*>(pagecopy + index*pagesize);
+	char* copy = static_cast<char*>(pagecopy + index*PAGE_SIZE);
 	char* real = static_cast<char*>(startAddr)+addr;
 	size_t drf_unit = sizeof(char);
 
 	mpi_lock_data[win_index][homenode].lock(MPI_LOCK_EXCLUSIVE, homenode, data_windows[win_index][homenode]);
 
 	std::size_t i;
-	for(i = 0; i < pagesize; i += drf_unit) {
+	for(i = 0; i < PAGE_SIZE; i += drf_unit) {
 		int branchval;
 		for(std::size_t j = i; j < i+drf_unit; j++) {
 			branchval = real[j] != copy[j];
@@ -1344,8 +1342,8 @@ void print_statistics() {
 
 		/* Print general information */
 		printf("\n#################################" YEL" ArgoDSM statistics " RESET "##################################\n");
-		printf("#  memory size: %12.2f%s  page size (p): %10dB   cache size: %13ldp\n",
-				mem_size_readable, sizes[order], pagesize, cachesize);
+		printf("#  memory size: %12.2f%s  page size (p): %10ldB   cache size: %13ldp\n",
+				mem_size_readable, sizes[order], PAGE_SIZE, cachesize);
 		printf("#  write buffer size: %6ldp   write back size: %8ldp   CACHELINE: %14ldp\n",
 				env::write_buffer_size()/CACHELINE,
 				env::write_buffer_write_back_size()/CACHELINE,
@@ -1430,13 +1428,13 @@ void *argo_get_global_base() { return startAddr; }
 size_t argo_get_global_size() { return size_of_all; }
 
 std::size_t get_classification_index(std::uintptr_t addr) {
-	return (2*(addr/(pagesize*CACHELINE))) % classificationSize;
+	return (2*(addr/(PAGE_SIZE*CACHELINE))) % classificationSize;
 }
 
 bool _is_cached(std::uintptr_t addr) {
 	argo::node_id_t homenode;
 	std::size_t aligned_address = align_backwards(
-			addr-reinterpret_cast<std::size_t>(startAddr), CACHELINE*pagesize);
+			addr-reinterpret_cast<std::size_t>(startAddr), PAGE_SIZE*CACHELINE);
 	homenode = peek_homenode(aligned_address);
 	std::size_t cache_index = getCacheIndex(aligned_address);
 
@@ -1465,7 +1463,7 @@ std::size_t get_sharer_win_offset(int classification_index) {
 
 std::size_t get_data_win_index(std::size_t offset) {
 	std::size_t granularity = load_size*2; // 2x load size pages per window chunk
-	std::size_t chunk_index = (offset/(pagesize*CACHELINE)) / granularity;
+	std::size_t chunk_index = (offset/(PAGE_SIZE*CACHELINE)) / granularity;
 	return (chunk_index + chunk_index/mpi_windows + 1) % mpi_windows;
 }
 

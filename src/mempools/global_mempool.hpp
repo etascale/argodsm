@@ -18,16 +18,13 @@
 #include "../data_distribution/global_ptr.hpp"
 #include "../synchronization/global_tas_lock.hpp"
 
-/** @todo Documentation */
-constexpr int PAGESIZE = 4096;
-
 namespace argo {
 namespace mempools {
 
 /**
  * @brief Globally growing memory pool
  */
-template<std::size_t chunk_size = 4096>
+template<std::size_t chunk_size = PAGE_SIZE>
 class global_memory_pool {
 	private:
 		/** @brief current base address of this memory pool's memory */
@@ -47,7 +44,7 @@ class global_memory_pool {
 		using bad_alloc = std::bad_alloc;
 
 		/** reserved space for internal use */
-		static const std::size_t reserved = 4096;
+		static const std::size_t reserved = PAGE_SIZE;
 		/**
 		 * @brief Default constructor: initializes memory on heap and sets offset to 0
 		 */

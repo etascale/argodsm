@@ -253,13 +253,6 @@ static const argo_byte WRITER = 4;
 /** @brief Constant for reader states */
 static const argo_byte READER = 5;
 
-/**
- * @brief The size of a hardware memory page
- * @note  This should be better centralized for all
- *        modules and backend implementations
- */
-constexpr std::size_t page_size = 4096;
-
 /* External declarations */
 /**
  * @brief Argo cache data structure

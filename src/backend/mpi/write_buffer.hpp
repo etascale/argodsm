@@ -25,7 +25,7 @@
 #include "virtual_memory/virtual_memory.hpp"
 
 /** @brief Block size based on backend definition */
-const std::size_t block_size = page_size*CACHELINE;
+const std::size_t block_size = PAGE_SIZE*CACHELINE;
 
 /**
  * @brief	A write buffer in FIFO style with the capability to erase any
@@ -138,7 +138,7 @@ class write_buffer {
 			mprotect(page_ptr, block_size, PROT_READ);
 			cacheControl[cache_index].dirty = CLEAN;
 			for(std::size_t i = 0; i < CACHELINE; i++) {
-				storepageDIFF(cache_index+i, page_size*i+page_address);
+				storepageDIFF(cache_index+i, PAGE_SIZE*i+page_address);
 			}
 			cache_locks[cache_index].unlock();
 		}
