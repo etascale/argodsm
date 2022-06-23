@@ -688,7 +688,7 @@ TEST_F(backendTest, randAccessesPeriodicSelectiveReleaseAcquireArray) {
  */
 TEST_F(backendTest, randAccessesBarrierPage) {
 	// Allocate global page
-	constexpr std::size_t array_size = 4096 / sizeof(unsigned char);
+	constexpr std::size_t array_size = PAGE_SIZE / sizeof(unsigned char);
 	unsigned char*const array = argo::conew_array<unsigned char>(array_size);
 
 	// Allocate indices array and populate it
@@ -745,7 +745,7 @@ TEST_F(backendTest, randAccessesBarrierPage) {
  */
 TEST_F(backendTest, randAccessesBulkySelectiveReleaseAcquirePage) {
 	// Allocate global page
-	constexpr std::size_t array_size = 4096 / sizeof(unsigned char);
+	constexpr std::size_t array_size = PAGE_SIZE / sizeof(unsigned char);
 	unsigned char*const array = argo::conew_array<unsigned char>(array_size);
 
 	// Allocate indices array and populate it
@@ -808,7 +808,7 @@ TEST_F(backendTest, randAccessesBulkySelectiveReleaseAcquirePage) {
  */
 TEST_F(backendTest, randAccessesPeriodicSelectiveReleaseAcquirePage) {
 	// Allocate global page
-	constexpr std::size_t array_size = 4096 / sizeof(unsigned char);
+	constexpr std::size_t array_size = PAGE_SIZE / sizeof(unsigned char);
 	unsigned char*const array = argo::conew_array<unsigned char>(array_size);
 
 	// Allocate indices array and populate it
