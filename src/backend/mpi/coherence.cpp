@@ -82,7 +82,7 @@ void _selective_acquire(void *addr, std::size_t size) {
 
 	// Poke the MPI system to force progress
 	int flag;
-	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
+	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, argo_comm, &flag, MPI_STATUS_IGNORE);
 
 	std::lock_guard<std::mutex> ssi_time_lock(stats.ssi_time_mutex);
 	stats.ssi_time += t2-t1;
