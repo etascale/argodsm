@@ -20,8 +20,6 @@ namespace vm = argo::virtual_memory;
 namespace sig = argo::signal;
 namespace env = argo::env;
 
-using namespace argo::backend;
-
 /*Barrier*/
 /** @brief  Locks access to part that does SD in the global barrier */
 pthread_mutex_t barriermutex = PTHREAD_MUTEX_INITIALIZER;
@@ -972,7 +970,13 @@ void self_invalidation() {
 	stats.selfinvtime += (t2-t1);
 }
 
-void self_upgrade(upgrade_type upgrade) {
+/**
+ * @brief Perform upgrade of page classifications
+ * @param upgrade the type of classification upgrade to perform
+ */
+static
+void self_upgrade(argo::backend::upgrade_type upgrade) {
+	using argo::backend::upgrade_type;
 	assert(upgrade == upgrade_type::upgrade_writers ||
 		   upgrade == upgrade_type::upgrade_all);
 	const std::uint64_t node_id_bit = static_cast<std::uint64_t>(1) << workrank;
@@ -1012,7 +1016,13 @@ void self_upgrade(upgrade_type upgrade) {
 	}
 }
 
-void swdsm_argo_barrier(int n, upgrade_type upgrade) {
+/**
+ * @brief Global barrier for ArgoDSM - needs to be called by every thread in the
+ *        system that need coherent view of the memory
+ * @param n number of local thread participating
+ * @param upgrade the type of classification upgrade to perform
+ */
+void swdsm_argo_barrier(int n, argo::backend::upgrade_type upgrade) {
 	pthread_t barrierlockholder;
 	double t1 = MPI_Wtime();
 
@@ -1037,7 +1047,7 @@ void swdsm_argo_barrier(int n, upgrade_type upgrade) {
 		self_invalidation();
 
 		// Perform upgrade if requested
-		if (upgrade != upgrade_type::upgrade_none) {
+		if (upgrade != argo::backend::upgrade_type::upgrade_none) {
 			self_upgrade(upgrade);
 			MPI_Barrier(argo_comm);
 		}

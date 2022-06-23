@@ -399,12 +399,6 @@ void argo_finalize();
 void self_invalidation();
 
 /**
- * @brief Perform upgrade of page classifications
- * @param upgrade the type of classification upgrade to perform
- */
-void self_upgrade(argo::backend::upgrade_type upgrade);
-
-/**
  * @brief Global barrier for ArgoDSM - needs to be called by every thread in the
  *        system that need coherent view of the memory
  * @param n number of local thread participating
