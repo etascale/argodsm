@@ -9,7 +9,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         dbg: [OFF, ON]
-        vm: [MEMFD, SHM]
+        vm: [ANONYMOUS, SHM]
     name: On ${{ matrix.os }} (DBG=${{ matrix.dbg }}, VM=${{ matrix.vm }})
     runs-on: ${{ matrix.os }}
     env:
