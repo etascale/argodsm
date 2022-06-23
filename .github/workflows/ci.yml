@@ -9,10 +9,12 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         dbg: [OFF, ON]
-    name: On ${{ matrix.os }} (DEBUG=${{ matrix.dbg }})
+        vm: [MEMFD, SHM]
+    name: On ${{ matrix.os }} (DBG=${{ matrix.dbg }}, VM=${{ matrix.vm }})
     runs-on: ${{ matrix.os }}
     env:
       ARGO_DBG: ${{ matrix.dbg }}
+      ARGO_VM:  ${{ matrix.vm  }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
