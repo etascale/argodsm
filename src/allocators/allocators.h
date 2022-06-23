@@ -10,4 +10,4 @@
 #include "collective_allocator.h"
 #include "dynamic_allocator.h"
 
-#endif // ARGODSM_SRC_ALLOCATORS_ALLOCATORS_H_
+#endif  // ARGODSM_SRC_ALLOCATORS_ALLOCATORS_H_

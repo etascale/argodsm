@@ -50,4 +50,4 @@ void synchronize(T* ptr) {
 }  // namespace synchronization
 }  // namespace argo
 
-#endif // ARGODSM_SRC_SYNCHRONIZATION_BROADCAST_HPP_
+#endif  // ARGODSM_SRC_SYNCHRONIZATION_BROADCAST_HPP_

@@ -173,4 +173,4 @@ class dynamic_memory_pool {
 }  // namespace mempools
 }  // namespace argo
 
-#endif // ARGODSM_SRC_MEMPOOLS_DYNAMIC_MEMPOOL_HPP_
+#endif  // ARGODSM_SRC_MEMPOOLS_DYNAMIC_MEMPOOL_HPP_

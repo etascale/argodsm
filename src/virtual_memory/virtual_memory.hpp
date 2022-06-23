@@ -53,4 +53,4 @@ void map_memory(void* addr, std::size_t size, std::size_t offset, int prot);
 }  // namespace virtual_memory
 }  // namespace argo
 
-#endif // ARGODSM_SRC_VIRTUAL_MEMORY_VIRTUAL_MEMORY_HPP_
+#endif  // ARGODSM_SRC_VIRTUAL_MEMORY_VIRTUAL_MEMORY_HPP_

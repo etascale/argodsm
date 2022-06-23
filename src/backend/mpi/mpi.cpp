@@ -29,12 +29,12 @@ static MPI_Datatype fitting_mpi_int(std::size_t size) {
 
 	switch (size) {
 	// Until UCX supports 1/2 byte atomics, they must be disabled
-	//case 1:
-	//	t_type = MPI_INT8_T;
-	//	break;
-	//case 2:
-	//	t_type = MPI_INT16_T;
-	//	break;
+	// case 1:
+	// 	t_type = MPI_INT8_T;
+	// 	break;
+	// case 2:
+	// 	t_type = MPI_INT16_T;
+	// 	break;
 	case 4:
 		t_type = MPI_INT32_T;
 		break;
@@ -64,12 +64,12 @@ static MPI_Datatype fitting_mpi_uint(std::size_t size) {
 
 	switch (size) {
 	// Until UCX supports 1/2 byte atomics, they must be disabled
-	//case 1:
-	//	t_type = MPI_UINT8_T;
-	//	break;
-	//case 2:
-	//	t_type = MPI_UINT16_T;
-	//	break;
+	// case 1:
+	// 	t_type = MPI_UINT8_T;
+	// 	break;
+	// case 2:
+	// 	t_type = MPI_UINT16_T;
+	// 	break;
 	case 4:
 		t_type = MPI_UINT32_T;
 		break;
@@ -103,9 +103,9 @@ static MPI_Datatype fitting_mpi_float(std::size_t size) {
 		t_type = MPI_DOUBLE;
 		break;
 	// Until UCX supports 16 byte atomics, it must be disabled
-	//case 16:
-	//	t_type = MPI_LONG_DOUBLE;
-	//	break;
+	// case 16:
+	// 	t_type = MPI_LONG_DOUBLE;
+	// 	break;
 	default:
 		throw std::invalid_argument(
 			"Invalid size (must be power either 4, 8)");

@@ -19,6 +19,6 @@ namespace argo {
 	 * @see dynamic_memory_pool
 	 */
 	using memory_t = char*;
-} // namespace argo
+}  // namespace argo
 
-#endif // ARGODSM_SRC_TYPES_TYPES_HPP_
+#endif  // ARGODSM_SRC_TYPES_TYPES_HPP_

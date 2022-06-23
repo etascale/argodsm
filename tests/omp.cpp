@@ -55,33 +55,34 @@ class ompTest : public testing::Test {
  */
 TEST_F(ompTest, WriteAndRead) {
 	int *arr = argo::conew_array<int>(amount);
-	int node_id = argo_node_id(); // Node id
-	int nodecount = argo_number_of_nodes(); // Number of nodes
+	int node_id = argo_node_id();
+	int nodecount = argo_number_of_nodes();
 
-	ASSERT_GT(nodecount, 0); // More than 0 nodes
-	ASSERT_GE(node_id, 0); // Node id non-negative
+	ASSERT_GT(nodecount, 0);  // More than 0 nodes
+	ASSERT_GE(node_id, 0);    // Node id non-negative
 
 	int chunk = amount / nodecount;
 	int start = chunk*node_id;
 	int end = start+chunk;
-	if(argo_node_id() == (argo_number_of_nodes()-1)) { // Last node always iterates to the end of the array
+	// Last node always iterates to the end of the array
+	if(argo_node_id() == (argo_number_of_nodes()-1)) {
 		end = amount;
 	}
 	argo::barrier();
 
-	for(int n = 0; n < ITER; n++) { // Run ITER times
-		for(int i = 0; i < MAX_THREADS; i++) { // Up to MAX_THREADS, threads
+	for(int n = 0; n < ITER; n++) {
+		for(int i = 0; i < MAX_THREADS; i++) {
 			omp_set_num_threads(i);
 
 			#pragma omp parallel for
 			for(int j = start; j < end; j++) {
-				arr[j] = (i+42); // Each entry written
+				arr[j] = (i+42);
 			}
 			argo::barrier();
 
 			#pragma omp parallel for
 			for(int j = 0; j < amount; j++) {
-				EXPECT_EQ(arr[j], (i+42)); // Each thread checks for correctness
+				EXPECT_EQ(arr[j], (i+42));
 			}
 			argo::barrier();
 		}

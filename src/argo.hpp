@@ -110,6 +110,6 @@ namespace argo {
 	 * @return The block size of the current allocation policy in bytes
 	 */
 	std::size_t get_block_size();
-} // namespace argo
+}  // namespace argo
 
 #endif  // ARGODSM_SRC_ARGO_HPP_

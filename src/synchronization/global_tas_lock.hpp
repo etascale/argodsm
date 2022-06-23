@@ -117,4 +117,4 @@ class global_tas_lock {
 }  // namespace globallock
 }  // namespace argo
 
-#endif // ARGODSM_SRC_SYNCHRONIZATION_GLOBAL_TAS_LOCK_HPP_
+#endif  // ARGODSM_SRC_SYNCHRONIZATION_GLOBAL_TAS_LOCK_HPP_

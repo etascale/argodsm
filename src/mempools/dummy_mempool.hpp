@@ -65,4 +65,4 @@ class memory_pool {
 
 }  // namespace argo
 
-#endif // ARGODSM_SRC_MEMPOOLS_DUMMY_MEMPOOL_HPP_
+#endif  // ARGODSM_SRC_MEMPOOLS_DUMMY_MEMPOOL_HPP_

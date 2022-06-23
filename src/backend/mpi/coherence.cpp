@@ -75,7 +75,8 @@ void _selective_acquire(void *addr, std::size_t size) {
 			mpi_lock_sharer[win_index][node_id].unlock(node_id, sharer_windows[win_index][node_id]);
 			touchedcache[cache_index] = 1;
 			// nothing - we keep the pages, SD is done in flushWB
-		} else { // multiple writer or SO, invalidate the page
+		} else {
+			// multiple writer or SO, invalidate the page
 			mpi_lock_sharer[win_index][node_id].unlock(node_id, sharer_windows[win_index][node_id]);
 			cacheControl[cache_index].dirty = CLEAN;
 			cacheControl[cache_index].state = INVALID;

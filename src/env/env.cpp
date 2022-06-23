@@ -19,37 +19,37 @@ namespace {
  * @brief default requested memory size (if environment variable is unset)
  * @see @ref ARGO_MEMORY_SIZE
  */
-const std::size_t default_memory_size = 8ul*(1ul<<30); // default: 8GB
+const std::size_t default_memory_size = 8ul*(1ul<<30);  // default: 8GB
 
 /**
  * @brief default requested cache size (if environment variable is unset)
  * @see @ref ARGO_CACHE_SIZE
  */
-const std::size_t default_cache_size = 1ul<<30; // default: 1GB
+const std::size_t default_cache_size = 1ul<<30;  // default: 1GB
 
 /**
  * @brief default requested write buffer size (if environment variable is unset)
  * @see @ref ARGO_WRITE_BUFFER_SIZE
  */
-const std::size_t default_write_buffer_size = 512; // default: 512 cache blocks
+const std::size_t default_write_buffer_size = 512;  // default: 512 cache blocks
 
 /**
  * @brief default requested write buffer write back size (if environment variable is unset)
  * @see @ref ARGO_WRITE_BUFFER_WRITE_BACK_SIZE
  */
-const std::size_t default_write_buffer_write_back_size = 32; // default: 32 pages
+const std::size_t default_write_buffer_write_back_size = 32;  // default: 32 pages
 
 /**
  * @brief default requested allocation policy (if environment variable is unset)
  * @see @ref ARGO_ALLOCATION_POLICY
  */
-const std::size_t default_allocation_policy = 0; // default: naive
+const std::size_t default_allocation_policy = 0;  // default: naive
 
 /**
  * @brief default requested allocation block size (if environment variable is unset)
  * @see @ref ARGO_ALLOCATION_BLOCK_SIZE
  */
-const std::size_t default_allocation_block_size = 1ul<<4; // default: 16
+const std::size_t default_allocation_block_size = 1ul<<4;  // default: 16
 
 /**
  * @brief default requested load size (if environment variable is unset)
@@ -67,7 +67,7 @@ const std::size_t default_mpi_windows_per_node = 4;
  * @brief default requested statistics level (if environment variable is unset)
  * @see @ref ARGO_PRINT_STATISTICS
  */
-const std::size_t default_print_statistics = 2; // default 2 is basic node statistics
+const std::size_t default_print_statistics = 2;  // default 2 is basic node statistics
 
 /**
  * @brief environment variable used for requesting memory size
