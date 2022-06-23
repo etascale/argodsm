@@ -50,15 +50,9 @@ void _selective_acquire(void *addr, std::size_t size) {
 		const std::size_t classification_index = get_classification_index(page_address);
 		cache_locks[cache_index].lock();
 
-		// If the page is dirty, downgrade it
-		if(cacheControl[cache_index].dirty == DIRTY) {
-			mprotect(reinterpret_cast<char*>(start_address) + page_address, block_size, PROT_READ);
-			for(int i = 0; i <CACHELINE; i++) {
-				storepageDIFF(cache_index+i, page_address+page_size*i);
-			}
-			argo_write_buffer->erase(cache_index);
-			cacheControl[cache_index].dirty = CLEAN;
-		}
+		// Poke the MPI system to force progress
+		int flag;
+		MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, argo_comm, &flag, MPI_STATUS_IGNORE);
 
 		std::size_t win_index = get_sharer_win_index(classification_index);
 		// Optimization to keep pages in cache if they do not
@@ -88,7 +82,7 @@ void _selective_acquire(void *addr, std::size_t size) {
 
 	// Poke the MPI system to force progress
 	int flag;
-	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
+	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, argo_comm, &flag, MPI_STATUS_IGNORE);
 
 	std::lock_guard<std::mutex> ssi_time_lock(stats.ssi_time_mutex);
 	stats.ssi_time += t2-t1;
@@ -143,7 +137,7 @@ void _selective_release(void *addr, std::size_t size) {
 
 	// Poke the MPI system to force progress
 	int flag;
-	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, workcomm, &flag, MPI_STATUS_IGNORE);
+	MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, argo_comm, &flag, MPI_STATUS_IGNORE);
 
 	std::lock_guard<std::mutex> ssd_time_lock(stats.ssd_time_mutex);
 	stats.ssd_time += t2-t1;

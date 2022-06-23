@@ -123,7 +123,7 @@ void init(std::size_t argo_size, std::size_t cache_size) {
 }
 
 node_id_t node_id() {
-	return argo_get_nid();
+	return argo_get_node_id();
 }
 
 node_id_t number_of_nodes() {
@@ -160,7 +160,7 @@ void barrier(std::size_t tc, upgrade_type upgrade) {
 
 template<typename T>
 void broadcast(node_id_t source, T* ptr) {
-	MPI_Bcast(static_cast<void*>(ptr), sizeof(T), MPI_BYTE, source, workcomm);
+	MPI_Bcast(static_cast<void*>(ptr), sizeof(T), MPI_BYTE, source, argo_comm);
 }
 
 void acquire() {

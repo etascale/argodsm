@@ -277,6 +277,11 @@ extern std::vector<cache_lock> cache_locks;
  */
 extern std::shared_mutex sync_lock;
 /**
+ * @brief Communicator to isolate ArgoDSM communication
+ * @see swdsm.cpp
+ */
+extern MPI_Comm argo_comm;
+/**
  * @brief globalSharers is needed to access and modify the pyxis directory
  * @deprecated Should eventually be handled by a cache module
  * @see swdsm.cpp
@@ -318,12 +323,6 @@ extern argo_statistics stats;
  * @deprecated Should eventually be handled by a cache module
  */
 extern argo_byte* touchedcache;
-/**
- * @brief MPI communicator for node processes
- * @deprecated prototype implementation detail
- * @see swdsm.cpp
- */
-extern MPI_Comm workcomm;
 /**
  * @brief MPI window for the first-touch data distribution
  * @see swdsm.cpp
@@ -446,19 +445,12 @@ void print_statistics();
  */
 void argo_reset_coherence();
 
-/**
- * @brief Gives the ArgoDSM node id for the local process
- * @return Returns the ArgoDSM node id for the local process
- * @deprecated Should use argo_get_nid() instead and eventually remove this
- * @see argo_get_nid()
- */
-argo::node_id_t getID();
 
 /**
  * @brief Gives the ArgoDSM node id for the local process
  * @return Returns the ArgoDSM node id for the local process
  */
-argo::node_id_t argo_get_nid();
+argo::node_id_t argo_get_node_id();
 
 /**
  * @brief Gives number of ArgoDSM nodes
