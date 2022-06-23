@@ -27,8 +27,9 @@ endforeach(src)
 
 
 unset(vm_libs)
-
+set(ARGO_VM "SHM" CACHE STRING "Select how to handle virtual addresses")
 # Exactly one of these must be enabled (or use the default)
+set_property(CACHE ARGO_VM PROPERTY STRINGS ANONYMOUS MEMFD SHM)
 if(ARGO_VM STREQUAL "MEMFD")
 # "Handle virtual addresses using an anonymous memory file. Requires kernel 3.17+."
 	set(vm_sources memfd.cpp)
