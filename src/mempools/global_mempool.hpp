@@ -14,9 +14,9 @@
 #include <iostream>
 #include <memory>
 
-#include "../backend/backend.hpp"
-#include "../data_distribution/global_ptr.hpp"
-#include "../synchronization/global_tas_lock.hpp"
+#include "backend/backend.hpp"
+#include "data_distribution/global_ptr.hpp"
+#include "synchronization/global_tas_lock.hpp"
 
 /** @todo Documentation */
 constexpr int PAGESIZE = 4096;

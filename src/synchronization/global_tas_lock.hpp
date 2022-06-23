@@ -9,8 +9,9 @@
 
 #include <atomic>
 #include <thread>
-#include "../backend/backend.hpp"
-#include "../data_distribution/global_ptr.hpp"
+
+#include "backend/backend.hpp"
+#include "data_distribution/global_ptr.hpp"
 
 namespace argo {
 namespace globallock {

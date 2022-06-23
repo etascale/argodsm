@@ -11,7 +11,7 @@
 #include <cstring>
 #include <mutex>
 
-#include "../backend.hpp"
+#include "backend/backend.hpp"
 #include "data_distribution/global_ptr.hpp"
 #include "signal/signal.hpp"
 #include "synchronization/global_tas_lock.hpp"

@@ -4,7 +4,7 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#include "../backend/backend.hpp"
+#include "backend/backend.hpp"
 #include "synchronization.hpp"
 
 namespace argo {

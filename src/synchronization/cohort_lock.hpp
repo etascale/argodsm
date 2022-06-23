@@ -16,15 +16,15 @@
 #endif
 
 extern "C" {
-#include "cohort_lock.h"
+#include "synchronization/cohort_lock.h"
 }
 
 // C++ headers
 #include <vector>
 
-#include "../allocators/collective_allocator.hpp"
-#include "../backend/backend.hpp"
-#include "../data_distribution/data_distribution.hpp"
+#include "allocators/collective_allocator.hpp"
+#include "backend/backend.hpp"
+#include "data_distribution/data_distribution.hpp"
 #include "global_tas_lock.hpp"
 #include "intranode/mcs_lock.hpp"
 #include "intranode/ticket_lock.hpp"

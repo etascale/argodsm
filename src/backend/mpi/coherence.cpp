@@ -7,8 +7,8 @@
 #include <shared_mutex>
 #include <vector>
 
-#include "../backend.hpp"
-#include "swdsm.h"
+#include "backend/backend.hpp"
+#include "backend/mpi/swdsm.h"
 #include "virtual_memory/virtual_memory.hpp"
 
 namespace argo {
