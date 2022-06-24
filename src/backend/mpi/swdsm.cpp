@@ -126,8 +126,14 @@ namespace {
 	constexpr std::uint64_t invalid_node = static_cast<std::uint64_t>(-1);
 }
 
-std::size_t isPowerOf2(std::size_t x) {
-	std::size_t retval =  ((x & (x - 1)) == 0);
+/**
+ * @brief Checks if its argument is 0 or power of 2
+ * @param x an unsigned integer
+ * @return 1 if x is 0 or a power of 2, otherwise return 0
+ */
+static
+std::size_t isZeroOrPowerOf2(std::size_t x) {
+	std::size_t retval = ((x & (x - 1)) == 0);
 	return retval;
 }
 
@@ -380,7 +386,7 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 				remote_sharers[i*2]&node_id_inv_bit;  // remove own bit
 
 			/* If there is exactly one other owner, and we are not sharer */
-			if(isPowerOf2(owner_id_bit) && owner_id_bit != 0 && local_sharers[i] == 0) {
+			if(isZeroOrPowerOf2(owner_id_bit) && owner_id_bit != 0 && local_sharers[i] == 0) {
 				std::uintptr_t owner = invalid_node;  // initialize to failsafe value
 				for(argo::num_nodes_t n = 0; n < numtasks; n++) {
 					if((static_cast<std::uintptr_t>(1) << n) == owner_id_bit) {
@@ -514,7 +520,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 					sharers = globalSharers[classidx];
 					globalSharers[classidx] |= id;
 					});
-			if(sharers != 0 && sharers != id && isPowerOf2(sharers)) {
+			if(sharers != 0 && sharers != id && isZeroOrPowerOf2(sharers)) {
 				std::uint64_t ownid = sharers&invid;
 				argo::node_id_t owner = workrank;
 				for(argo::num_nodes_t n = 0; n < numtasks; n++) {
@@ -553,7 +559,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 					});
 
 			/* remote single writer */
-			if(writers != id && writers != 0 && isPowerOf2(writers&invid)) {
+			if(writers != id && writers != 0 && isZeroOrPowerOf2(writers&invid)) {
 				argo::node_id_t owner = 0;
 				for(argo::num_nodes_t n = 0; n < numtasks; n++) {
 					if((static_cast<std::uint64_t>(1) << n) == (writers&invid)) {
@@ -630,7 +636,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 			});
 
 	/* Either already registered write - or 1 or 0 other writers already cached */
-	if(writers != id && isPowerOf2(writers)) {
+	if(writers != id && isZeroOrPowerOf2(writers)) {
 		sharer_op(MPI_LOCK_EXCLUSIVE, workrank, classidx, [&](std::size_t) {
 				globalSharers[classidx+1] |= id;  // register locally
 				});
@@ -655,7 +661,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 				});
 
 		/* check if we need to update */
-		if(writers != id && writers != 0 && isPowerOf2(writers&invid)) {
+		if(writers != id && writers != 0 && isZeroOrPowerOf2(writers&invid)) {
 			argo::node_id_t owner = 0;
 			for(argo::num_nodes_t n = 0; n < numtasks; n++) {
 				if((static_cast<std::uint64_t>(1) << n) == (writers&invid)) {

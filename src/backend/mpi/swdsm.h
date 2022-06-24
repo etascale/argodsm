@@ -499,12 +499,6 @@ void init_mpi_struct(void);
  */
 void init_mpi_cacheblock(void);
 /**
- * @brief Checks if something is power of 2
- * @param x a non-negative integer
- * @return 1 if x is 0 or a power of 2, otherwise return 0
- */
-std::size_t isPowerOf2(std::size_t x);
-/**
  * @brief Gets cacheindex for a given address
  * @param addr Address in the global address space
  * @return cacheindex where addr should map to in the ArgoDSM page cache
