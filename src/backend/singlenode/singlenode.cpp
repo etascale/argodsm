@@ -21,7 +21,6 @@
 
 namespace vm = argo::virtual_memory;
 namespace sig = argo::signal;
-using namespace argo::backend;
 
 /** @brief a lock for atomically executed operations */
 std::mutex atomic_op_mutex;
@@ -85,12 +84,12 @@ void init(std::size_t argo_size, std::size_t cache_size) {
 	(void)(cache_size);
 	memory = static_cast<char*>(vm::allocate_mappable(PAGE_SIZE, argo_size));
 	memory_size = argo_size;
-	using namespace data_distribution;
+	using argo::data_distribution::base_distribution;
 	base_distribution<0>::set_memory_space(nodes, memory, argo_size);
 	sig::signal_handler<SIGSEGV>::install_argo_handler(&singlenode_handler);
 	/** @note first-touch needs a directory for fetching
 	 *        the homenode and offset for an address */
-	if (is_first_touch_policy()) {
+	if (argo::data_distribution::is_first_touch_policy()) {
 		/* calculate the directory size and allocate memory */
 		std::size_t owners_dir_size = 3*(argo_size/PAGE_SIZE);
 		std::size_t owners_dir_size_bytes = owners_dir_size*sizeof(std::size_t);
@@ -132,10 +131,9 @@ void reset_stats() {}
 void finalize() {}
 
 void reset_coherence() {
-	using namespace data_distribution;
 	/** @note first-touch needs a directory for fetching
 	 *        the homenode and offset for an address */
-	if (is_first_touch_policy()) {
+	if (argo::data_distribution::is_first_touch_policy()) {
 		/* calculate the directory size and allocate memory */
 		std::size_t owners_dir_size = 3*(memory_size/PAGE_SIZE);
 		std::size_t owners_dir_size_bytes = owners_dir_size*sizeof(std::size_t);

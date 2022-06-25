@@ -54,7 +54,7 @@ class global_memory_pool {
 			memory = backend::global_base();
 			max_size = backend::global_size();
 			/**@todo this initialization should move to tools::init() land */
-			using namespace data_distribution;
+			using argo::data_distribution::base_distribution;
 			base_distribution<0>::set_memory_space(nodes, memory, max_size);
 
 			// Reset maximum size to the full memory size minus the space reserved for internal use
@@ -68,6 +68,7 @@ class global_memory_pool {
 			global_tas_lock = new tas_lock(field);
 
 			// Home node makes sure that offset points to Argo's starting address
+			using argo::data_distribution::global_ptr;
 			global_ptr<char> gptr(&memory[max_size]);
 			if(backend::node_id() == gptr.node()) {
 				*offset = static_cast<std::ptrdiff_t>(0);
@@ -93,7 +94,7 @@ class global_memory_pool {
 			max_size = backend::global_size() - reserved;
 
 			// Home node makes sure that offset points to Argo's starting address
-			using namespace data_distribution;
+			using argo::data_distribution::global_ptr;
 			global_ptr<char> gptr(&memory[max_size]);
 			if(backend::node_id() == gptr.node()) {
 				*offset = static_cast<std::ptrdiff_t>(0);
