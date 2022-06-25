@@ -25,7 +25,6 @@
  */
 static MPI_Datatype fitting_mpi_int(std::size_t size) {
 	MPI_Datatype t_type;
-	using namespace argo;
 
 	switch (size) {
 	// Until UCX supports 1/2 byte atomics, they must be disabled
@@ -60,7 +59,6 @@ static MPI_Datatype fitting_mpi_int(std::size_t size) {
  */
 static MPI_Datatype fitting_mpi_uint(std::size_t size) {
 	MPI_Datatype t_type;
-	using namespace argo;
 
 	switch (size) {
 	// Until UCX supports 1/2 byte atomics, they must be disabled
@@ -93,7 +91,6 @@ static MPI_Datatype fitting_mpi_uint(std::size_t size) {
  */
 static MPI_Datatype fitting_mpi_float(std::size_t size) {
 	MPI_Datatype t_type;
-	using namespace argo;
 
 	switch (size) {
 	case 4:
