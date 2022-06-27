@@ -60,4 +60,4 @@ class cyclic_distribution : public base_distribution<instance> {
 }  // namespace data_distribution
 }  // namespace argo
 
-#endif // ARGODSM_SRC_DATA_DISTRIBUTION_CYCLIC_DISTRIBUTION_HPP_
+#endif  // ARGODSM_SRC_DATA_DISTRIBUTION_CYCLIC_DISTRIBUTION_HPP_

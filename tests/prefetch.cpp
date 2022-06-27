@@ -152,7 +152,7 @@ TEST_F(PrefetchTest, AccessPrefetched) {
 
 		/* On all nodes, check that after accessing the first page,
 		 * all expected pages are either node local or cached. */
-		ASSERT_EQ(tmp[start_page*page_size], c_const); // Access first page
+		ASSERT_EQ(tmp[start_page*page_size], c_const);  // Access first page
 		for(std::size_t page_num = start_page;
 						page_num < end_page;
 						page_num++) {

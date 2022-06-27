@@ -117,7 +117,7 @@ namespace argo {
 	std::size_t get_block_size() {
 		return dd::policy_block_size();
 	}
-} // namespace argo
+}  // namespace argo
 
 extern "C" {
 	void argo_init(size_t argo_size, size_t cache_size) {

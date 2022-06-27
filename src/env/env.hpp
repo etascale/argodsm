@@ -142,4 +142,4 @@ std::size_t print_statistics();
 }  // namespace env
 }  // namespace argo
 
-#endif // ARGODSM_SRC_ENV_ENV_HPP_
+#endif  // ARGODSM_SRC_ENV_ENV_HPP_

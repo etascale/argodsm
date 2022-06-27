@@ -40,7 +40,7 @@ const std::string msg_main_mmap_fail = "ArgoDSM failed to set up virtual memory.
 int fd;
 /** @brief the address at which the virtual address space used by ArgoDSM starts */
 void* start_addr;
-} // namespace
+}  // namespace
 
 namespace argo {
 namespace virtual_memory {

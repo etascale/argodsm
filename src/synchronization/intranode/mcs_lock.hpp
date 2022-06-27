@@ -75,4 +75,4 @@ public:
 }  // namespace locallock
 }  // namespace argo
 
-#endif // ARGODSM_SRC_SYNCHRONIZATION_INTRANODE_MCS_LOCK_HPP_
+#endif  // ARGODSM_SRC_SYNCHRONIZATION_INTRANODE_MCS_LOCK_HPP_

@@ -40,10 +40,10 @@ namespace argo {
 	 *          upgrades all pages to a private state.
 	 */
 	void barrier_upgrade_all(std::size_t threadcount = 1);
-} // namespace argo
+}  // namespace argo
 
 extern "C" {
 #include "./synchronization.h"
 }
 
-#endif // ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_
+#endif  // ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_

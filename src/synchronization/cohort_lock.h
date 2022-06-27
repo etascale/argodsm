@@ -41,4 +41,4 @@ void argo_cohortlock_lock(cohortlock_t lock);
  */
 void argo_cohortlock_unlock(cohortlock_t lock);
 
-#endif // ARGODSM_SRC_SYNCHRONIZATION_COHORT_LOCK_H_
+#endif  // ARGODSM_SRC_SYNCHRONIZATION_COHORT_LOCK_H_

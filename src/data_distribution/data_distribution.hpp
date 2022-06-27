@@ -136,4 +136,4 @@ static inline std::size_t policy_block_size() {
 }  // namespace data_distribution
 }  // namespace argo
 
-#endif // ARGODSM_SRC_DATA_DISTRIBUTION_DATA_DISTRIBUTION_HPP_
+#endif  // ARGODSM_SRC_DATA_DISTRIBUTION_DATA_DISTRIBUTION_HPP_

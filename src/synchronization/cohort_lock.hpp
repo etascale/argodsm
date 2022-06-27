@@ -104,7 +104,7 @@ class cohort_lock {
 			 * int cpu = sched_getcpu();
 			 * return numa_mapping[cpu];
 			 */
-			return 0; /// @bug FIXME
+			return 0;  // @bug FIXME
 		}
 
 	public:
@@ -117,13 +117,13 @@ class cohort_lock {
 		 */
 		cohort_lock() :
 			has_global_lock(false),
-			numanodes(1), // sane default
+			numanodes(1),  // sane default
 			numahandover(0),
 			nodelockowner(NO_OWNER),
 			global_lock_field(argo::conew_<typename global_lock_type::internal_field_type>()),
 			global_lock(new global_lock_type(global_lock_field)),
 			node_lock(new argo::locallock::ticket_lock()) {
-			int num_cpus = sysconf(_SC_NPROCESSORS_CONF); // sane default
+			int num_cpus = sysconf(_SC_NPROCESSORS_CONF);  // sane default
 			numa_mapping.resize(num_cpus, 0);
 			#ifdef ARGO_USE_LIBNUMA
 			/* use libnuma only if it is actually available */
@@ -202,4 +202,4 @@ class cohort_lock {
 }  // namespace globallock
 }  // namespace argo
 
-#endif // ARGODSM_SRC_SYNCHRONIZATION_COHORT_LOCK_HPP_
+#endif  // ARGODSM_SRC_SYNCHRONIZATION_COHORT_LOCK_HPP_

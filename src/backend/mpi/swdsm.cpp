@@ -118,8 +118,14 @@ namespace {
 	constexpr std::uint64_t invalid_node = static_cast<std::uint64_t>(-1);
 }
 
-std::size_t isPowerOf2(std::size_t x) {
-	std::size_t retval =  ((x & (x - 1)) == 0); //Checks if x is power of 2 (or zero)
+/**
+ * @brief Checks if its argument is 0 or power of 2
+ * @param x an unsigned integer
+ * @return 1 if x is 0 or a power of 2, otherwise return 0
+ */
+static
+std::size_t isZeroOrPowerOf2(std::size_t x) {
+	std::size_t retval = ((x & (x - 1)) == 0);
 	return retval;
 }
 
@@ -142,7 +148,7 @@ void init_mpi_struct(void) {
 
 
 void init_mpi_cacheblock(void) {
-	//init our struct coherence unit to work in mpi.
+	// init our struct coherence unit to work in mpi.
 	MPI_Type_contiguous(pagesize*CACHELINE, MPI_BYTE, &cacheblock);
 	MPI_Type_commit(&cacheblock);
 }
@@ -369,14 +375,14 @@ void load_cache_entry(std::uintptr_t aligned_access_offset) {
 		if(pages_to_load[i] && !handled_pages[i]) {
 			std::fill(sharer_bit_mask.begin(), sharer_bit_mask.end(), 0);
 			const std::uintptr_t owner_id_bit =
-				remote_sharers[i*2]&node_id_inv_bit; // remove own bit
+				remote_sharers[i*2]&node_id_inv_bit;  // remove own bit
 
 			/* If there is exactly one other owner, and we are not sharer */
-			if(isPowerOf2(owner_id_bit) && owner_id_bit != 0 && local_sharers[i] == 0) {
-				std::uintptr_t owner = invalid_node; // initialize to failsafe value
+			if(isZeroOrPowerOf2(owner_id_bit) && owner_id_bit != 0 && local_sharers[i] == 0) {
+				std::uintptr_t owner = invalid_node;  // initialize to failsafe value
 				for(argo::num_nodes_t n = 0; n < numtasks; n++) {
 					if((static_cast<std::uintptr_t>(1) << n) == owner_id_bit) {
-						owner = n; //just get rank...
+						owner = n;  // just get rank...
 						break;
 					}
 				}
@@ -460,8 +466,8 @@ void handler(int sig, siginfo_t *si, void *context) {
 	/* On x86, get and decode the error number from the context */
 	const ucontext_t* ctx = static_cast<ucontext_t*>(context);
 	auto err_num = ctx->uc_mcontext.gregs[REG_ERR];
-	assert(err_num & X86_PF_USER);	//Assert signal from user space
-	assert(err_num < X86_PF_RSVD); 	//Assert signal is from read or write access
+	assert(err_num & X86_PF_USER);  // signal from user space
+	assert(err_num < X86_PF_RSVD); 	// signal is from read or write access
 	/* This could be further decoded by using X86_PF_PROT to detect
 	 * whether the fault originated from no page found (0) or from
 	 * a protection fault (1), but is not needed for this purpose. */
@@ -489,7 +495,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 	double sync_lock_start = MPI_Wtime();
 	std::shared_lock lock(sync_lock);
 	double sync_lock_end = MPI_Wtime();
-	{ // creates a scope for the lock below
+	{  // block creates a scope for the lock below
 		std::lock_guard<std::mutex> sync_time_lock(stats.sync_lock_time_mutex);
 		stats.sync_lock_time += sync_lock_end-sync_lock_start;
 	}
@@ -506,7 +512,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 					sharers = globalSharers[classidx];
 					globalSharers[classidx] |= id;
 					});
-			if(sharers != 0 && sharers != id && isPowerOf2(sharers)) {
+			if(sharers != 0 && sharers != id && isZeroOrPowerOf2(sharers)) {
 				std::uint64_t ownid = sharers&invid;
 				argo::node_id_t owner = workrank;
 				for(argo::num_nodes_t n = 0; n < numtasks; n++) {
@@ -545,7 +551,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 					});
 
 			/* remote single writer */
-			if(writers != id && writers != 0 && isPowerOf2(writers&invid)) {
+			if(writers != id && writers != 0 && isZeroOrPowerOf2(writers&invid)) {
 				argo::node_id_t owner = 0;
 				for(argo::num_nodes_t n = 0; n < numtasks; n++) {
 					if((static_cast<std::uint64_t>(1) << n) == (writers&invid)) {
@@ -622,7 +628,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 			});
 
 	/* Either already registered write - or 1 or 0 other writers already cached */
-	if(writers != id && isPowerOf2(writers)) {
+	if(writers != id && isZeroOrPowerOf2(writers)) {
 		sharer_op(MPI_LOCK_EXCLUSIVE, workrank, classidx, [&](std::size_t) {
 				globalSharers[classidx+1] |= id;  // register locally
 				});
@@ -647,7 +653,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 				});
 
 		/* check if we need to update */
-		if(writers != id && writers != 0 && isPowerOf2(writers&invid)) {
+		if(writers != id && writers != 0 && isZeroOrPowerOf2(writers&invid)) {
 			argo::node_id_t owner = 0;
 			for(argo::num_nodes_t n = 0; n < numtasks; n++) {
 				if((static_cast<std::uint64_t>(1) << n) == (writers&invid)) {
@@ -764,7 +770,7 @@ void argo_initialize(std::size_t argo_size, std::size_t cache_size) {
 	argo_write_buffer = new write_buffer<std::size_t>();
 
 	// Allocate local memory for each node
-	size_of_all = argo_size;	// total distr. global memory
+	size_of_all = argo_size;      // total distr. global memory
 	GLOBAL_NULL = size_of_all+1;
 	size_of_chunk = argo_size/(numtasks);  // part on each node
 	sig::signal_handler<SIGSEGV>::install_argo_handler(&handler);
@@ -959,7 +965,8 @@ void self_invalidation() {
 				mpi_lock_sharer[win_index][workrank].unlock(workrank, sharer_windows[win_index][workrank]);
 				touchedcache[i] = 1;
 				/* nothing - we keep the pages, SD is done in flushWB */
-			} else { // multiple writer or SO
+			} else {
+				// multiple writer or SO
 				mpi_lock_sharer[win_index][workrank].unlock(workrank, sharer_windows[win_index][workrank]);
 				cacheControl[i].dirty = CLEAN;
 				cacheControl[i].state = INVALID;
@@ -1454,7 +1461,7 @@ void sharer_op(int lock_type, int rank, int offset,
 }
 
 std::size_t get_sharer_win_index(int classification_index) {
-	std::size_t granularity = load_size*2; // 2x load size pages per window chunk
+	std::size_t granularity = load_size*2;  // 2x load size pages per window chunk
 	std::size_t chunk_index = (classification_index/2) / granularity;
 	return (chunk_index + chunk_index/mpi_windows + 1) % mpi_windows;
 }
@@ -1464,7 +1471,7 @@ std::size_t get_sharer_win_offset(int classification_index) {
 }
 
 std::size_t get_data_win_index(std::size_t offset) {
-	std::size_t granularity = load_size*2; // 2x load size pages per window chunk
+	std::size_t granularity = load_size*2;  // 2x load size pages per window chunk
 	std::size_t chunk_index = (offset/(pagesize*CACHELINE)) / granularity;
 	return (chunk_index + chunk_index/mpi_windows + 1) % mpi_windows;
 }

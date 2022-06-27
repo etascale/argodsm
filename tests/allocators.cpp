@@ -291,8 +291,6 @@ TEST_F(AllocatorTest, StoringDynamicArrayInCollective) {
 	argo::barrier();
 	for(argo::num_nodes_t i = 0; i < argo::number_of_nodes(); i++) {
 		for(unsigned int j = 0; j < entries; j++) {
-			//std::cout << "collective_arr : " << j << "," << i << " => "<< collective_arr[i][j] << " i+j*11 " << i+(j*11)<< std::endl;
-			//std::cout << "collective_arr2 : " << j << " => "<< collective_arr2[j] << std::endl;
 			ASSERT_TRUE(collective_arr[i][j] == static_cast<int>(i+j*11));
 			ASSERT_TRUE(collective_arr2[j] == static_cast<int>(j));
 		}

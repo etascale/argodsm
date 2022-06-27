@@ -61,4 +61,4 @@ class skew_mapp_distribution : public base_distribution<instance> {
 }  // namespace data_distribution
 }  // namespace argo
 
-#endif // ARGODSM_SRC_DATA_DISTRIBUTION_SKEW_MAPP_DISTRIBUTION_HPP_
+#endif  // ARGODSM_SRC_DATA_DISTRIBUTION_SKEW_MAPP_DISTRIBUTION_HPP_

@@ -38,4 +38,4 @@ void argo_barrier_upgrade_writers(size_t threadcount);
  */
 void argo_barrier_upgrade_all(size_t threadcount);
 
-#endif // ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_H_
+#endif  // ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_H_

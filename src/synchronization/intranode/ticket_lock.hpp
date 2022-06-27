@@ -59,4 +59,4 @@ class ticket_lock {
 }  // namespace locallock
 }  // namespace argo
 
-#endif // ARGODSM_SRC_SYNCHRONIZATION_INTRANODE_TICKET_LOCK_HPP_
+#endif  // ARGODSM_SRC_SYNCHRONIZATION_INTRANODE_TICKET_LOCK_HPP_
