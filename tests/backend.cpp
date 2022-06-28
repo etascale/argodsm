@@ -28,15 +28,15 @@ using global_uint = typename argo::data_distribution::global_ptr<unsigned>;
 /** @brief Global pointer to int pointer */
 using global_intptr = typename argo::data_distribution::global_ptr<int*>;
 
-/** @brief ArgoDSM memory size */
-constexpr std::size_t size = 1<<24; // 16M
+/** @brief ArgoDSM memory size (16M) */
+constexpr std::size_t size = 1<<24;
 /** @brief ArgoDSM cache size */
 constexpr std::size_t cache_size = size;
 /** @brief ArgoDSM array size */
 constexpr std::size_t array_size = 1<<19;
 
 /** @brief Time to wait before assuming a deadlock has occured */
-constexpr std::chrono::minutes deadlock_threshold{1}; // Choosen for no reason
+constexpr std::chrono::minutes deadlock_threshold{1};  // Choosen for no reason
 
 /** @brief A random char constant */
 constexpr char c_const = 'a';
@@ -68,11 +68,11 @@ class backendTest : public testing::Test, public ::testing::WithParamInterface<i
  * The writes are performed by all the nodes at the same time
  */
 TEST_F(backendTest, atomicXchgAll) {
-	//@todo This test is disabled as OpenUCX only supports
-	//atomic MPI operations of size 4 and 8 bytes.
-	//global_char _c(argo::conew_<char>(0));
-	//argo::backend::atomic::exchange(_c, c_const);
-	//ASSERT_EQ(c_const, argo::backend::atomic::load(_c));
+	// @todo This test is disabled as OpenUCX only supports
+	// atomic MPI operations of size 4 and 8 bytes.
+	// global_char _c(argo::conew_<char>(0));
+	// argo::backend::atomic::exchange(_c, c_const);
+	// ASSERT_EQ(c_const, argo::backend::atomic::load(_c));
 
 	global_int _i(argo::conew_<int>(0));
 	argo::backend::atomic::exchange(_i, i_const);
@@ -93,13 +93,13 @@ TEST_F(backendTest, atomicXchgAll) {
  * The writes are only performed by one node
  */
 TEST_F(backendTest, atomicXchgOne) {
-	//@todo This test is disabled as OpenUCX only supports
-	//atomic MPI operations of size 4 and 8 bytes.
-	//global_char _c(argo::conew_<char>());
-	//if (argo::backend::node_id() == 0)
-	//	argo::backend::atomic::exchange(_c, c_const);
-	//argo::backend::barrier();
-	//ASSERT_EQ(c_const, argo::backend::atomic::load(_c));
+	// @todo This test is disabled as OpenUCX only supports
+	// atomic MPI operations of size 4 and 8 bytes.
+	// global_char _c(argo::conew_<char>());
+	// if (argo::backend::node_id() == 0)
+	// 	argo::backend::atomic::exchange(_c, c_const);
+	// argo::backend::barrier();
+	// ASSERT_EQ(c_const, argo::backend::atomic::load(_c));
 
 	global_int _i(argo::conew_<int>());
 	if (argo::backend::node_id() == 0)
@@ -130,13 +130,13 @@ TEST_F(backendTest, atomicXchgOne) {
  * @brief Test atomic stores
  */
 TEST_F(backendTest, storeOne) {
-	//@todo This test is disabled as OpenUCX only supports
-	//atomic MPI operations of size 4 and 8 bytes.
-	//global_char _c(argo::conew_<char>());
-	//if (argo::backend::node_id() == 0)
-	//	argo::backend::atomic::store(_c, c_const);
-	//argo::backend::barrier();
-	//ASSERT_EQ(c_const, argo::backend::atomic::load(_c));
+	// @todo This test is disabled as OpenUCX only supports
+	// atomic MPI operations of size 4 and 8 bytes.
+	// global_char _c(argo::conew_<char>());
+	// if (argo::backend::node_id() == 0)
+	// 	argo::backend::atomic::store(_c, c_const);
+	// argo::backend::barrier();
+	// ASSERT_EQ(c_const, argo::backend::atomic::load(_c));
 
 	global_int _i(argo::conew_<int>());
 	if (argo::backend::node_id() == 0)
@@ -172,14 +172,14 @@ TEST_F(backendTest, storeOne) {
  */
 TEST_F(backendTest, loadOne) {
 	std::chrono::system_clock::time_point max_time;
-	//@todo This test is disabled as OpenUCX only supports
-	//atomic MPI operations of size 4 and 8 bytes.
-	//global_char _c(argo::conew_<char>());
-	//if (argo::backend::node_id() == 0)
-	//	argo::backend::atomic::store(_c, c_const);
-	//max_time = std::chrono::system_clock::now() + deadlock_threshold;
-	//while(argo::backend::atomic::load(_c) != c_const)
-	//	ASSERT_LT(std::chrono::system_clock::now(), max_time);
+	// @todo This test is disabled as OpenUCX only supports
+	// atomic MPI operations of size 4 and 8 bytes.
+	// global_char _c(argo::conew_<char>());
+	// if (argo::backend::node_id() == 0)
+	// 	argo::backend::atomic::store(_c, c_const);
+	// max_time = std::chrono::system_clock::now() + deadlock_threshold;
+	// while(argo::backend::atomic::load(_c) != c_const)
+	// 	ASSERT_LT(std::chrono::system_clock::now(), max_time);
 
 	global_int _i(argo::conew_<int>());
 	if (argo::backend::node_id() == 0)
@@ -869,8 +869,8 @@ TEST_F(backendTest, randAccessesPeriodicSelectiveReleaseAcquirePage) {
  * @brief Test write buffer under load with random access patterns
  */
 TEST_F(backendTest, writeBufferLoad) {
-	const std::size_t num_ints = 4000000; // 4M ints for just under total memory size
-	const std::size_t num_writes = num_ints/20; // Not too many random writes
+	const std::size_t num_ints = 4000000;  // 4M ints for just under total memory size
+	const std::size_t num_writes = num_ints/20;  // Not too many random writes
 	int* array = argo::conew_array<int>(num_ints);
 
 	// Random device to ensure accesses are irregular in order to expose

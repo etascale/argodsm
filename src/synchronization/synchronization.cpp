@@ -19,7 +19,7 @@ namespace argo {
 	void barrier_upgrade_all(std::size_t threadcount) {
 		backend::barrier(threadcount, backend::upgrade_type::upgrade_all);
 	}
-} // namespace argo
+}  // namespace argo
 
 extern "C" {
 	void argo_barrier(size_t threadcount) {

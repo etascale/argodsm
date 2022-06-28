@@ -121,10 +121,10 @@ class global_memory_pool {
 
 		/**
 		 * @brief fail to grow the memory pool
-		 * @param size minimum size to grow
+		 * @param size minimum size to grow (not needed for unconditional failure)
 		 */
 		void grow(std::size_t size) {
-			(void)size; // size is not needed for unconditional failure
+			(void)size;
 			throw std::bad_alloc();
 		}
 
@@ -144,4 +144,4 @@ class global_memory_pool {
 }  // namespace mempools
 }  // namespace argo
 
-#endif // ARGODSM_SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_
+#endif  // ARGODSM_SRC_MEMPOOLS_GLOBAL_MEMPOOL_HPP_

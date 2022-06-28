@@ -166,7 +166,7 @@ Dist* global_ptr<T, Dist>::policies[] = {
 	new first_touch_distribution<0>
 };
 
-} // namespace data_distribution
-} // namespace argo
+}  // namespace data_distribution
+}  // namespace argo
 
-#endif // ARGODSM_SRC_DATA_DISTRIBUTION_GLOBAL_PTR_HPP_
+#endif  // ARGODSM_SRC_DATA_DISTRIBUTION_GLOBAL_PTR_HPP_

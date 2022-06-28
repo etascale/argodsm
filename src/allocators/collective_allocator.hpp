@@ -52,7 +52,7 @@ using collective_allocator = generic_allocator<char, mempools::dynamic_memory_po
  */
 extern collective_allocator default_collective_allocator;
 
-} // namespace allocators
+}  // namespace allocators
 
 /**
  * @brief template function to construct new objects using collective allocation

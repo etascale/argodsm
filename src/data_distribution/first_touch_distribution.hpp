@@ -327,4 +327,4 @@ void first_touch_distribution<instance>::first_touch(const std::size_t& addr) {
 }  // namespace data_distribution
 }  // namespace argo
 
-#endif // ARGODSM_SRC_DATA_DISTRIBUTION_FIRST_TOUCH_DISTRIBUTION_HPP_
+#endif  // ARGODSM_SRC_DATA_DISTRIBUTION_FIRST_TOUCH_DISTRIBUTION_HPP_

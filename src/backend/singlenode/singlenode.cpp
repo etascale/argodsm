@@ -173,7 +173,7 @@ void barrier(std::size_t threadcount, upgrade_type upgrade) {
 	if(barrier_counter == 0) {
 		/* all threads successfully left the wait call, allow next barrier */
 		barrier_flag = false;
-		barrier_cv.notify_all(); // other threads + unstick next barrier's final thread
+		barrier_cv.notify_all();  // other threads + unstick next barrier's final thread
 	}
 
 	/** @bug there is a race here when the next barrier does not require
@@ -185,8 +185,8 @@ void barrier(std::size_t threadcount, upgrade_type upgrade) {
 
 template<typename T>
 void broadcast(node_id_t source, T* ptr) {
-	(void)source; // source is always node 0
-	(void)ptr; // synchronization with self is a no-op
+	(void)source;  // source is always node 0
+	(void)ptr;     // synchronization with self is a no-op
 }
 
 #include "../explicit_instantiations.inc.cpp"
@@ -202,13 +202,13 @@ void release() {
 void _selective_acquire(void* addr, std::size_t size) {
 	(void)addr;
 	(void)size;
-	acquire();	// Selective acquire not actually possible here
+	acquire();  // Selective acquire not actually possible here
 }
 
 void _selective_release(void* addr, std::size_t size) {
 	(void)addr;
 	(void)size;
-	release();	// Selective release not actually possible here
+	release();  // Selective release not actually possible here
 }
 
 namespace atomic {

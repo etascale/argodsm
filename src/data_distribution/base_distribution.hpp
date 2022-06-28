@@ -143,4 +143,4 @@ template<int i> std::size_t base_distribution<i>::size_per_node;
 }  // namespace data_distribution
 }  // namespace argo
 
-#endif // ARGODSM_SRC_DATA_DISTRIBUTION_BASE_DISTRIBUTION_HPP_
+#endif  // ARGODSM_SRC_DATA_DISTRIBUTION_BASE_DISTRIBUTION_HPP_

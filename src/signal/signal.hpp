@@ -139,4 +139,4 @@ template<int S> sig_handler signal_handler<S>::application_handler;
 }  // namespace signal
 }  // namespace argo
 
-#endif // ARGODSM_SRC_SIGNAL_SIGNAL_HPP_
+#endif  // ARGODSM_SRC_SIGNAL_SIGNAL_HPP_

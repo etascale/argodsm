@@ -49,7 +49,7 @@ bool mcs_lock::try_lock() {
  */
 void mcs_lock::unlock() {
 	mcs_node* self = &selfs[this];
-	mcs_node* also_self = self; // atomic CAS changes this
+	mcs_node* also_self = self;  // atomic CAS changes this
 
 	// See if there is anyone waiting
 	if (self->next.load(std::memory_order_acquire) == nullptr) {
@@ -76,5 +76,5 @@ bool mcs_lock::is_contended() {
 
 thread_local std::map<mcs_lock*, mcs_lock::mcs_node> mcs_lock::selfs;
 
-} // namespace locallock
-} // namespace argo
+}  // namespace locallock
+}  // namespace argo

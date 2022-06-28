@@ -66,14 +66,14 @@
 /** @brief Wrapper for unsigned char - basically a byte */
 typedef unsigned char argo_byte;
 
-/** @brief Struct for cache control data */
-typedef struct myControlData { // global cache control data / directory
+/** @brief Struct for global cache control data / directory */
+typedef struct myControlData {
 		/** @brief Coherence state, basically only Valid/Invalid now */
-		argo_byte state;	// I/P/SW/MW
+		argo_byte state;     // I/P/SW/MW
 		/** @brief Tracks if page is dirty or clean */
-		argo_byte dirty;	// is this locally dirty?
+		argo_byte dirty;     // is this locally dirty?
 		/** @brief Tracks address of page */
-		std::uintptr_t tag;	// address of global page in distr memory
+		std::uintptr_t tag;  // address of global page in distr memory
 } control_data;
 
 /** @brief Struct containing statistics */
@@ -392,12 +392,6 @@ void argo_finalize();
 void self_invalidation();
 
 /**
- * @brief Perform upgrade of page classifications
- * @param upgrade the type of classification upgrade to perform
- */
-void self_upgrade(argo::backend::upgrade_type upgrade);
-
-/**
  * @brief Global barrier for ArgoDSM - needs to be called by every thread in the
  *        system that need coherent view of the memory
  * @param n number of local thread participating
@@ -483,12 +477,6 @@ void init_mpi_struct(void);
  * @brief Initializes an MPI data structure for writing cache blocks over the network
  */
 void init_mpi_cacheblock(void);
-/**
- * @brief Checks if something is power of 2
- * @param x a non-negative integer
- * @return 1 if x is 0 or a power of 2, otherwise return 0
- */
-std::size_t isPowerOf2(std::size_t x);
 /**
  * @brief Gets cacheindex for a given address
  * @param addr Address in the global address space
