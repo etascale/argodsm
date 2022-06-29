@@ -7,7 +7,7 @@
 #ifndef ARGODSM_SRC_ALLOCATORS_ALLOCATORS_H_
 #define ARGODSM_SRC_ALLOCATORS_ALLOCATORS_H_
 
-#include "collective_allocator.h"
-#include "dynamic_allocator.h"
+#include "allocators/collective_allocator.h"
+#include "allocators/dynamic_allocator.h"
 
 #endif  // ARGODSM_SRC_ALLOCATORS_ALLOCATORS_H_

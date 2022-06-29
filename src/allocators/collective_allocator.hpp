@@ -26,9 +26,9 @@
 #include <stack>
 #include <utility>
 
-#include "../backend/backend.hpp"
-#include "../mempools/dynamic_mempool.hpp"
-#include "../mempools/global_mempool.hpp"
+#include "backend/backend.hpp"
+#include "mempools/dynamic_mempool.hpp"
+#include "mempools/global_mempool.hpp"
 
 #include "dynamic_allocator.hpp"
 #include "generic_allocator.hpp"
@@ -36,7 +36,7 @@
 
 /* forward declarations */
 extern "C" {
-#include "collective_allocator.h"
+#include "allocators/collective_allocator.h"
 }
 
 namespace argo {

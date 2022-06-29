@@ -12,8 +12,8 @@
 #include <atomic>
 #include <type_traits>
 
-#include "../backend.hpp"
-#include "swdsm.h"
+#include "backend/backend.hpp"
+#include "backend/mpi/swdsm.h"
 
 /**
  * @brief Returns an MPI integer type that exactly matches in size the argument given

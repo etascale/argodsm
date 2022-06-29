@@ -11,7 +11,8 @@
 #include <iostream>
 #include <string>
 
-#include "../types/types.hpp"
+#include "env/env.hpp"
+#include "types/types.hpp"
 
 namespace argo {
 namespace data_distribution {

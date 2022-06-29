@@ -7,8 +7,8 @@
 #ifndef ARGODSM_SRC_SYNCHRONIZATION_BROADCAST_HPP_
 #define ARGODSM_SRC_SYNCHRONIZATION_BROADCAST_HPP_
 
-#include "../backend/backend.hpp"
-#include "../types/types.hpp"
+#include "backend/backend.hpp"
+#include "types/types.hpp"
 
 namespace argo {
 namespace synchronization {

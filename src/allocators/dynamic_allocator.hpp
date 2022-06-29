@@ -26,15 +26,15 @@
 #include <stack>
 #include <utility>
 
-#include "../mempools/dynamic_mempool.hpp"
-#include "../mempools/global_mempool.hpp"
+#include "mempools/dynamic_mempool.hpp"
+#include "mempools/global_mempool.hpp"
 
 #include "generic_allocator.hpp"
 #include "null_lock.hpp"
 
 /* forward declarations */
 extern "C" {
-#include "dynamic_allocator.h"
+#include "allocators/dynamic_allocator.h"
 }
 
 namespace argo {

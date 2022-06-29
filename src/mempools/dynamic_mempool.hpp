@@ -7,8 +7,8 @@
 #ifndef ARGODSM_SRC_MEMPOOLS_DYNAMIC_MEMPOOL_HPP_
 #define ARGODSM_SRC_MEMPOOLS_DYNAMIC_MEMPOOL_HPP_
 
-#include "../backend/backend.hpp"
-#include "../synchronization/broadcast.hpp"
+#include "backend/backend.hpp"
+#include "synchronization/broadcast.hpp"
 
 namespace argo {
 namespace mempools {

@@ -9,10 +9,10 @@
 #include <memory>
 #include <vector>
 
+#include "backend/mpi/swdsm.h"
 #include "data_distribution/global_ptr.hpp"
 #include "env/env.hpp"
 #include "signal/signal.hpp"
-#include "swdsm.h"
 #include "virtual_memory/virtual_memory.hpp"
 
 namespace dd = argo::data_distribution;

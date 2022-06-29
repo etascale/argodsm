@@ -15,6 +15,8 @@
 #include "prime_mapp_distribution.hpp"
 #include "skew_mapp_distribution.hpp"
 
+#include "env/env.hpp"
+
 /**
  * @note backend.hpp is not included here as it includes global_ptr.hpp,
  *       which means that the data distribution definitions precede the

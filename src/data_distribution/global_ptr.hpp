@@ -9,8 +9,8 @@
 
 #include <string>
 
-#include "../env/env.hpp"
 #include "data_distribution.hpp"
+#include "env/env.hpp"
 
 namespace argo {
 namespace data_distribution {

@@ -13,8 +13,8 @@
 #include <cstdint>
 #include <stdexcept>
 
-#include "../data_distribution/global_ptr.hpp"
-#include "../types/types.hpp"
+#include "data_distribution/global_ptr.hpp"
+#include "types/types.hpp"
 
 namespace argo {
 /**

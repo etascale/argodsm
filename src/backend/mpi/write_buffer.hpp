@@ -17,7 +17,7 @@
 #include <mutex>
 #include <utility>
 
-#include "swdsm.h"
+#include "backend/mpi/swdsm.h"
 
 #include "backend/backend.hpp"
 #include "env/env.hpp"
