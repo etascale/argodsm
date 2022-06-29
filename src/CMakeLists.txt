@@ -67,7 +67,7 @@ install(TARGETS argo
 	ARCHIVE DESTINATION lib)
 
 install(DIRECTORY .
-	DESTINATION include/argo
+	DESTINATION include
 	COMPONENT "Development"
 	FILES_MATCHING
 		PATTERN "*.h"

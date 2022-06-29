@@ -5,7 +5,7 @@
 
 #include <pthread.h>
 
-#include "argo/argo.hpp"
+#include "argo.hpp"
 
 struct thread_args {
 	int data_begin;
