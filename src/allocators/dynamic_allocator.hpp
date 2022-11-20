@@ -48,7 +48,7 @@ namespace allocators {
 template<typename T>
 using global_allocator = generic_allocator<T, mempools::global_memory_pool<>, null_lock>;
 
-/** @brief type alias for default dynamic allocatior */
+/** @brief type alias for default dynamic allocator */
 using default_dynamic_allocator_t = generic_allocator<char, mempools::dynamic_memory_pool<global_allocator, mempools::ALWAYS>, std::mutex>;
 
 /**

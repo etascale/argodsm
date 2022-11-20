@@ -31,7 +31,7 @@ template<growth_mode_t g>
 inline bool do_grow();
 
 /**
- * @brief synchronize memory metainformation (address) after growing
+ * @brief synchronize memory meta-information (address) after growing
  *        to ensure visibility
  * @tparam g enumeration of possibilities, used for partial specialization
  * @param m pointer to the memory information to synchronize

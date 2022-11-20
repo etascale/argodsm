@@ -30,7 +30,7 @@ class ticket_lock {
 		ticket_lock() : in_counter(0), out_counter(0) {}
 
 		/**
-		 * @brief take the lock by fetching your ticket and wait untill out_counter matches your ticket
+		 * @brief take the lock by fetching your ticket and wait until out_counter matches your ticket
 		 */
 		void lock() {
 			int ticket = in_counter.fetch_add(1, std::memory_order_relaxed);

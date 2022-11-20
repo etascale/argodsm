@@ -4,7 +4,7 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  *
  * @internal
- * @details sometimes templates should be used with and without internal locking, this file provides the neccessary dummy class to allow disabling locking
+ * @details sometimes templates should be used with and without internal locking, this file provides the necessary dummy class to allow disabling locking
  */
 
 #ifndef ARGODSM_SRC_ALLOCATORS_NULL_LOCK_HPP_

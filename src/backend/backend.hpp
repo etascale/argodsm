@@ -32,7 +32,7 @@ enum class memory_order {
 	relaxed,  ///< No synchronization
 	// consume,
 	acquire,  ///< This operation is an acquire operation
-	release,  ///< This operation is a release opearation
+	release,  ///< This operation is a release operation
 	acq_rel,  ///< Release + Acquire
 	// seq_cst
 };
