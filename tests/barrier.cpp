@@ -16,8 +16,6 @@
 constexpr std::size_t size = 1<<30;
 /** @brief ArgoDSM cache size */
 constexpr std::size_t cache_size = size/8;
-/** @brief Size of an ArgoDSM page */
-constexpr std::size_t page_size = 4096;
 
 /** @brief Maximum number of threads to run in the stress tests */
 constexpr int max_threads = 128;
@@ -52,32 +50,32 @@ TEST_F(barrierTest, simpleBarrier) {
 TEST_F(barrierTest, barrierUpgradeWriters) {
 	std::size_t num_pages = 32;
 	const char a = 'a';
-	char* c_array = argo::conew_array<char>(page_size*num_pages);
+	char* c_array = argo::conew_array<char>(PAGE_SIZE*num_pages);
 
 	// Write data on node 0
 	if(argo::node_id() == 0) {
-		for(std::size_t i = 0; i < page_size*num_pages; i++) {
+		for(std::size_t i = 0; i < PAGE_SIZE*num_pages; i++) {
 			c_array[i] = a;
 		}
 	}
 	argo::barrier();
 
 	// Read data on all nodes
-	for(std::size_t i = 0; i < page_size*num_pages; i++) {
+	for(std::size_t i = 0; i < PAGE_SIZE*num_pages; i++) {
 		ASSERT_EQ(c_array[i], a);
 	}
 	// Upgrade all non-private pages to shared
 	argo::barrier_upgrade_writers();
 
 	// Read data on all nodes and self-invalidate through a barrier
-	for(std::size_t i = 0; i < page_size*num_pages; i++) {
+	for(std::size_t i = 0; i < PAGE_SIZE*num_pages; i++) {
 		ASSERT_EQ(c_array[i], a);
 	}
 	argo::barrier();
 
 	// Check that all nodes have all pages cached (or local)
 	for(std::size_t n = 0; n < num_pages; n++) {
-		ASSERT_TRUE(argo::backend::is_cached(&c_array[n*page_size]));
+		ASSERT_TRUE(argo::backend::is_cached(&c_array[n*PAGE_SIZE]));
 	}
 }
 
@@ -89,11 +87,11 @@ TEST_F(barrierTest, barrierUpgradeWriters) {
 TEST_F(barrierTest, barrierReadUpgraded) {
 	std::size_t num_pages = 32;
 	const char a = 'a';
-	char* c_array = argo::conew_array<char>(page_size*num_pages);
+	char* c_array = argo::conew_array<char>(PAGE_SIZE*num_pages);
 
 	// Write data on node 0
 	if(argo::node_id() == 0) {
-		for(std::size_t i = 0; i < page_size*num_pages; i++) {
+		for(std::size_t i = 0; i < PAGE_SIZE*num_pages; i++) {
 			c_array[i] = a;
 		}
 	}
@@ -101,14 +99,14 @@ TEST_F(barrierTest, barrierReadUpgraded) {
 	argo::barrier_upgrade_writers();
 
 	// Read data on all nodes and self-invalidate through a barrier
-	for(std::size_t i = 0; i < page_size*num_pages; i++) {
+	for(std::size_t i = 0; i < PAGE_SIZE*num_pages; i++) {
 		ASSERT_EQ(c_array[i], a);
 	}
 	argo::barrier();
 
 	// Check that all nodes have all pages cached (or local)
 	for(std::size_t n = 0; n < num_pages; n++) {
-		ASSERT_TRUE(argo::backend::is_cached(&c_array[n*page_size]));
+		ASSERT_TRUE(argo::backend::is_cached(&c_array[n*PAGE_SIZE]));
 	}
 }
 
@@ -121,18 +119,18 @@ TEST_F(barrierTest, barrierDowngradeAfterUpgrade) {
 	const std::size_t num_pages = 32;
 	const char a = 'a';
 	const char b = 'b';
-	char* c_array = argo::conew_array<char>(page_size*num_pages);
+	char* c_array = argo::conew_array<char>(PAGE_SIZE*num_pages);
 
 	// Write data on node 0
 	if(argo::node_id() == 0) {
-		for(std::size_t i = 0; i < page_size*num_pages; i++) {
+		for(std::size_t i = 0; i < PAGE_SIZE*num_pages; i++) {
 			c_array[i] = a;
 		}
 	}
 	argo::barrier();
 
 	// Read data on all nodes
-	for(std::size_t i = 0; i < page_size*num_pages; i++) {
+	for(std::size_t i = 0; i < PAGE_SIZE*num_pages; i++) {
 		ASSERT_EQ(c_array[i], a);
 	}
 	// Upgrade all non-private pages to shared
@@ -140,14 +138,14 @@ TEST_F(barrierTest, barrierDowngradeAfterUpgrade) {
 
 	// Write to the same pages again
 	if(argo::node_id() == 0) {
-		for(std::size_t i = 0; i < page_size*num_pages; i++) {
+		for(std::size_t i = 0; i < PAGE_SIZE*num_pages; i++) {
 			c_array[i] = b;
 		}
 	}
 	argo::barrier();
 
 	// Read data again all nodes
-	for(std::size_t i = 0; i < page_size*num_pages; i++) {
+	for(std::size_t i = 0; i < PAGE_SIZE*num_pages; i++) {
 		ASSERT_EQ(c_array[i], b);
 	}
 	argo::barrier();
@@ -155,8 +153,8 @@ TEST_F(barrierTest, barrierDowngradeAfterUpgrade) {
 	// Check that no node besides 0 has anything cached
 	if(argo::node_id() != 0) {
 		for(std::size_t n = 0; n < num_pages; n++) {
-			if(argo::get_homenode(&c_array[n*page_size]) != argo::node_id()) {
-				ASSERT_FALSE(argo::backend::is_cached(&c_array[n*page_size]));
+			if(argo::get_homenode(&c_array[n*PAGE_SIZE]) != argo::node_id()) {
+				ASSERT_FALSE(argo::backend::is_cached(&c_array[n*PAGE_SIZE]));
 			}
 		}
 	}
@@ -170,18 +168,18 @@ TEST_F(barrierTest, barrierDowngradeAfterUpgrade) {
 TEST_F(barrierTest, barrierUpgradeAll) {
 	const std::size_t num_pages = 32;
 	const char a = 'a';
-	char* c_array = argo::conew_array<char>(page_size*num_pages);
+	char* c_array = argo::conew_array<char>(PAGE_SIZE*num_pages);
 
 	// Write data on node 0
 	if(argo::node_id() == 0) {
-		for(std::size_t i = 0; i < page_size*num_pages; i++) {
+		for(std::size_t i = 0; i < PAGE_SIZE*num_pages; i++) {
 			c_array[i] = a;
 		}
 	}
 	argo::barrier();
 
 	// Read data on all nodes
-	for(std::size_t i = 0; i < page_size*num_pages; i++) {
+	for(std::size_t i = 0; i < PAGE_SIZE*num_pages; i++) {
 		ASSERT_EQ(c_array[i], a);
 	}
 
@@ -190,20 +188,20 @@ TEST_F(barrierTest, barrierUpgradeAll) {
 
 	// Check that no node has anything cached
 	for(std::size_t n = 0; n < num_pages; n++) {
-		if(argo::get_homenode(&c_array[n*page_size]) != argo::node_id()) {
-			ASSERT_FALSE(argo::backend::is_cached(&c_array[n*page_size]));
+		if(argo::get_homenode(&c_array[n*PAGE_SIZE]) != argo::node_id()) {
+			ASSERT_FALSE(argo::backend::is_cached(&c_array[n*PAGE_SIZE]));
 		}
 	}
 
 	// Read data on all nodes
-	for(std::size_t i = 0; i < page_size*num_pages; i++) {
+	for(std::size_t i = 0; i < PAGE_SIZE*num_pages; i++) {
 		ASSERT_EQ(c_array[i], a);
 	}
 	argo::barrier();
 
 	// Check that all nodes have all pages cached (or local)
 	for(std::size_t n = 0; n < num_pages; n++) {
-		ASSERT_TRUE(argo::backend::is_cached(&c_array[n*page_size]));
+		ASSERT_TRUE(argo::backend::is_cached(&c_array[n*PAGE_SIZE]));
 	}
 }
 

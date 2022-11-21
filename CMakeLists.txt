@@ -3,6 +3,10 @@
 cmake_minimum_required(VERSION 3.3)
 project(ArgoDSM VERSION 0.1)
 
+# define PAGE_SIZE: the commented out code returns an int; we want a size_t
+#execute_process(COMMAND getconf PAGESIZE OUTPUT_VARIABLE SYSTEM_PAGE_SIZE)
+add_definitions(-DPAGE_SIZE=4096UL) #${SYSTEM_PAGE_SIZE})
+
 set(DEFAULT_C_FLAGS "-std=c17 -pthread -Wall -Wextra -Werror")
 set(DEFAULT_CXX_FLAGS "-std=c++17 -pthread -DOMPI_SKIP_MPICXX=1 -Wall -Wextra -Werror")
 set(DEFAULT_LINK_FLAGS "")

@@ -20,7 +20,7 @@ void _selective_acquire(void *addr, std::size_t size) {
 		return;
 	}
 
-	const std::size_t block_size = page_size*CACHELINE;
+	const std::size_t block_size = PAGE_SIZE*CACHELINE;
 	const std::size_t start_address = reinterpret_cast<std::size_t>(argo::virtual_memory::start_address());
 	const std::size_t page_misalignment = reinterpret_cast<std::size_t>(addr)%block_size;
 	std::size_t argo_address =
@@ -95,7 +95,7 @@ void _selective_release(void *addr, std::size_t size) {
 		return;
 	}
 
-	const std::size_t block_size = page_size*CACHELINE;
+	const std::size_t block_size = PAGE_SIZE*CACHELINE;
 	const std::size_t start_address = reinterpret_cast<std::size_t>(argo::virtual_memory::start_address());
 	const std::size_t page_misalignment = reinterpret_cast<std::size_t>(addr)%block_size;
 	std::size_t argo_address =
@@ -127,7 +127,7 @@ void _selective_release(void *addr, std::size_t size) {
 		if(cacheControl[cache_index].dirty == DIRTY) {
 			mprotect(reinterpret_cast<char*>(start_address) + page_address, block_size, PROT_READ);
 			for(int i = 0; i <CACHELINE; i++) {
-				storepageDIFF(cache_index+i, page_address+page_size*i);
+				storepageDIFF(cache_index+i, page_address+PAGE_SIZE*i);
 			}
 			argo_write_buffer->erase(cache_index);
 			cacheControl[cache_index].dirty = CLEAN;

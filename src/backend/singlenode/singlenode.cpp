@@ -82,7 +82,7 @@ void init(std::size_t argo_size, std::size_t cache_size) {
 	/** @todo the cache_size parameter is not needed
 	 *        and should not be part of the backend interface */
 	(void)(cache_size);
-	memory = static_cast<char*>(vm::allocate_mappable(4096, argo_size));
+	memory = static_cast<char*>(vm::allocate_mappable(PAGE_SIZE, argo_size));
 	memory_size = argo_size;
 	using namespace data_distribution;
 	base_distribution<0>::set_memory_space(nodes, memory, argo_size);
@@ -91,15 +91,15 @@ void init(std::size_t argo_size, std::size_t cache_size) {
 	 *        the homenode and offset for an address */
 	if (is_first_touch_policy()) {
 		/* calculate the directory size and allocate memory */
-		std::size_t owners_dir_size = 3*(argo_size/4096UL);
+		std::size_t owners_dir_size = 3*(argo_size/PAGE_SIZE);
 		std::size_t owners_dir_size_bytes = owners_dir_size*sizeof(std::size_t);
-		owners_dir_size_bytes = (1 + ((owners_dir_size_bytes-1) / 4096UL))*4096UL;
-		global_owners_dir = static_cast<std::uintptr_t*>(vm::allocate_mappable(4096UL, owners_dir_size_bytes));
+		owners_dir_size_bytes = (1 + ((owners_dir_size_bytes-1) / PAGE_SIZE))*PAGE_SIZE;
+		global_owners_dir = static_cast<std::uintptr_t*>(vm::allocate_mappable(PAGE_SIZE, owners_dir_size_bytes));
 		/* hardcode first-touch directory values so
 		   that we perform only load operations */
 		for(std::size_t j = 0; j < owners_dir_size; j += 3) {
 			global_owners_dir[j] = 0;
-			global_owners_dir[j+1] = j/3 * 4096UL;
+			global_owners_dir[j+1] = j/3 * PAGE_SIZE;
 			global_owners_dir[j+2] = 0;
 		}
 	}
@@ -136,15 +136,15 @@ void reset_coherence() {
 	 *        the homenode and offset for an address */
 	if (is_first_touch_policy()) {
 		/* calculate the directory size and allocate memory */
-		std::size_t owners_dir_size = 3*(memory_size/4096UL);
+		std::size_t owners_dir_size = 3*(memory_size/PAGE_SIZE);
 		std::size_t owners_dir_size_bytes = owners_dir_size*sizeof(std::size_t);
-		owners_dir_size_bytes = (1 + ((owners_dir_size_bytes-1) / 4096UL))*4096UL;
-		global_owners_dir = static_cast<std::uintptr_t*>(vm::allocate_mappable(4096UL, owners_dir_size_bytes));
+		owners_dir_size_bytes = (1 + ((owners_dir_size_bytes-1) / PAGE_SIZE))*PAGE_SIZE;
+		global_owners_dir = static_cast<std::uintptr_t*>(vm::allocate_mappable(PAGE_SIZE, owners_dir_size_bytes));
 		/* hardcode first-touch directory values so
 		   that we perform only load operations */
 		for(std::size_t j = 0; j < owners_dir_size; j += 3) {
 			global_owners_dir[j] = 0;
-			global_owners_dir[j+1] = j/3 * 4096UL;
+			global_owners_dir[j+1] = j/3 * PAGE_SIZE;
 			global_owners_dir[j+2] = 0;
 		}
 	}

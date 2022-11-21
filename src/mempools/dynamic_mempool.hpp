@@ -91,7 +91,7 @@ inline void synchronize<NODE_ZERO_ONLY>(memory_t* const m) {
 /**
  * @brief Dynamically growing memory pool
  */
-template<template<class> class Allocator, growth_mode_t growth_mode, std::size_t chunk_size = 4096>
+template<template<class> class Allocator, growth_mode_t growth_mode, std::size_t chunk_size = PAGE_SIZE>
 class dynamic_memory_pool {
 	private:
 		/**  @brief typedef for byte-size allocator */
