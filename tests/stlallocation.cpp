@@ -43,7 +43,7 @@ TEST_F(cppTest, simpleList) {
 
 	my_list* l = conew_<my_list>();
 
-	for(int i = 0; i < argo_number_of_nodes(); i++) {
+	for(unsigned int i = 0; i < argo_number_of_nodes(); i++) {
 		if(argo_node_id() == i) {
 			ASSERT_NO_THROW(l->push_back(i));
 		}
@@ -68,7 +68,7 @@ TEST_F(cppTest, simpleVector) {
 
 	my_vector* v = conew_<my_vector>();
 
-	for(int i = 0; i < argo_number_of_nodes(); i++) {
+	for(unsigned int i = 0; i < argo_number_of_nodes(); i++) {
 		if(argo_node_id() == i) {
 			ASSERT_NO_THROW(v->push_back(i));
 		}
