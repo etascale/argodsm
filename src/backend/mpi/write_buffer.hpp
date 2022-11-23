@@ -20,6 +20,7 @@
 #include "backend/mpi/swdsm.h"
 
 #include "backend/backend.hpp"
+#include "config.hpp"
 #include "env/env.hpp"
 #include "qd.hpp"
 #include "virtual_memory/virtual_memory.hpp"

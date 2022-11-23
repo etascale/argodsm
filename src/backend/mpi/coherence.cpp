@@ -9,6 +9,7 @@
 
 #include "backend/backend.hpp"
 #include "backend/mpi/swdsm.h"
+#include "config.hpp"
 #include "virtual_memory/virtual_memory.hpp"
 
 namespace argo {

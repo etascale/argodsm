@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "backend/mpi/swdsm.h"
+#include "config.hpp"
 #include "data_distribution/global_ptr.hpp"
 #include "env/env.hpp"
 #include "signal/signal.hpp"
