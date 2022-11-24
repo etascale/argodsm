@@ -132,11 +132,11 @@ extern "C" {
 		argo::reset();
 	}
 
-	int argo_node_id() {
+	unsigned int argo_node_id() {
 		return argo::node_id();
 	}
 
-	int argo_number_of_nodes() {
+	unsigned int argo_number_of_nodes() {
 		return argo::number_of_nodes();
 	}
 
@@ -144,7 +144,7 @@ extern "C" {
 		return argo::is_argo_address(addr);
 	}
 
-	argo::node_id_t argo_get_homenode(void* addr) {
+	unsigned int argo_get_homenode(void* addr) {
 		return argo::get_homenode(addr);
 	}
 
