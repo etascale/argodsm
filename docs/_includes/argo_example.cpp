@@ -5,7 +5,7 @@
 
 #include <pthread.h>
 
-#include "argo/argo.hpp"
+#include "argo.hpp"
 
 struct thread_args {
 	int data_begin;
@@ -49,8 +49,8 @@ int main(int argc, char* argv[]) {
 	int num_threads = 16;
 	int local_num_threads;
 
-	// We totally need 10GB for this application
-	argo::init(10*1024*1024*1024UL);
+	// We totally need 1GB for this application
+	argo::init(1*1024*1024*1024UL);
 
 	local_num_threads = num_threads / argo::number_of_nodes();
 

@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_synchronization_hpp
-#define argo_synchronization_hpp argo_synchronization_hpp
+#ifndef ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_
+#define ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_
 
 #include <cstddef>
 
@@ -19,7 +19,7 @@ namespace argo {
 	 *          barrier call on each ArgoDSM node, then performs self-downgrade
 	 *          and self-invalidation on each node.
 	 */
-	void barrier(std::size_t threadcount=1);
+	void barrier(std::size_t threadcount = 1);
 
 	/**
 	 * @brief a barrier for ArgoDSM nodes
@@ -29,7 +29,7 @@ namespace argo {
 	 *          and self-invalidation on each node. Additionally, this barrier
 	 *          upgrades all pages with registered writers to a shared state.
 	 */
-	void barrier_upgrade_writers(std::size_t threadcount=1);
+	void barrier_upgrade_writers(std::size_t threadcount = 1);
 
 	/**
 	 * @brief a barrier for ArgoDSM nodes
@@ -39,11 +39,11 @@ namespace argo {
 	 *          and self-invalidation on each node. Additionally, this barrier
 	 *          upgrades all pages to a private state.
 	 */
-	void barrier_upgrade_all(std::size_t threadcount=1);
-} // namespace argo
+	void barrier_upgrade_all(std::size_t threadcount = 1);
+}  // namespace argo
 
 extern "C" {
-#include "synchronization.h"
+#include "synchronization/synchronization.h"
 }
 
-#endif /* argo_synchronization_hpp */
+#endif  // ARGODSM_SRC_SYNCHRONIZATION_SYNCHRONIZATION_HPP_

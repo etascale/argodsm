@@ -4,16 +4,13 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_argo_hpp
-#define argo_argo_hpp argo_argo_hpp
+#ifndef ARGODSM_SRC_ARGO_HPP_
+#define ARGODSM_SRC_ARGO_HPP_
 
 #include <cstddef>
 
 #include "allocators/allocators.hpp"
-#include "backend/backend.hpp"
-#include "types/types.hpp"
 #include "synchronization/synchronization.hpp"
-#include "data_distribution/data_distribution.hpp"
 
 extern "C" {
 #include "argo.h"
@@ -69,12 +66,12 @@ namespace argo {
 	 * @brief A unique ArgoDSM node identifier. Counting starts from 0.
 	 * @return The node ID
 	 */
-	int node_id();
+	argo::node_id_t node_id();
 	/**
 	 * @brief Number of ArgoDSM nodes being run
 	 * @return The total number of ArgoDSM nodes
 	 */
-	int number_of_nodes();
+	argo::num_nodes_t number_of_nodes();
 
 	/**
 	 * @brief Check if addr belongs in the ArgoDSM memory space
@@ -100,7 +97,7 @@ namespace argo {
 	 * @pre addr must be an address in ArgoDSM memory
 	 */
 	template<typename T>
-	int get_homenode(T* addr) {
+	argo::node_id_t get_homenode(T* addr) {
 		data_distribution::global_ptr<T> gptr(addr, false, false);
 		return gptr.peek_node();
 	}
@@ -110,6 +107,6 @@ namespace argo {
 	 * @return The block size of the current allocation policy in bytes
 	 */
 	std::size_t get_block_size();
-} // namespace argo
+}  // namespace argo
 
-#endif /* argo_argo_hpp */
+#endif  // ARGODSM_SRC_ARGO_HPP_

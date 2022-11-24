@@ -4,8 +4,8 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_argo_h
-#define argo_argo_h argo_argo_h
+#ifndef ARGODSM_SRC_ARGO_H_
+#define ARGODSM_SRC_ARGO_H_
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -41,13 +41,13 @@ void argo_reset();
  * @brief A unique ArgoDSM node identifier. Counting starts from 0.
  * @return The node id
  */
-int  argo_node_id();
+unsigned int argo_node_id();
 
 /**
  * @brief Number of ArgoDSM nodes being run
  * @return The total number of ArgoDSM nodes
  */
-int  argo_number_of_nodes();
+unsigned int argo_number_of_nodes();
 
 /**
  * @brief Check if addr belongs in the ArgoDSM memory space
@@ -64,7 +64,7 @@ bool argo_is_argo_address(void* addr);
  * been first-touched under the first-touch allocation policy
  * @pre addr must be an address in ArgoDSM memory
  */
-int argo_get_homenode(void* addr);
+unsigned int argo_get_homenode(void* addr);
 
 /**
  * @brief Get the block size of the current allocation policy
@@ -72,4 +72,4 @@ int argo_get_homenode(void* addr);
  */
 size_t argo_get_block_size();
 
-#endif /* argo_argo_h */
+#endif  // ARGODSM_SRC_ARGO_H_

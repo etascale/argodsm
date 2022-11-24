@@ -4,36 +4,29 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#ifndef argo_write_buffer_hpp
-#define argo_write_buffer_hpp argo_write_buffer_hpp
+#ifndef ARGODSM_SRC_BACKEND_MPI_WRITE_BUFFER_HPP_
+#define ARGODSM_SRC_BACKEND_MPI_WRITE_BUFFER_HPP_
 
+// C headers
+#include <mpi.h>
+// C++ headers
+#include <algorithm>
+#include <atomic>
 #include <deque>
 #include <iterator>
-#include <algorithm>
 #include <mutex>
-#include <atomic>
-#include <mpi.h>
+#include <utility>
+
+#include "backend/mpi/swdsm.h"
 
 #include "backend/backend.hpp"
+#include "config.hpp"
 #include "env/env.hpp"
-#include "virtual_memory/virtual_memory.hpp"
-#include "swdsm.h"
 #include "qd.hpp"
-
-/**
- * @brief		Argo statistics struct
- * @deprecated 	This should be replaced with an API call
- */
-extern argo_statistics stats;
-
-/**
- * @brief		Argo cache data structure
- * @deprecated 	prototype implementation, should be replaced with API calls
- */
-extern control_data* cacheControl;
+#include "virtual_memory/virtual_memory.hpp"
 
 /** @brief Block size based on backend definition */
-const std::size_t block_size = page_size*CACHELINE;
+const std::size_t block_size = PAGE_SIZE*CACHELINE;
 
 /**
  * @brief	A write buffer in FIFO style with the capability to erase any
@@ -41,8 +34,7 @@ const std::size_t block_size = page_size*CACHELINE;
  * @tparam	T the type of the write buffer
  */
 template<typename T>
-class write_buffer
-{
+class write_buffer {
 	private:
 		/** @brief This container holds cache indexes that should be written back */
 		std::deque<T> _buffer;
@@ -80,7 +72,7 @@ class write_buffer
 		 * @brief	Check if the write buffer is empty
 		 * @return	True if empty, else False
 		 */
-		bool empty() {
+		bool empty() const {
 			return _buffer.empty();
 		}
 
@@ -88,7 +80,7 @@ class write_buffer
 		 * @brief	Get the size of the buffer
 		 * @return	The size of the buffer
 		 */
-		size_t size() {
+		size_t size() const {
 			return _buffer.size();
 		}
 
@@ -97,7 +89,7 @@ class write_buffer
 		 * @param	i The requested buffer index
 		 * @return	The element at index i of type T
 		 */
-		T at(std::size_t i){
+		T at(std::size_t i) const {
 			return _buffer.at(i);
 		}
 
@@ -117,7 +109,7 @@ class write_buffer
 		 * @param	args Properties of the new element to emplace back
 		 */
 		template<typename... Args>
-			void emplace_back( Args&&... args) {
+			void emplace_back(Args&&... args) {
 				_buffer.emplace_back(std::forward<Args>(args)...);
 			}
 
@@ -137,17 +129,19 @@ class write_buffer
 		 * @pre		Require ibsem and cachemutex to be taken
 		 */
 		void write_back_index(std::size_t cache_index) {
+			cache_locks[cache_index].lock();
 			assert(cacheControl[cache_index].dirty == DIRTY);
-			std::uintptr_t page_address = cacheControl[cache_index].tag;
+			const std::uintptr_t page_address = cacheControl[cache_index].tag;
 			void* page_ptr = static_cast<char*>(
 				argo::virtual_memory::start_address()) + page_address;
 
 			// Write back the page
 			mprotect(page_ptr, block_size, PROT_READ);
 			cacheControl[cache_index].dirty = CLEAN;
-			for(std::size_t i = 0; i < CACHELINE; i++){
-				storepageDIFF(cache_index+i, page_size*i+page_address);
+			for(std::size_t i = 0; i < CACHELINE; i++) {
+				storepageDIFF(cache_index+i, PAGE_SIZE*i+page_address);
 			}
+			cache_locks[cache_index].unlock();
 		}
 
 		/**
@@ -189,7 +183,7 @@ class write_buffer
 			assert(!has(val));
 
 			// If the buffer is full, write back _write_back_size indices
-			if(size() >= _max_size){
+			if(size() >= _max_size) {
 				flush_partial();
 			}
 
@@ -216,9 +210,9 @@ class write_buffer
 		void _erase(T val) {
 			// Attempt to get iterator to element equal to val
 			typename std::deque<T>::iterator it =
-				std::find(_buffer.begin(),_buffer.end(), val);
+				std::find(_buffer.begin(), _buffer.end(), val);
 			// If found, erase it
-			if(it != _buffer.end()){
+			if(it != _buffer.end()) {
 				_buffer.erase(it);
 			}
 		}
@@ -368,12 +362,11 @@ class write_buffer
 
 		/**
 		 * @brief	Flushes the ArgoDSM write buffer to memory
-		 * @pre		Require ibsem to be taken until parallel MPI
 		 */
 		void flush() {
 			// Use an atomic flag to detect when flush is done
 			std::atomic<bool> w_flag;
-			w_flag.store(false,std::memory_order_release);
+			w_flag.store(false, std::memory_order_release);
 
 			double t_start = MPI_Wtime();
 			// Delegate flushing to lock holder (can be self)
@@ -382,7 +375,7 @@ class write_buffer
 
 			// Wait until flush is completed
 			double w_start = MPI_Wtime();
-			while(!w_flag.load(std::memory_order_acquire));
+			while(!w_flag.load(std::memory_order_acquire)) {}
 			double w_end = MPI_Wtime();
 
 			std::lock_guard<std::mutex> stat_lock(_stat_mutex);
@@ -393,7 +386,6 @@ class write_buffer
 		/**
 		 * @brief	Adds a new element to the write buffer
 		 * @param	val The value of type T to add to the buffer
-		 * @pre		Require ibsem to be taken until parallel MPI
 		 */
 		void add(T val) {
 			double t_start = MPI_Wtime();
@@ -481,7 +473,6 @@ class write_buffer
 			_page_count = 0;
 			_partial_flush_count = 0;
 		}
+};  // class write_buffer
 
-}; //class
-
-#endif /* argo_write_buffer_hpp */
+#endif  // ARGODSM_SRC_BACKEND_MPI_WRITE_BUFFER_HPP_

@@ -183,9 +183,9 @@ is where you installed ArgoDSM. If the ArgoDSM files are already in your
 are talking about, you should ask your system administrator.
 
 ``` bash
-mpic++ -O3 -std=c++11 -o argo_example            \
+mpic++ -O3 -std=c++17 -o argo_example            \
        -L${ARGO_INSTALL_DIRECTORY}/lib           \
-       -I${ARGO_INSTALL_DIRECTORY}/include       \
+       -I${ARGO_INSTALL_DIRECTORY}/include/argo  \
        -Wl,-rpath,${ARGO_INSTALL_DIRECTORY}/lib  \
        argo_example.cpp -largo -largobackend-mpi
 ```
@@ -196,8 +196,9 @@ support office. A generic example with OpenMPI on a cluster utilizing Slurm
 might look like this:
 
 ``` bash
-mpirun --map-by ppr:1:node                                               \
-	--mca mpi_leave_pinned 1 --mca btl openib,self,sm -n ${SLURM_NNODES} \
-	./argo_example
+mpirun --map-by ppr:1:node  \
+       --mca pml ucx        \
+       --mca osc ucx        \
+       ./argo_example
 ```
 

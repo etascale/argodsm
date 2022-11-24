@@ -4,15 +4,17 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
+// C headers
+#include <mpi.h>
+// C++ headers
 #include <algorithm>
 #include <chrono>
-#include <mpi.h>
 #include <numeric>
 #include <random>
-
+// ArgoDSM headers
 #include "argo.hpp"
 #include "data_distribution/global_ptr.hpp"
-
+// GoogleTest headers
 #include "gtest/gtest.h"
 
 /** @brief Global pointer to char */
@@ -26,15 +28,15 @@ using global_uint = typename argo::data_distribution::global_ptr<unsigned>;
 /** @brief Global pointer to int pointer */
 using global_intptr = typename argo::data_distribution::global_ptr<int*>;
 
-/** @brief ArgoDSM memory size */
-constexpr std::size_t size = 1<<24; // 16M
+/** @brief ArgoDSM memory size (16M) */
+constexpr std::size_t size = 1<<24;
 /** @brief ArgoDSM cache size */
 constexpr std::size_t cache_size = size;
 /** @brief ArgoDSM array size */
 constexpr std::size_t array_size = 1<<19;
 
 /** @brief Time to wait before assuming a deadlock has occured */
-constexpr std::chrono::minutes deadlock_threshold{1}; // Choosen for no reason
+constexpr std::chrono::minutes deadlock_threshold{1};  // Choosen for no reason
 
 /** @brief A random char constant */
 constexpr char c_const = 'a';
@@ -59,17 +61,18 @@ class backendTest : public testing::Test, public ::testing::WithParamInterface<i
 		}
 };
 
+
 /**
  * @brief Test if atomic exchange writes the correct values
  *
  * The writes are performed by all the nodes at the same time
  */
 TEST_F(backendTest, atomicXchgAll) {
-	//@todo This test is disabled as OpenUCX only supports
-	//atomic MPI operations of size 4 and 8 bytes.
-	//global_char _c(argo::conew_<char>(0));
-	//argo::backend::atomic::exchange(_c, c_const);
-	//ASSERT_EQ(c_const, argo::backend::atomic::load(_c));
+	// @todo This test is disabled as OpenUCX only supports
+	// atomic MPI operations of size 4 and 8 bytes.
+	// global_char _c(argo::conew_<char>(0));
+	// argo::backend::atomic::exchange(_c, c_const);
+	// ASSERT_EQ(c_const, argo::backend::atomic::load(_c));
 
 	global_int _i(argo::conew_<int>(0));
 	argo::backend::atomic::exchange(_i, i_const);
@@ -90,13 +93,13 @@ TEST_F(backendTest, atomicXchgAll) {
  * The writes are only performed by one node
  */
 TEST_F(backendTest, atomicXchgOne) {
-	//@todo This test is disabled as OpenUCX only supports
-	//atomic MPI operations of size 4 and 8 bytes.
-	//global_char _c(argo::conew_<char>());
-	//if (argo::backend::node_id() == 0)
-	//	argo::backend::atomic::exchange(_c, c_const);
-	//argo::backend::barrier();
-	//ASSERT_EQ(c_const, argo::backend::atomic::load(_c));
+	// @todo This test is disabled as OpenUCX only supports
+	// atomic MPI operations of size 4 and 8 bytes.
+	// global_char _c(argo::conew_<char>());
+	// if (argo::backend::node_id() == 0)
+	// 	argo::backend::atomic::exchange(_c, c_const);
+	// argo::backend::barrier();
+	// ASSERT_EQ(c_const, argo::backend::atomic::load(_c));
 
 	global_int _i(argo::conew_<int>());
 	if (argo::backend::node_id() == 0)
@@ -127,13 +130,13 @@ TEST_F(backendTest, atomicXchgOne) {
  * @brief Test atomic stores
  */
 TEST_F(backendTest, storeOne) {
-	//@todo This test is disabled as OpenUCX only supports
-	//atomic MPI operations of size 4 and 8 bytes.
-	//global_char _c(argo::conew_<char>());
-	//if (argo::backend::node_id() == 0)
-	//	argo::backend::atomic::store(_c, c_const);
-	//argo::backend::barrier();
-	//ASSERT_EQ(c_const, argo::backend::atomic::load(_c));
+	// @todo This test is disabled as OpenUCX only supports
+	// atomic MPI operations of size 4 and 8 bytes.
+	// global_char _c(argo::conew_<char>());
+	// if (argo::backend::node_id() == 0)
+	// 	argo::backend::atomic::store(_c, c_const);
+	// argo::backend::barrier();
+	// ASSERT_EQ(c_const, argo::backend::atomic::load(_c));
 
 	global_int _i(argo::conew_<int>());
 	if (argo::backend::node_id() == 0)
@@ -169,14 +172,14 @@ TEST_F(backendTest, storeOne) {
  */
 TEST_F(backendTest, loadOne) {
 	std::chrono::system_clock::time_point max_time;
-	//@todo This test is disabled as OpenUCX only supports
-	//atomic MPI operations of size 4 and 8 bytes.
-	//global_char _c(argo::conew_<char>());
-	//if (argo::backend::node_id() == 0)
-	//	argo::backend::atomic::store(_c, c_const);
-	//max_time = std::chrono::system_clock::now() + deadlock_threshold;
-	//while(argo::backend::atomic::load(_c) != c_const)
-	//	ASSERT_LT(std::chrono::system_clock::now(), max_time);
+	// @todo This test is disabled as OpenUCX only supports
+	// atomic MPI operations of size 4 and 8 bytes.
+	// global_char _c(argo::conew_<char>());
+	// if (argo::backend::node_id() == 0)
+	// 	argo::backend::atomic::store(_c, c_const);
+	// max_time = std::chrono::system_clock::now() + deadlock_threshold;
+	// while(argo::backend::atomic::load(_c) != c_const)
+	// 	ASSERT_LT(std::chrono::system_clock::now(), max_time);
 
 	global_int _i(argo::conew_<int>());
 	if (argo::backend::node_id() == 0)
@@ -221,7 +224,7 @@ TEST_F(backendTest, atomicXchgAtomicity) {
 	// Test if only one node succeeded
 	argo::barrier();
 	bool found = false;
-	for (int i = 0; i < argo::number_of_nodes(); ++i) {
+	for (argo::num_nodes_t i = 0; i < argo::number_of_nodes(); ++i) {
 		global_int _rcs(&rcs[i]);
 		if (argo::backend::atomic::load(_rcs)) {
 			ASSERT_FALSE(found);
@@ -301,7 +304,7 @@ TEST_F(backendTest, atomicCASAtomicity) {
 	// Test if only one node succeeded
 	argo::barrier();
 	int count = 0;
-	for (int i = 0; i < argo::number_of_nodes(); ++i) {
+	for (argo::num_nodes_t i = 0; i < argo::number_of_nodes(); ++i) {
 		global_uint _rcs(&rcs[i]);
 		if (argo::backend::atomic::load(_rcs)) {
 			++count;
@@ -410,7 +413,7 @@ TEST_F(backendTest, selectiveSpin) {
 		argo::backend::selective_release(flag, sizeof(unsigned));
 	}
 	// Wait for the flag change to be visible on every node
-	while(*flag != 1){
+	while(*flag != 1) {
 		ASSERT_LT(std::chrono::system_clock::now(), max_time);
 		argo::backend::selective_acquire(flag, sizeof(unsigned));
 	}
@@ -427,34 +430,33 @@ TEST_F(backendTest, selectiveArray) {
 		std::chrono::system_clock::now() + deadlock_threshold;
 
 	// Initialize
-	if(argo::node_id() == 0){
-		for(std::size_t i=0; i<array_size; i++){
+	if(argo::node_id() == 0) {
+		for(std::size_t i = 0; i < array_size; i++) {
 			array[i] = 0;
 		}
 	}
 	argo::barrier();
 
-	// Set each array element on node 0, then set flag
-	if(argo::node_id() == 0){
-		for(std::size_t i=0; i<array_size; i++){
+	if(argo::node_id() == 0) {
+		// Set each array element on node 0, then set flag
+		for(std::size_t i = 0; i < array_size; i++) {
 			array[i] = i_const;
 		}
 		argo::backend::selective_release(array, array_size*sizeof(int));
 		*flag = 1;
 		argo::backend::selective_release(flag, sizeof(unsigned));
-	}
-	// Read each element on remote nodes to ensure they are cached
-	else {
+	} else {
+		// Read each element on remote nodes to ensure they are cached
 		int tmp;
 		const int max_total = i_const*array_size;
-		for(std::size_t i=0; i<array_size; i++){
+		for(std::size_t i = 0; i < array_size; i++) {
 			tmp = array[i];
 		}
 		ASSERT_LE(tmp, max_total);
 	}
 
 	// Wait for the flag change to be visible on every node
-	while(*flag != 1){
+	while(*flag != 1) {
 		ASSERT_LT(std::chrono::system_clock::now(), max_time);
 		argo::backend::selective_acquire(flag, sizeof(unsigned));
 	}
@@ -463,7 +465,7 @@ TEST_F(backendTest, selectiveArray) {
 	argo::backend::selective_acquire(array, array_size*sizeof(int));
 	int count = 0;
 	const int expected = i_const*array_size;
-	for(std::size_t i=0; i<array_size; i++){
+	for(std::size_t i = 0; i < array_size; i++) {
 		count += array[i];
 	}
 	ASSERT_EQ(count, expected);
@@ -484,17 +486,17 @@ TEST_F(backendTest, selectiveUnaligned) {
 		std::chrono::system_clock::now() + deadlock_threshold;
 
 	// Initialize
-	if(argo::node_id() == 0){
-		for(std::size_t i=0; i<array_size; i++){
+	if(argo::node_id() == 0) {
+		for(std::size_t i = 0; i < array_size; i++) {
 			array[i] = 0;
 		}
 	}
 	argo::barrier();
 
-	// Set array elements on node 0, then set flag
-	if(argo::node_id() == 0){
+	if(argo::node_id() == 0) {
+		// Set array elements on node 0, then set flag
 		// Write an unaligned chunk crossing a (remote node) boundary
-		for(std::size_t i=ua_chunk_size*1807; i<ua_chunk_size*1809; i++){
+		for(std::size_t i = ua_chunk_size*1807; i < ua_chunk_size*1809; i++) {
 			array[i] = i_const;
 		}
 		argo::backend::selective_release(&array[ua_chunk_size*1807],
@@ -502,20 +504,19 @@ TEST_F(backendTest, selectiveUnaligned) {
 
 		*flag = 1;
 		argo::backend::selective_release(flag, sizeof(unsigned));
-	}
-	// Read the set values on every other node to make sure that some
-	// version of the pages involved are already cached
-	else{
+	} else {
+		// Read the set values on every other node to make sure that some
+		// version of the pages involved are already cached
 		int tmp = 0;
 		const int max_total = i_const*ua_chunk_size*2;
-		for(std::size_t i=ua_chunk_size*1807; i<ua_chunk_size*1809; i++){
+		for(std::size_t i = ua_chunk_size*1807; i < ua_chunk_size*1809; i++) {
 			tmp = array[i];
 		}
 		ASSERT_LE(tmp, max_total);
 	}
 
 	// Wait for the flag change to be visible on every node
-	while(*flag != 1){
+	while(*flag != 1) {
 		ASSERT_LT(std::chrono::system_clock::now(), max_time);
 		argo::backend::selective_acquire(flag, sizeof(unsigned));
 	}
@@ -525,7 +526,7 @@ TEST_F(backendTest, selectiveUnaligned) {
 			(ua_chunk_size*2)*sizeof(int));
 	int count = 0;
 	const int expected = i_const*ua_chunk_size*2;
-	for(std::size_t i=0; i<array_size; i++){
+	for(std::size_t i = 0; i < array_size; i++) {
 		count += array[i];
 	}
 	ASSERT_EQ(count, expected);
@@ -687,7 +688,7 @@ TEST_F(backendTest, randAccessesPeriodicSelectiveReleaseAcquireArray) {
  */
 TEST_F(backendTest, randAccessesBarrierPage) {
 	// Allocate global page
-	constexpr std::size_t array_size = 4096 / sizeof(unsigned char);
+	constexpr std::size_t array_size = PAGE_SIZE / sizeof(unsigned char);
 	unsigned char*const array = argo::conew_array<unsigned char>(array_size);
 
 	// Allocate indices array and populate it
@@ -744,7 +745,7 @@ TEST_F(backendTest, randAccessesBarrierPage) {
  */
 TEST_F(backendTest, randAccessesBulkySelectiveReleaseAcquirePage) {
 	// Allocate global page
-	constexpr std::size_t array_size = 4096 / sizeof(unsigned char);
+	constexpr std::size_t array_size = PAGE_SIZE / sizeof(unsigned char);
 	unsigned char*const array = argo::conew_array<unsigned char>(array_size);
 
 	// Allocate indices array and populate it
@@ -807,7 +808,7 @@ TEST_F(backendTest, randAccessesBulkySelectiveReleaseAcquirePage) {
  */
 TEST_F(backendTest, randAccessesPeriodicSelectiveReleaseAcquirePage) {
 	// Allocate global page
-	constexpr std::size_t array_size = 4096 / sizeof(unsigned char);
+	constexpr std::size_t array_size = PAGE_SIZE / sizeof(unsigned char);
 	unsigned char*const array = argo::conew_array<unsigned char>(array_size);
 
 	// Allocate indices array and populate it
@@ -868,39 +869,39 @@ TEST_F(backendTest, randAccessesPeriodicSelectiveReleaseAcquirePage) {
  * @brief Test write buffer under load with random access patterns
  */
 TEST_F(backendTest, writeBufferLoad) {
-	const std::size_t num_ints = 4000000; // 4M ints for just under total memory size
-	const std::size_t num_writes = num_ints/20; // Not too many random writes
+	const std::size_t num_ints = 4000000;  // 4M ints for just under total memory size
+	const std::size_t num_writes = num_ints/20;  // Not too many random writes
 	int* array = argo::conew_array<int>(num_ints);
 
 	// Random device to ensure accesses are irregular in order to expose
 	// random ordering between writebacks to different nodes
 	std::random_device rd;
 	std::mt19937 rng(rd());
-	std::uniform_int_distribution<int> dist(0,num_ints-1);
+	std::uniform_int_distribution<int> dist(0, num_ints-1);
 
 	// Initialize write buffer
-	if(argo::node_id() == 0){
-		for(std::size_t i=0; i<num_ints; i++){
+	if(argo::node_id() == 0) {
+		for(std::size_t i = 0; i < num_ints; i++) {
 			array[i] = 0;
 		}
 	}
 	argo::barrier();
 
 	// One node at a time, increment random elements num_writes times
-	for(int i=0; i<argo::number_of_nodes(); i++){
-		if(i == argo::node_id()){
-			for(std::size_t j=0; j<num_writes; j++){
-				array[dist(rng)]+=1;
+	for(argo::num_nodes_t i = 0; i < argo::number_of_nodes(); i++) {
+		if(i == argo::node_id()) {
+			for(std::size_t j = 0; j < num_writes; j++) {
+				array[dist(rng)] += 1;
 			}
 		}
 		argo::barrier();
 	}
 
 	// Check that each node incremented num_writes elements
-	if(argo::node_id() == 0){
+	if(argo::node_id() == 0) {
 		int count = 0;
 		int expected = num_writes*argo::number_of_nodes();
-		for(std::size_t i=0; i<num_ints; i++){
+		for(std::size_t i = 0; i < num_ints; i++) {
 			count += array[i];
 		}
 		ASSERT_EQ(count, expected);
@@ -908,6 +909,7 @@ TEST_F(backendTest, writeBufferLoad) {
 	// Clean up
 	argo::codelete_array(array);
 }
+
 
 /**
  * @brief The main function that runs the tests

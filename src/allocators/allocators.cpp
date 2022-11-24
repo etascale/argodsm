@@ -4,8 +4,7 @@
  * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
  */
 
-#include "collective_allocator.hpp"
-#include "dynamic_allocator.hpp"
+#include "allocators.hpp"
 
 namespace mem = argo::mempools;
 namespace alloc = argo::allocators;

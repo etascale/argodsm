@@ -1,0 +1,14 @@
+/**
+ * @file
+ * @brief This file provides automatic generation of config.hpp based on CMake options
+ * @note Do not change the values in this file
+ * @copyright Eta Scale AB. Licensed under the Eta Scale Open Source License. See the LICENSE file for details.
+ */
+
+#ifndef ARGODSM_CONFIG_CONFIG_HPP_
+#define ARGODSM_CONFIG_CONFIG_HPP_
+
+#define PAGE_SIZE @ARGO_PAGE_SIZE@
+#define CACHELINE @ARGO_CACHE_LINE_SIZE@
+
+#endif /* ARGODSM_CONFIG_CONFIG_HPP */
