@@ -22,7 +22,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y doxygen graphviz libnuma-dev libopenmpi-dev
-      - name: Build
+      - name: Build ArgoDSM
         run: ./.github/scripts/make_argo.sh
-      - name: Test
-        run: cd build && make test
+      - name: Install ArgoDSM
+        run: make install -C build
+      - name: Build external
+        run: ./.github/scripts/make_external.sh
+      - name: Run test suite
+        run: make test -C build
+      - name: Run external
+        run: ./.github/scripts/run_external.sh
