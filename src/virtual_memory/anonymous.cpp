@@ -19,6 +19,7 @@
 #include <system_error>
 
 #include "backend/backend.hpp"
+#include "config.hpp"
 #include "virtual_memory.hpp"
 
 namespace {

@@ -42,11 +42,6 @@
 #include "backend/backend.hpp"
 #include "mpi_lock.hpp"
 
-#ifndef CACHELINE
-/** @brief Size of a ArgoDSM cacheline in number of pages */
-#define CACHELINE 1L
-#endif
-
 #ifndef NUM_THREADS
 /** @brief Number of maximum local threads in each node */
 /**@bug this limits amount of local threads because of pthread barriers being initialized at startup*/

@@ -3,9 +3,6 @@
 cmake_minimum_required(VERSION 3.3)
 project(ArgoDSM VERSION 0.1)
 
-# define PAGE_SIZE: the commented out code returns an int; we want a size_t
-#execute_process(COMMAND getconf PAGESIZE OUTPUT_VARIABLE SYSTEM_PAGE_SIZE)
-add_definitions(-DPAGE_SIZE=4096UL) #${SYSTEM_PAGE_SIZE})
 
 set(DEFAULT_C_FLAGS "-std=c17 -pthread -Wall -Wextra -Werror")
 set(DEFAULT_CXX_FLAGS "-std=c++17 -pthread -DOMPI_SKIP_MPICXX=1 -Wall -Wextra -Werror")
@@ -87,6 +84,30 @@ else()
 	include_directories(${SUBMODULES_DIR}/qd)
 endif()
 
+# Add a restricted option to set the ArgoDSM page size
+set(VALID_PAGE_SIZES 4096UL)
+set(ARGO_PAGE_SIZE 4096UL CACHE STRING "Set the ArgoDSM page size")
+set_property(CACHE ARGO_PAGE_SIZE PROPERTY STRINGS ${VALID_PAGE_SIZES})
+list(FIND VALID_PAGE_SIZES ${ARGO_PAGE_SIZE} index)
+if(index EQUAL -1)
+	message(FATAL_ERROR "Invalid ARGO_PAGE_SIZE. Valid options: ${VALID_PAGE_SIZES}")
+endif()
+
+# Add a restricted option to set the number of ArgoDSM pages per cache line
+set(VALID_CACHE_LINE_SIZES 1L)
+set(ARGO_CACHE_LINE_SIZE 1L CACHE STRING "Set the number of ArgoDSM pages per cache line")
+set_property(CACHE ARGO_CACHE_LINE_SIZE PROPERTY STRINGS ${VALID_CACHE_LINE_SIZES})
+list(FIND VALID_CACHE_LINE_SIZES ${ARGO_CACHE_LINE_SIZE} index)
+if(index EQUAL -1)
+	message(FATAL_ERROR "Invalid ARGO_CACHE_LINE_SIZE. Valid options: ${VALID_CACHE_LINE_SIZES}")
+endif()
+
+# Generate config.hpp containing the above set options and install it
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config/config.hpp.in ${CMAKE_BINARY_DIR}/config/config.hpp @ONLY)
+include_directories(${CMAKE_BINARY_DIR}/config)
+install(FILES ${CMAKE_BINARY_DIR}/config/config.hpp
+	DESTINATION include/argo)
+
 include_directories("${PROJECT_SOURCE_DIR}/src")
 add_subdirectory(src)
 
@@ -138,4 +159,3 @@ if(BUILD_DOCUMENTATION)
 
 	install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc)
 endif()
-

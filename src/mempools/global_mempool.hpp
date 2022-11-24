@@ -15,6 +15,7 @@
 #include <memory>
 
 #include "backend/backend.hpp"
+#include "config.hpp"
 #include "data_distribution/global_ptr.hpp"
 #include "synchronization/global_tas_lock.hpp"
 
