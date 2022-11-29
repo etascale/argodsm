@@ -30,7 +30,7 @@ constexpr std::size_t size = 1<<20;
 constexpr std::size_t cache_size = size;
 
 /** @brief number of threads to spawn for some of the tests */
-constexpr int nThreads = 16;
+constexpr int kThreads = 16;
 /** @brief number of itereations to run for some of the tests */
 constexpr int iter = 10000;
 
@@ -190,21 +190,21 @@ void increment_counter2(LockType* l1, LockType* l2, int* counter) {
  * @brief Checks if locking is working by incrementing a shared counter
  */
 TEST_F(LockTest, StressMCSLock) {
-	std::thread threads[nThreads];
+	std::thread threads[kThreads];
 	counter = new int(0);
 	mcs_lock = new argo::locallock::mcs_lock();
 
 	ASSERT_EQ(*counter, 0);
 
-	for (int i = 0; i < nThreads; i++) {
+	for (int i = 0; i < kThreads; i++) {
 		threads[i] = std::thread(
 			increment_counter<argo::locallock::mcs_lock>, mcs_lock, counter);
 	}
-	for (int i = 0; i < nThreads; i++) {
+	for (int i = 0; i < kThreads; i++) {
 		threads[i].join();
 	}
 
-	ASSERT_EQ(iter * nThreads, *counter);
+	ASSERT_EQ(iter * kThreads, *counter);
 
 	delete counter;
 	delete mcs_lock;
@@ -214,7 +214,7 @@ TEST_F(LockTest, StressMCSLock) {
  * @brief Checks if locking of multiple locks is working by incrementing a shared counter
  */
 TEST_F(LockTest, StressMCSMultipleLocks) {
-	std::thread threads[nThreads];
+	std::thread threads[kThreads];
 	int locks = 4;
 	counter = new int(0);
 	mcs_lock = new argo::locallock::mcs_lock[locks];
@@ -222,15 +222,15 @@ TEST_F(LockTest, StressMCSMultipleLocks) {
 
 	ASSERT_EQ(*counter, 0);
 
-	for (int i = 0; i < nThreads; i++) {
+	for (int i = 0; i < kThreads; i++) {
 		threads[i] = std::thread(increment_counter2<argo::locallock::mcs_lock>,
 			&mcs_lock[i % locks], global_lock, counter);
 	}
-	for (int i = 0; i < nThreads; i++) {
+	for (int i = 0; i < kThreads; i++) {
 		threads[i].join();
 	}
 
-	ASSERT_EQ(iter * nThreads, *counter);
+	ASSERT_EQ(iter * kThreads, *counter);
 
 	delete counter;
 	delete[] mcs_lock;
@@ -241,22 +241,22 @@ TEST_F(LockTest, StressMCSMultipleLocks) {
  * @brief Checks locking is working by decrementing a shared counter
  */
 TEST_F(LockTest, StressCohortLock) {
-	std::thread threads[nThreads];
+	std::thread threads[kThreads];
 	counter = argo::conew_<int>(0);
 	cohort_lock = new argo::globallock::cohort_lock();
 
 	ASSERT_EQ(0, *counter);
 	argo::barrier();
-	for (int i = 0; i < nThreads; i++) {
+	for (int i = 0; i < kThreads; i++) {
 		threads[i] = std::thread(
 			increment_counter<argo::globallock::cohort_lock>, cohort_lock, counter);
 	}
-	for (int i = 0; i < nThreads; i++) {
+	for (int i = 0; i < kThreads; i++) {
 		threads[i].join();
 	}
 
 	argo::barrier();
-	ASSERT_EQ(iter * nThreads * argo::number_of_nodes(), *counter);
+	ASSERT_EQ(iter * kThreads * argo::number_of_nodes(), *counter);
 	argo::codelete_(counter);
 	delete cohort_lock;
 }

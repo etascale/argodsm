@@ -25,7 +25,7 @@ constexpr std::size_t single_entry_size = 1;
  * in the MPI backend. Changes to this must be applied in both locations
  * and should probably be centralized at some point.
  */
-constexpr std::size_t page_info_size = single_entry_size * 3;
+constexpr std::size_t kPageInfoSize = single_entry_size * 3;
 
 /**
  * @note backend.hpp is not included here as it includes global_ptr.hpp,
@@ -105,12 +105,12 @@ class first_touch_distribution : public base_distribution<instance> {
 
 	public:
 		virtual node_id_t peek_homenode(char* const ptr) {
-			std::size_t page_info[page_info_size];
+			std::size_t page_info[kPageInfoSize];
 			node_id_t homenode = invalid_node_id;
 			static const std::size_t rank = argo::backend::node_id();
 			static const std::size_t global_null = base_distribution<instance>::total_size + 1;
 			const std::size_t addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
-			const std::size_t owners_dir_window_index = page_info_size * (addr / granularity);
+			const std::size_t owners_dir_window_index = kPageInfoSize * (addr / granularity);
 
 			std::unique_lock<std::mutex> def_lock(owners_mutex, std::defer_lock);
 			def_lock.lock();
@@ -118,7 +118,7 @@ class first_touch_distribution : public base_distribution<instance> {
 			update_dirs(addr, false);
 			/* spin in case the values other than `ownership` have not been reflected to the local window */
 			do {
-				argo::backend::atomic::_load_local_owners_dir(&page_info, page_info_size, rank, owners_dir_window_index);
+				argo::backend::atomic::_load_local_owners_dir(&page_info, kPageInfoSize, rank, owners_dir_window_index);
 			} while (page_info[2] != global_null && page_info[0] == global_null);
 			def_lock.unlock();
 
@@ -140,7 +140,7 @@ class first_touch_distribution : public base_distribution<instance> {
 			static const std::size_t rank = argo::backend::node_id();
 			static const std::size_t global_null = base_distribution<instance>::total_size + 1;
 			const std::size_t addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
-			const std::size_t owners_dir_window_index = page_info_size * (addr / granularity);
+			const std::size_t owners_dir_window_index = kPageInfoSize * (addr / granularity);
 
 			std::unique_lock<std::mutex> def_lock(owners_mutex, std::defer_lock);
 			def_lock.lock();
@@ -162,13 +162,13 @@ class first_touch_distribution : public base_distribution<instance> {
 		}
 
 		virtual std::size_t peek_local_offset(char* const ptr) {
-			std::size_t page_info[page_info_size];
+			std::size_t page_info[kPageInfoSize];
 			std::size_t offset = invalid_offset;
 			static const std::size_t rank = argo::backend::node_id();
 			static const std::size_t global_null = base_distribution<instance>::total_size + 1;
 			const std::size_t drift = (ptr - base_distribution<instance>::start_address) % granularity;
 			const std::size_t addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
-			const std::size_t owners_dir_window_index = page_info_size * (addr / granularity);
+			const std::size_t owners_dir_window_index = kPageInfoSize * (addr / granularity);
 
 			std::unique_lock<std::mutex> def_lock(owners_mutex, std::defer_lock);
 			def_lock.lock();
@@ -176,7 +176,7 @@ class first_touch_distribution : public base_distribution<instance> {
 			update_dirs(addr, false);
 			/* spin in case the values other than `ownership` have not been reflected to the local window */
 			do {
-				argo::backend::atomic::_load_local_owners_dir(&page_info, page_info_size, rank, owners_dir_window_index);
+				argo::backend::atomic::_load_local_owners_dir(&page_info, kPageInfoSize, rank, owners_dir_window_index);
 			} while (page_info[2] != global_null && page_info[1] == global_null);
 			def_lock.unlock();
 
@@ -199,7 +199,7 @@ class first_touch_distribution : public base_distribution<instance> {
 			static const std::size_t global_null = base_distribution<instance>::total_size + 1;
 			const std::size_t drift = (ptr - base_distribution<instance>::start_address) % granularity;
 			const std::size_t addr = (ptr - base_distribution<instance>::start_address) / granularity * granularity;
-			const std::size_t owners_dir_window_index = page_info_size * (addr / granularity);
+			const std::size_t owners_dir_window_index = kPageInfoSize * (addr / granularity);
 
 			std::unique_lock<std::mutex> def_lock(owners_mutex, std::defer_lock);
 			def_lock.lock();
@@ -228,7 +228,7 @@ void first_touch_distribution<instance>::update_dirs(const std::size_t& addr,
 	std::size_t ownership;
 	static const std::size_t rank = argo::backend::node_id();
 	static const std::size_t global_null = base_distribution<instance>::total_size + 1;
-	const std::size_t owners_dir_window_index = page_info_size * (addr / granularity);
+	const std::size_t owners_dir_window_index = kPageInfoSize * (addr / granularity);
 	const std::size_t cas_node = (addr / granularity) % base_distribution<instance>::nodes;
 
 	/* fetch the ownership value for the page from the local window */
@@ -237,17 +237,17 @@ void first_touch_distribution<instance>::update_dirs(const std::size_t& addr,
 	/* check if no info is found locally regarding the page */
 	if (ownership == global_null) {
 		/* load page info from the public cas_node window */
-		std::size_t page_info[page_info_size];
-		argo::backend::atomic::_load_public_owners_dir(page_info, sizeof(std::size_t), page_info_size, cas_node, owners_dir_window_index);
+		std::size_t page_info[kPageInfoSize];
+		argo::backend::atomic::_load_public_owners_dir(page_info, sizeof(std::size_t), kPageInfoSize, cas_node, owners_dir_window_index);
 		/* check if any page info is found on the cas_node window */
 		if (!is_all_equal_to(page_info, global_null)) {
 			/* make sure that all the remote values are read correctly */
 			if (rank != cas_node) {
 				while (is_one_equal_to(page_info, global_null)) {
-					argo::backend::atomic::_load_public_owners_dir(page_info, sizeof(std::size_t), page_info_size, cas_node, owners_dir_window_index);
+					argo::backend::atomic::_load_public_owners_dir(page_info, sizeof(std::size_t), kPageInfoSize, cas_node, owners_dir_window_index);
 				}
 				/* store page info in the local window */
-				argo::backend::atomic::_store_local_owners_dir(page_info, page_info_size, rank, owners_dir_window_index);
+				argo::backend::atomic::_store_local_owners_dir(page_info, kPageInfoSize, rank, owners_dir_window_index);
 			}
 		} else {
 			if(do_first_touch) {
@@ -264,7 +264,7 @@ void first_touch_distribution<instance>::first_touch(const std::size_t& addr) {
 	std::size_t offset, homenode, result;
 	static const std::size_t rank = argo::backend::node_id();
 	static const std::size_t global_null = base_distribution<instance>::total_size + 1;
-	const std::size_t owners_dir_window_index = page_info_size * (addr / granularity);
+	const std::size_t owners_dir_window_index = kPageInfoSize * (addr / granularity);
 	/* decentralize CAS */
 	const std::size_t cas_node = (addr / granularity) % base_distribution<instance>::nodes;
 
@@ -304,22 +304,22 @@ void first_touch_distribution<instance>::first_touch(const std::size_t& addr) {
 		}
 
 		/* store page info in the local window */
-		std::size_t page_info[page_info_size] = {homenode, offset, rank};
-		argo::backend::atomic::_store_local_owners_dir(page_info, page_info_size, rank, owners_dir_window_index);
+		std::size_t page_info[kPageInfoSize] = {homenode, offset, rank};
+		argo::backend::atomic::_store_local_owners_dir(page_info, kPageInfoSize, rank, owners_dir_window_index);
 
 		/* store page info in the remote public cas_node window */
 		if (rank != cas_node) {
-			argo::backend::atomic::_store_public_owners_dir(page_info, sizeof(std::size_t), page_info_size, cas_node, owners_dir_window_index);
+			argo::backend::atomic::_store_public_owners_dir(page_info, sizeof(std::size_t), kPageInfoSize, cas_node, owners_dir_window_index);
 		}
 	} else {
 		/* load page info from the remote public cas_node window */
 		if (rank != cas_node) {
-			std::size_t page_info[page_info_size];
+			std::size_t page_info[kPageInfoSize];
 			do {
-				argo::backend::atomic::_load_public_owners_dir(page_info, sizeof(std::size_t), page_info_size, cas_node, owners_dir_window_index);
+				argo::backend::atomic::_load_public_owners_dir(page_info, sizeof(std::size_t), kPageInfoSize, cas_node, owners_dir_window_index);
 			} while (is_one_equal_to(page_info, global_null));
 			/* store page info in the local window */
-			argo::backend::atomic::_store_local_owners_dir(page_info, page_info_size, rank, owners_dir_window_index);
+			argo::backend::atomic::_store_local_owners_dir(page_info, kPageInfoSize, rank, owners_dir_window_index);
 		}
 	}
 }
