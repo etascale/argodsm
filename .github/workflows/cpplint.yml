@@ -1,0 +1,10 @@
+name: cpplint
+on: [push, pull_request]
+jobs:
+  cpplint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+    - run: pip install cpplint
+    - run: cpplint --quiet --root=../ --filter=-build/c++11,-build/include,-build/namespaces,-runtime/array,-runtime/string,-whitespace/braces,-whitespace/indent,-whitespace/line_length,-whitespace/tab --recursive src tests
