@@ -64,12 +64,10 @@ void init() {
 	if(shm_unlink(filename.c_str())) {
 		std::cerr << msg_main_mmap_fail << std::endl;
 		throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
-		exit(EXIT_FAILURE);
 	}
 	if(ftruncate(fd, avail)) {
 		std::cerr << msg_main_mmap_fail << std::endl;
 		throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
-		exit(EXIT_FAILURE);
 	}
 	/** @todo check desired range is free */
 	constexpr int flags = MAP_ANONYMOUS|MAP_SHARED|MAP_FIXED;
@@ -77,7 +75,6 @@ void init() {
 	if(start_addr == MAP_FAILED) {
 		std::cerr << msg_main_mmap_fail << std::endl;
 		throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
-		exit(EXIT_FAILURE);
 	}
 }
 
@@ -105,7 +102,6 @@ void map_memory(void* addr, std::size_t size, std::size_t offset, int prot) {
 	if(p == MAP_FAILED) {
 		std::cerr << msg_mmap_fail << std::endl;
 		throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_mmap_fail);
-		exit(EXIT_FAILURE);
 	}
 }
 

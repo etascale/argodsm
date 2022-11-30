@@ -130,7 +130,6 @@ class first_touch_distribution : public base_distribution<instance> {
 			if(homenode >= static_cast<node_id_t>(base_distribution<instance>::nodes)) {
 				std::cerr << msg_fetch_homenode_fail << std::endl;
 				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_fetch_homenode_fail);
-				exit(EXIT_FAILURE);
 			}
 			return homenode;
 		}
@@ -156,7 +155,6 @@ class first_touch_distribution : public base_distribution<instance> {
 			if(homenode >= static_cast<node_id_t>(base_distribution<instance>::nodes)) {
 				std::cerr << msg_fetch_homenode_fail << std::endl;
 				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_fetch_homenode_fail);
-				exit(EXIT_FAILURE);
 			}
 			return homenode;
 		}
@@ -188,7 +186,6 @@ class first_touch_distribution : public base_distribution<instance> {
 				offset >= base_distribution<instance>::size_per_node) {
 				std::cerr << msg_fetch_offset_fail << std::endl;
 				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_fetch_offset_fail);
-				exit(EXIT_FAILURE);
 			}
 			return offset;
 		}
@@ -216,7 +213,6 @@ class first_touch_distribution : public base_distribution<instance> {
 			if(offset >= base_distribution<instance>::size_per_node) {
 				std::cerr << msg_fetch_offset_fail << std::endl;
 				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_fetch_offset_fail);
-				exit(EXIT_FAILURE);
 			}
 			return offset;
 		}
@@ -300,7 +296,6 @@ void first_touch_distribution<instance>::first_touch(const std::size_t& addr) {
 		if (!succeeded) {
 			std::cerr << msg_first_touch_fail << std::endl;
 			throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_first_touch_fail);
-			exit(EXIT_FAILURE);
 		}
 
 		/* store page info in the local window */

@@ -58,7 +58,6 @@ void init() {
 	if(backing_addr == MAP_FAILED) {
 		std::cerr << msg_main_mmap_fail << std::endl;
 		throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
-		exit(EXIT_FAILURE);
 	}
 	char* virtual_addr = ARGO_START + ARGO_SIZE/2l;
 	backing_offset = 0;
@@ -103,13 +102,11 @@ void map_memory(void* addr, std::size_t size, std::size_t offset, int prot) {
 	if(err) {
 		std::cerr << msg_invalid_remap << std::endl;
 		throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_invalid_remap);
-		exit(EXIT_FAILURE);
 	}
 	err = mprotect(addr, size, prot);
 	if(err) {
 		std::cerr << msg_mprotect_fail << std::endl;
 		throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_mprotect_fail);
-		exit(EXIT_FAILURE);
 	}
 }
 
