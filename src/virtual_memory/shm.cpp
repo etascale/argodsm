@@ -23,13 +23,22 @@
 
 namespace {
 /* file constants */
-/** @todo hardcoded start address */
-char* const ARGO_START = reinterpret_cast<char*>(0x200000000000l);
-/** @todo hardcoded end address */
-char* const ARGO_END   = reinterpret_cast<char*>(0x600000000000l);
-/** @todo hardcoded size */
-const ptrdiff_t ARGO_SIZE = ARGO_END - ARGO_START;
-/** @todo hardcoded maximum size */
+/**
+ * @brief The start of the ArgoDSM virtual memory space
+ * @note This hard-coded value assumes x86_64 architecture
+ *
+ * The ArgoDSM virtual memory space leaves the first 1/6 for local use.
+ */
+char* const ARGO_START = reinterpret_cast<char*>(0x155555554000l);
+/**
+ * @brief The size of the ArgoDSM virtual memory space
+ * @note This hard-coded value assumes x86_64 architecture
+ *
+ * ArgoDSM reserves a part of the available user-space virtual memory.
+ * In combination with @ref{ARGO_START}, this ensures that the final third
+ * of the virtual memory is left for PIE loads, heap, shared libraries and
+ * the stack among other things.
+ */
 const ptrdiff_t ARGO_SIZE_LIMIT = 0x80000000000l;
 
 /** @brief error message string */
