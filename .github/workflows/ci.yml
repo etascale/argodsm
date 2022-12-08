@@ -9,7 +9,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         dbg: [OFF, ON]
-        vm: [ANONYMOUS, SHM]
+        vm: [ANONYMOUS, SHM, MEMFD]
     name: On ${{ matrix.os }} (DBG=${{ matrix.dbg }}, VM=${{ matrix.vm }})
     runs-on: ${{ matrix.os }}
     env:
@@ -29,6 +29,8 @@ jobs:
       - name: Build external
         run: ./.github/scripts/make_external.sh
       - name: Run test suite
-        run: make test -C build
+        run: |
+          sudo sysctl -w vm.overcommit_memory=1
+          make test -C build
       - name: Run external
         run: ./.github/scripts/run_external.sh
