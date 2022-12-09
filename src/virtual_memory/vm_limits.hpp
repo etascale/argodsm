@@ -21,7 +21,7 @@ char* const ARGO_VM_START = reinterpret_cast<char*>(0x155555554000l);
  *
  * ArgoDSM reserves up to half of the available user-space virtual memory. A
  * particular VM implementation may choose to reserve less than this number.
- * In combination with @ref{ARGO_VM_START}, this ensures that the final third
+ * In combination with @ref ARGO_VM_START this ensures that the final third
  * of the virtual memory is left for PIE loads, heap, shared libraries and
  * the stack among other things.
  */
