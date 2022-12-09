@@ -18,27 +18,9 @@
 #include <system_error>
 
 #include "virtual_memory.hpp"
+#include "vm_limits.hpp"
 
 namespace {
-/* file constants */
-/**
- * @brief The start of the ArgoDSM virtual memory space
- * @note This hard-coded value assumes x86_64 architecture
- *
- * The ArgoDSM virtual memory space leaves the first 1/6 for local use.
- */
-char* const ARGO_START = reinterpret_cast<char*>(0x155555554000l);
-/**
- * @brief The size of the ArgoDSM virtual memory space
- * @note This hard-coded value assumes x86_64 architecture
- *
- * ArgoDSM reserves half of the available user-space virtual memory.
- * In combination with @ref{ARGO_START}, this ensures that the final third
- * of the virtual memory is left for PIE loads, heap, shared libraries and
- * the stack among other things.
- */
-const ptrdiff_t ARGO_SIZE = 0x400000000000l;
-
 /** @brief error message string */
 const std::string msg_alloc_fail = "ArgoDSM could not allocate mappable memory";
 /** @brief error message string */
@@ -58,14 +40,14 @@ namespace virtual_memory {
 
 void init() {
 	fd = syscall(__NR_memfd_create, "argocache", 0);
-	if(ftruncate(fd, ARGO_SIZE)) {
+	if(ftruncate(fd, ARGO_VM_SIZE)) {
 		std::cerr << msg_main_mmap_fail << std::endl;
 		/** @todo do something? */
 		throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
 	}
 	/** @todo check desired range is free */
 	constexpr int flags = MAP_ANONYMOUS|MAP_SHARED|MAP_FIXED;
-	start_addr = ::mmap(static_cast<void*>(ARGO_START), ARGO_SIZE, PROT_NONE, flags, -1, 0);
+	start_addr = ::mmap(static_cast<void*>(ARGO_VM_START), ARGO_VM_SIZE, PROT_NONE, flags, -1, 0);
 	if(start_addr == MAP_FAILED) {
 		std::cerr << msg_main_mmap_fail << std::endl;
 		/** @todo do something? */
@@ -78,7 +60,7 @@ void* start_address() {
 }
 
 std::size_t size() {
-	return ARGO_SIZE/2;
+	return ARGO_VM_SIZE/2;
 }
 
 void* allocate_mappable(std::size_t alignment, std::size_t size) {

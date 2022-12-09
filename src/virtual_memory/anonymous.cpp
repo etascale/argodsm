@@ -21,27 +21,9 @@
 #include "backend/backend.hpp"
 #include "config.hpp"
 #include "virtual_memory.hpp"
+#include "vm_limits.hpp"
 
 namespace {
-/* file constants */
-/**
- * @brief The start of the ArgoDSM virtual memory space
- * @note This hard-coded value assumes x86_64 architecture
- *
- * The ArgoDSM virtual memory space leaves the first 1/6 for local use.
- */
-char* const ARGO_START = reinterpret_cast<char*>(0x155555554000l);
-/**
- * @brief The size of the ArgoDSM virtual memory space
- * @note This hard-coded value assumes x86_64 architecture
- *
- * ArgoDSM reserves a part of the available user-space virtual memory.
- * In combination with @ref{ARGO_START}, this ensures that the final third
- * of the virtual memory is left for PIE loads, heap, shared libraries and
- * the stack among other things.
- */
-const ptrdiff_t ARGO_SIZE = 0x80000000000l;
-
 /** @brief error message string */
 const std::string msg_insufficient_memory = "ArgoDSM anonymous mappable memory is insufficient.";
 /** @brief error message string */
@@ -67,12 +49,12 @@ void init() {
 	/** @todo check desired range is free */
 	constexpr int flags = MAP_ANONYMOUS|MAP_SHARED|MAP_FIXED|MAP_NORESERVE;
 	backing_addr = static_cast<char*>(
-		::mmap(static_cast<void*>(ARGO_START), ARGO_SIZE, PROT_NONE, flags, -1, 0));
+		::mmap(static_cast<void*>(ARGO_VM_START), ARGO_VM_SIZE, PROT_NONE, flags, -1, 0));
 	if(backing_addr == MAP_FAILED) {
 		std::cerr << msg_main_mmap_fail << std::endl;
 		throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
 	}
-	char* virtual_addr = ARGO_START + ARGO_SIZE/2l;
+	char* virtual_addr = ARGO_VM_START + ARGO_VM_SIZE/2l;
 	backing_offset = 0;
 	file_offset = virtual_addr - backing_addr;
 }
@@ -82,7 +64,7 @@ void* start_address() {
 }
 
 std::size_t size() {
-	return ARGO_SIZE/4;
+	return ARGO_VM_SIZE/4;
 }
 
 void* allocate_mappable(std::size_t alignment, std::size_t size) {

@@ -20,27 +20,9 @@
 #include <system_error>
 
 #include "virtual_memory.hpp"
+#include "vm_limits.hpp"
 
 namespace {
-/* file constants */
-/**
- * @brief The start of the ArgoDSM virtual memory space
- * @note This hard-coded value assumes x86_64 architecture
- *
- * The ArgoDSM virtual memory space leaves the first 1/6 for local use.
- */
-char* const ARGO_START = reinterpret_cast<char*>(0x155555554000l);
-/**
- * @brief The size of the ArgoDSM virtual memory space
- * @note This hard-coded value assumes x86_64 architecture
- *
- * ArgoDSM reserves a part of the available user-space virtual memory.
- * In combination with @ref{ARGO_START}, this ensures that the final third
- * of the virtual memory is left for PIE loads, heap, shared libraries and
- * the stack among other things.
- */
-const ptrdiff_t ARGO_SIZE_LIMIT = 0x80000000000l;
-
 /** @brief error message string */
 const std::string msg_alloc_fail = "ArgoDSM could not allocate mappable memory";
 /** @brief error message string */
@@ -65,8 +47,8 @@ void init() {
 	struct statvfs b;
 	statvfs("/dev/shm", &b);
 	avail = b.f_bavail * b.f_bsize;
-	if(avail > static_cast<std::size_t>(ARGO_SIZE_LIMIT)) {
-		avail = ARGO_SIZE_LIMIT;
+	if(avail > static_cast<std::size_t>(ARGO_VM_SIZE)) {
+		avail = ARGO_VM_SIZE;
 	}
 	std::string filename = "/argocache" + std::to_string(getpid());
 	fd = shm_open(filename.c_str(), O_RDWR|O_CREAT, 0644);
@@ -80,7 +62,7 @@ void init() {
 	}
 	/** @todo check desired range is free */
 	constexpr int flags = MAP_ANONYMOUS|MAP_SHARED|MAP_FIXED;
-	start_addr = ::mmap(static_cast<void*>(ARGO_START), avail, PROT_NONE, flags, -1, 0);
+	start_addr = ::mmap(static_cast<void*>(ARGO_VM_START), avail, PROT_NONE, flags, -1, 0);
 	if(start_addr == MAP_FAILED) {
 		std::cerr << msg_main_mmap_fail << std::endl;
 		throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
