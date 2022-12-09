@@ -18,16 +18,9 @@
 #include <system_error>
 
 #include "virtual_memory.hpp"
+#include "vm_limits.hpp"
 
 namespace {
-/* file constants */
-/** @todo hardcoded start address */
-char* const ARGO_START = reinterpret_cast<char*>(0x200000000000l);
-/** @todo hardcoded end address */
-char* const ARGO_END   = reinterpret_cast<char*>(0x600000000000l);
-/** @todo hardcoded size */
-const ptrdiff_t ARGO_SIZE = ARGO_END - ARGO_START;
-
 /** @brief error message string */
 const std::string msg_alloc_fail = "ArgoDSM could not allocate mappable memory";
 /** @brief error message string */
@@ -47,14 +40,14 @@ namespace virtual_memory {
 
 void init() {
 	fd = syscall(__NR_memfd_create, "argocache", 0);
-	if(ftruncate(fd, ARGO_SIZE)) {
+	if(ftruncate(fd, ARGO_VM_SIZE)) {
 		std::cerr << msg_main_mmap_fail << std::endl;
 		/** @todo do something? */
 		throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
 	}
 	/** @todo check desired range is free */
 	constexpr int flags = MAP_ANONYMOUS|MAP_SHARED|MAP_FIXED;
-	start_addr = ::mmap(static_cast<void*>(ARGO_START), ARGO_SIZE, PROT_NONE, flags, -1, 0);
+	start_addr = ::mmap(static_cast<void*>(ARGO_VM_START), ARGO_VM_SIZE, PROT_NONE, flags, -1, 0);
 	if(start_addr == MAP_FAILED) {
 		std::cerr << msg_main_mmap_fail << std::endl;
 		/** @todo do something? */
@@ -67,7 +60,7 @@ void* start_address() {
 }
 
 std::size_t size() {
-	return ARGO_SIZE/2;
+	return ARGO_VM_SIZE/2;
 }
 
 void* allocate_mappable(std::size_t alignment, std::size_t size) {

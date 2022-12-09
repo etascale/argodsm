@@ -25,8 +25,9 @@ void init();
 void* start_address();
 
 /**
- * @brief get size of the ArgoDSM virtual memory
- * @return the size of the ArgoDSM virtual memory
+ * @brief Get the usable size of the ArgoDSM virtual memory
+ * @note Up to half of the virtual memory is earmarked for internal structures
+ * @return the usable size of the ArgoDSM virtual memory
  */
 std::size_t size();
 

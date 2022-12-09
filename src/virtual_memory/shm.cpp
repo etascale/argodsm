@@ -20,18 +20,9 @@
 #include <system_error>
 
 #include "virtual_memory.hpp"
+#include "vm_limits.hpp"
 
 namespace {
-/* file constants */
-/** @todo hardcoded start address */
-char* const ARGO_START = reinterpret_cast<char*>(0x200000000000l);
-/** @todo hardcoded end address */
-char* const ARGO_END   = reinterpret_cast<char*>(0x600000000000l);
-/** @todo hardcoded size */
-const ptrdiff_t ARGO_SIZE = ARGO_END - ARGO_START;
-/** @todo hardcoded maximum size */
-const ptrdiff_t ARGO_SIZE_LIMIT = 0x80000000000l;
-
 /** @brief error message string */
 const std::string msg_alloc_fail = "ArgoDSM could not allocate mappable memory";
 /** @brief error message string */
@@ -56,8 +47,8 @@ void init() {
 	struct statvfs b;
 	statvfs("/dev/shm", &b);
 	avail = b.f_bavail * b.f_bsize;
-	if(avail > static_cast<std::size_t>(ARGO_SIZE_LIMIT)) {
-		avail = ARGO_SIZE_LIMIT;
+	if(avail > static_cast<std::size_t>(ARGO_VM_SIZE)) {
+		avail = ARGO_VM_SIZE;
 	}
 	std::string filename = "/argocache" + std::to_string(getpid());
 	fd = shm_open(filename.c_str(), O_RDWR|O_CREAT, 0644);
@@ -71,7 +62,7 @@ void init() {
 	}
 	/** @todo check desired range is free */
 	constexpr int flags = MAP_ANONYMOUS|MAP_SHARED|MAP_FIXED;
-	start_addr = ::mmap(static_cast<void*>(ARGO_START), avail, PROT_NONE, flags, -1, 0);
+	start_addr = ::mmap(static_cast<void*>(ARGO_VM_START), avail, PROT_NONE, flags, -1, 0);
 	if(start_addr == MAP_FAILED) {
 		std::cerr << msg_main_mmap_fail << std::endl;
 		throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_main_mmap_fail);
