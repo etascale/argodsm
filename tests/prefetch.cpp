@@ -114,7 +114,7 @@ TEST_F(PrefetchTest, AccessPrefetched) {
 		start_page = 0;
 	} else {
 		/*
-		 * For the first touch policiy, at most
+		 * For the first touch policy, at most
 		 * (alloc_size/PAGE_SIZE)/num_nodes are guaranteed to be contiguous 
 		 * in both global memory and backing store.
 		 */
