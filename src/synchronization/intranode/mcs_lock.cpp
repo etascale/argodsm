@@ -14,7 +14,7 @@ namespace argo {
 namespace locallock {
 
 void mcs_lock::lock() {
-	mcs_node* self = &selfs[this];
+	mcs_node* self = &selves[this];
 
 	// See if the lock is locked
 	self->next.store(nullptr, std::memory_order_relaxed);
@@ -38,7 +38,7 @@ bool mcs_lock::try_lock() {
 	if (_tail.load(std::memory_order_acquire) != nullptr) {
 		return false;
 	} else {
-		mcs_node* self = &selfs[this];
+		mcs_node* self = &selves[this];
 		self->next.store(nullptr, std::memory_order_relaxed);
 		return _tail.compare_exchange_strong(self, nullptr);
 	}
@@ -48,7 +48,7 @@ bool mcs_lock::try_lock() {
  * @brief Release the MCS lock
  */
 void mcs_lock::unlock() {
-	mcs_node* self = &selfs[this];
+	mcs_node* self = &selves[this];
 	mcs_node* also_self = self;  // atomic CAS changes this
 
 	// See if there is anyone waiting
@@ -70,11 +70,11 @@ void mcs_lock::unlock() {
  * @brief Check if the lock is contented
  */
 bool mcs_lock::is_contended() {
-	mcs_node *self = &selfs[this];
+	mcs_node *self = &selves[this];
 	return self->next != nullptr;
 }
 
-thread_local std::map<mcs_lock*, mcs_lock::mcs_node> mcs_lock::selfs;
+thread_local std::map<mcs_lock*, mcs_lock::mcs_node> mcs_lock::selves;
 
 }  // namespace locallock
 }  // namespace argo

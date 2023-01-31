@@ -40,7 +40,7 @@ private:
 	std::atomic<mcs_node*> _tail;
 
 	/** @brief Local nodes for the different locks each thread can have */
-	thread_local static std::map<mcs_lock*, mcs_node> selfs;
+	thread_local static std::map<mcs_lock*, mcs_node> selves;
 
 public:
 	/**
