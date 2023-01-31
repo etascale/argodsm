@@ -81,7 +81,7 @@ class cohort_lock {
 		/** @brief A local MCS lock shared by all the NUMA nodes - used for handing lock over between HW NUMA nodes */
 		argo::locallock::ticket_lock *node_lock;
 
-		/** @brief maximum amount of local handovers withing a NUMA node - numbers are experimental */
+		/** @brief maximum amount of local handovers within a NUMA node - numbers are experimental */
 		static const int MAX_HANDOVER = 8192;
 
 		/** @brief maximum amount of local handovers between NUMA nodes on the same ArgoDSM node - numbers are experimental */
@@ -157,7 +157,7 @@ class cohort_lock {
 			if(local_lock[node].is_contended() && handovers[node] < MAX_HANDOVER) {
 				handovers[node]++;
 			} else {
-				/* Cant hand over locally in the NUMA node - releases the NUMA lock */
+				/* Cannot hand over locally in the NUMA node - releases the NUMA lock */
 				handovers[node] = 0;
 				nodelockowner = NO_OWNER;
 

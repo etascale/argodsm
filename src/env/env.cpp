@@ -209,7 +209,7 @@ std::pair<bool, T> parse_env(std::string name, T fallback) {
 			return std::make_pair(false, fallback);
 		}
 	} catch (const std::invalid_argument& e) {
-		// environment variable exists, but value is not convertable to an unsigned long
+		// environment variable exists, but value is not convertible to an unsigned long
 		std::cerr << msg_illegal_format << name << std::endl;
 		throw;
 	} catch (const std::out_of_range& e) {

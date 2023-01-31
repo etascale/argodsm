@@ -58,7 +58,7 @@ class base_distribution {
 	public:
 		/**
 		 * @brief set runtime parameters for global memory space
-		 * @param n numer of ArgoDSM nodes
+		 * @param n number of ArgoDSM nodes
 		 * @param start pointer to the memory space
 		 * @param size size of the memory space
 		 */

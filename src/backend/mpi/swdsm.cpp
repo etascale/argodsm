@@ -476,7 +476,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 	const std::size_t aligned_access_offset = align_backwards(access_offset, CACHELINE*PAGE_SIZE);
 	std::size_t classidx = get_classification_index(aligned_access_offset);
 
-	/* compute start pointer of cacheline. char* has byte-wise arithmetics */
+	/* compute start pointer of cacheline. char* has byte-wise arithmetic */
 	char* const aligned_access_ptr = static_cast<char*>(startAddr) + aligned_access_offset;
 	std::size_t startIndex = getCacheIndex(aligned_access_offset);
 
