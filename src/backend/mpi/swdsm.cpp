@@ -1023,7 +1023,7 @@ void self_upgrade(argo::backend::upgrade_type upgrade) {
 }
 
 void swdsm_argo_barrier(int n, argo::backend::upgrade_type upgrade) {
-	pthread_t barrierlockholder;
+	pthread_t barrierlockholder = pthread_t();
 	double t1 = MPI_Wtime();
 
 	// Wait for n threads to arrive
