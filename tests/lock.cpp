@@ -31,7 +31,7 @@ constexpr std::size_t cache_size = size;
 
 /** @brief number of threads to spawn for some of the tests */
 constexpr int nThreads = 16;
-/** @brief number of itereations to run for some of the tests */
+/** @brief number of iterations to run for some of the tests */
 constexpr int iter = 10000;
 
 /**
@@ -74,7 +74,7 @@ class LockTest : public testing::Test {
  */
 TEST_F(LockTest, TAS_trylock_all) {
 	bool *did_increment;
-	bool res;
+	bool res = false;
 	counter = argo::conew_<int>();
 	did_increment = argo::conew_array<bool>(argo::number_of_nodes());
 
