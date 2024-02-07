@@ -88,13 +88,14 @@ namespace argo {
 	 */
 	static void reset_allocators() {
 		default_global_mempool->reset();
-		using namespace alloc;
-		using namespace mem;
-		collective_prepool = dynamic_memory_pool<global_allocator, NODE_ZERO_ONLY>(&default_global_allocator);
-		dynamic_prepool = dynamic_memory_pool<global_allocator, ALWAYS>(&default_global_allocator);
-		default_global_allocator = global_allocator<char>();
-		default_dynamic_allocator = default_dynamic_allocator_t();
-		default_collective_allocator = collective_allocator();
+		using alloc::default_dynamic_allocator;
+		using alloc::default_collective_allocator;
+		using alloc::default_global_allocator;
+		collective_prepool = mem::dynamic_memory_pool<alloc::global_allocator, mem::NODE_ZERO_ONLY>(&default_global_allocator);
+		dynamic_prepool = mem::dynamic_memory_pool<alloc::global_allocator, mem::ALWAYS>(&default_global_allocator);
+		default_global_allocator = alloc::global_allocator<char>();
+		default_dynamic_allocator = alloc::default_dynamic_allocator_t();
+		default_collective_allocator = alloc::collective_allocator();
 		default_global_allocator.set_mempool(default_global_mempool);
 		default_dynamic_allocator.set_mempool(&dynamic_prepool);
 		default_collective_allocator.set_mempool(&collective_prepool);
