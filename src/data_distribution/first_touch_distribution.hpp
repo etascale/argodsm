@@ -272,7 +272,7 @@ void first_touch_distribution<instance>::first_touch(const std::size_t& addr) {
 		/* iterate through the nodes to find a valid offset for the page, starting from the currently running one */
 		bool succeeded = false;
 		std::size_t n, searched;
-		for(n = rank, searched = 0; searched < static_cast<std::size_t>(base_distribution<instance>::nodes);
+		for (n = rank, searched = 0; searched < static_cast<std::size_t>(base_distribution<instance>::nodes);
 				n = (n + 1) % base_distribution<instance>::nodes, searched++) {
 			/* load backing offset for the node from the offsets table */
 			argo::backend::atomic::_load_local_offsets_tbl(&offset, rank, n);
@@ -281,7 +281,11 @@ void first_touch_distribution<instance>::first_touch(const std::size_t& addr) {
 				/* try to claim a valid offset */
 				const std::size_t incr_offset = offset + granularity;
 				argo::backend::atomic::_compare_exchange_offsets_tbl(&incr_offset, &offset, &result, sizeof(std::size_t), n, n);
-				if (result == offset) { succeeded = true; homenode = n; break; }
+				if (result == offset) {
+					succeeded = true;
+					homenode = n;
+					break;
+				}
 				offset = result;
 			}
 			/* cache the offset returned from a remote CAS operation */
