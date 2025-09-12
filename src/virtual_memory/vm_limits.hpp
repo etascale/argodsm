@@ -11,20 +11,20 @@
  * @brief The start of the ArgoDSM virtual memory space
  * @note This value assumes x86_64 architecture
  *
- * The ArgoDSM virtual memory space leaves the first 1/6 for local use.
+ * The ArgoDSM virtual memory space leaves the lower part for local use.
  */
-char* const ARGO_VM_START = reinterpret_cast<char*>(0x155555554000l);
+char* const ARGO_VM_START = reinterpret_cast<char*>(0x355555554000l);
 
 /**
  * @brief The maximum size of the ArgoDSM virtual memory space
  * @note This value assumes x86_64 architecture
  *
- * ArgoDSM reserves up to half of the available user-space virtual memory. A
- * particular VM implementation may choose to reserve less than this number.
+ * ArgoDSM reserves up to a quarter of the available user-space virtual memory.
+ * A particular VM implementation may choose to reserve less than this number.
  * In combination with @ref ARGO_VM_START this ensures that the final third
  * of the virtual memory is left for PIE loads, heap, shared libraries and
  * the stack among other things.
  */
-constexpr ptrdiff_t ARGO_VM_SIZE = 0x400000000000l;
+constexpr ptrdiff_t ARGO_VM_SIZE = 0x200000000000l;
 
 #endif  // ARGODSM_SRC_VIRTUAL_MEMORY_VM_LIMITS_HPP_
