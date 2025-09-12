@@ -40,7 +40,9 @@ enum x86_pf_error_code {
 };
 #endif /* REG_ERR */
 
-namespace {
+namespace argo {
+namespace signal {
+namespace sig_internal {
 /** @brief typedef for signal handlers */
 using sig_handler = struct sigaction;
 /** @brief typedef for function type used by ArgoDSM */
@@ -48,10 +50,8 @@ using handler_ftype = void(*)(int, siginfo_t*, void*);
 
 /** @brief error message string */
 const std::string msg_argo_unitialized = "ArgoDSM must be configured to capture a signal before application handlers can be installed";
-}  // namespace
+}  // namespace sig_internal
 
-namespace argo {
-namespace signal {
 /**
  * @brief Originating access type of segfault
  */
@@ -69,9 +69,9 @@ template<int SIGNAL>
 class signal_handler {
 	private:
 		/** @brief signal handling function for ArgoDSM */
-		static handler_ftype argo_handler;
+		static sig_internal::handler_ftype argo_handler;
 		/** @brief signal handler for application use */
-		static sig_handler application_handler;
+		static sig_internal::sig_handler application_handler;
 
 	public:
 		/**
@@ -80,9 +80,9 @@ class signal_handler {
 		 * @details The function will only be called for signals
 		 *          that relate to ArgoDSM's internal workings
 		 */
-		static void install_argo_handler(const handler_ftype h) {
+		static void install_argo_handler(const sig_internal::handler_ftype h) {
 			argo_handler = h;
-			sig_handler s;
+			sig_internal::sig_handler s;
 			s.sa_flags = SA_SIGINFO;
 			s.sa_sigaction = argo_signal_handler;
 			sigaction(SIGNAL, &s, &application_handler);
@@ -95,11 +95,11 @@ class signal_handler {
 		 * @details The signal handler will only be called for signals
 		 *          that are not consumed by ArgoDSM internally
 		 */
-		static sig_handler install_application_handler(sig_handler* h) {
+		static sig_internal::sig_handler install_application_handler(sig_internal::sig_handler* h) {
 			if(argo_handler == nullptr) {
-				throw std::runtime_error(msg_argo_unitialized);
+				throw std::runtime_error(sig_internal::msg_argo_unitialized);
 			}
-			sig_handler r = *h;
+			sig_internal::sig_handler r = *h;
 			std::swap(r, application_handler);
 			return r;
 		}
@@ -133,8 +133,8 @@ class signal_handler {
 		}
 };
 
-template<int S> handler_ftype signal_handler<S>::argo_handler = nullptr;
-template<int S> sig_handler signal_handler<S>::application_handler;
+template<int S> sig_internal::handler_ftype signal_handler<S>::argo_handler = nullptr;
+template<int S> sig_internal::sig_handler signal_handler<S>::application_handler;
 
 }  // namespace signal
 }  // namespace argo

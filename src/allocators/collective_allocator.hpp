@@ -107,7 +107,7 @@ T* conew_(Ps&&... ps) {
 	}
 
 	void* ptr = collective_alloc(sizeof(T));
-	using namespace data_distribution;
+	using data_distribution::global_ptr;
 	global_ptr<void> gptr(ptr, false, false);
 	// The home node of ptr handles initialization
 	if (initialize && argo::backend::node_id() == gptr.node()) {
@@ -165,7 +165,7 @@ void codelete_(T* ptr) {
 		synchronize = false;
 	}
 
-	using namespace data_distribution;
+	using data_distribution::global_ptr;
 	global_ptr<T> gptr(ptr, false, false);
 	// The home node of ptr handles deinitialization
 	if (deinitialize && argo::backend::node_id() == gptr.node()) {
@@ -218,7 +218,7 @@ T* conew_array(size_t size) {
 	}
 
 	void* ptr = collective_alloc(sizeof(T) * size);
-	using namespace data_distribution;
+	using data_distribution::global_ptr;
 	global_ptr<void> gptr(ptr, false, false);
 	// The home node of ptr handles initialization
 	if (initialize && argo::backend::node_id() == gptr.node()) {
@@ -269,7 +269,7 @@ void codelete_array(T* ptr) {
 		synchronize = false;
 	}
 
-	using namespace data_distribution;
+	using data_distribution::global_ptr;
 	global_ptr<T> gptr(ptr, false, false);
 	// The home node of ptr handles deinitialization
 	if (deinitialize && argo::backend::node_id() == gptr.node()) {

@@ -15,7 +15,7 @@ required.
 
 The only distributed backend ArgoDSM currently supports is the MPI one, so a
 compiler and libraries for MPI are required. If you are using OpenMPI, we
-recommend using the latest stable release avaiable for your system.
+recommend using the latest stable release available for your system.
 Installing OpenMPI is
 [fairly easy](https://www.open-mpi.org/faq/?category=building#easy-build), but
 you should contact your system administrator if you are uncertain about it.
@@ -164,7 +164,7 @@ mpirun -n ${NNODES} ${EXECUTABLE}
 ```
 
 We **strongly recommend** running all of the MPI tests on at least two nodes
-before continueing working with ArgoDSM, to ensure that your system is
+before continuing working with ArgoDSM, to ensure that your system is
 configured properly and also that it is fully supported by ArgoDSM.
 
 ### Building ArgoDSM offline

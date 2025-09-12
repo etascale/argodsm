@@ -36,18 +36,15 @@ class cppTest : public testing::Test {
  * @brief Unittest that checks that an STL list can be allocated globally and populated
  */
 TEST_F(cppTest, simpleList) {
-	using namespace std;
-	using namespace argo;
-	using namespace argo::allocators;
-	using my_list = std::list<int, dynamic_allocator<int>>;
+	using my_list = std::list<int, argo::allocators::dynamic_allocator<int>>;
 
-	my_list* l = conew_<my_list>();
+	my_list* l = argo::conew_<my_list>();
 
 	for(unsigned int i = 0; i < argo_number_of_nodes(); i++) {
 		if(argo_node_id() == i) {
 			ASSERT_NO_THROW(l->push_back(i));
 		}
-		barrier();
+		argo::barrier();
 	}
 
 	int id = 0;
@@ -61,18 +58,15 @@ TEST_F(cppTest, simpleList) {
  * @brief Unittest that checks that an STL vector can be allocated globally and populated
  */
 TEST_F(cppTest, simpleVector) {
-	using namespace std;
-	using namespace argo;
-	using namespace argo::allocators;
-	using my_vector = std::vector<int, dynamic_allocator<int>>;
+	using my_vector = std::vector<int, argo::allocators::dynamic_allocator<int>>;
 
-	my_vector* v = conew_<my_vector>();
+	my_vector* v = argo::conew_<my_vector>();
 
 	for(unsigned int i = 0; i < argo_number_of_nodes(); i++) {
 		if(argo_node_id() == i) {
 			ASSERT_NO_THROW(v->push_back(i));
 		}
-		barrier();
+		argo::barrier();
 	}
 
 	int id = 0;

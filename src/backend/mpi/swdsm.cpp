@@ -476,7 +476,7 @@ void handler(int sig, siginfo_t *si, void *context) {
 	const std::size_t aligned_access_offset = align_backwards(access_offset, CACHELINE*PAGE_SIZE);
 	std::size_t classidx = get_classification_index(aligned_access_offset);
 
-	/* compute start pointer of cacheline. char* has byte-wise arithmetics */
+	/* compute start pointer of cacheline. char* has byte-wise arithmetic */
 	char* const aligned_access_ptr = static_cast<char*>(startAddr) + aligned_access_offset;
 	std::size_t startIndex = getCacheIndex(aligned_access_offset);
 
@@ -1023,7 +1023,6 @@ void self_upgrade(argo::backend::upgrade_type upgrade) {
 }
 
 void swdsm_argo_barrier(int n, argo::backend::upgrade_type upgrade) {
-	pthread_t barrierlockholder;
 	double t1 = MPI_Wtime();
 
 	// Wait for n threads to arrive
@@ -1038,7 +1037,6 @@ void swdsm_argo_barrier(int n, argo::backend::upgrade_type upgrade) {
 
 	// Let one thread per node perform MPI operations
 	if(pthread_mutex_trylock(&barriermutex) == 0) {
-		barrierlockholder = pthread_self();
 		std::unique_lock lock(sync_lock);
 
 		// Perform SD followed by SI
@@ -1051,14 +1049,14 @@ void swdsm_argo_barrier(int n, argo::backend::upgrade_type upgrade) {
 			self_upgrade(upgrade);
 			MPI_Barrier(argo_comm);
 		}
-	}
-
-	// Wait for n threads to arrive
-	pthread_barrier_wait(&threadbarrier[n]);
-	if (pthread_equal(barrierlockholder, pthread_self())) {
+		// Wait for n threads to arrive
+		pthread_barrier_wait(&threadbarrier[n]);
 		pthread_mutex_unlock(&barriermutex);
 		stats.barriers++;
 		stats.barriertime += MPI_Wtime() - t1;
+	} else {
+		// For everybody else wait for n threads to arrive
+		pthread_barrier_wait(&threadbarrier[n]);
 	}
 }
 

@@ -130,7 +130,6 @@ class first_touch_distribution : public base_distribution<instance> {
 			if(homenode >= static_cast<node_id_t>(base_distribution<instance>::nodes)) {
 				std::cerr << msg_fetch_homenode_fail << std::endl;
 				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_fetch_homenode_fail);
-				exit(EXIT_FAILURE);
 			}
 			return homenode;
 		}
@@ -156,7 +155,6 @@ class first_touch_distribution : public base_distribution<instance> {
 			if(homenode >= static_cast<node_id_t>(base_distribution<instance>::nodes)) {
 				std::cerr << msg_fetch_homenode_fail << std::endl;
 				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_fetch_homenode_fail);
-				exit(EXIT_FAILURE);
 			}
 			return homenode;
 		}
@@ -188,7 +186,6 @@ class first_touch_distribution : public base_distribution<instance> {
 				offset >= base_distribution<instance>::size_per_node) {
 				std::cerr << msg_fetch_offset_fail << std::endl;
 				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_fetch_offset_fail);
-				exit(EXIT_FAILURE);
 			}
 			return offset;
 		}
@@ -216,7 +213,6 @@ class first_touch_distribution : public base_distribution<instance> {
 			if(offset >= base_distribution<instance>::size_per_node) {
 				std::cerr << msg_fetch_offset_fail << std::endl;
 				throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_fetch_offset_fail);
-				exit(EXIT_FAILURE);
 			}
 			return offset;
 		}
@@ -276,7 +272,7 @@ void first_touch_distribution<instance>::first_touch(const std::size_t& addr) {
 		/* iterate through the nodes to find a valid offset for the page, starting from the currently running one */
 		bool succeeded = false;
 		std::size_t n, searched;
-		for(n = rank, searched = 0; searched < static_cast<std::size_t>(base_distribution<instance>::nodes);
+		for (n = rank, searched = 0; searched < static_cast<std::size_t>(base_distribution<instance>::nodes);
 				n = (n + 1) % base_distribution<instance>::nodes, searched++) {
 			/* load backing offset for the node from the offsets table */
 			argo::backend::atomic::_load_local_offsets_tbl(&offset, rank, n);
@@ -285,7 +281,11 @@ void first_touch_distribution<instance>::first_touch(const std::size_t& addr) {
 				/* try to claim a valid offset */
 				const std::size_t incr_offset = offset + granularity;
 				argo::backend::atomic::_compare_exchange_offsets_tbl(&incr_offset, &offset, &result, sizeof(std::size_t), n, n);
-				if (result == offset) { succeeded = true; homenode = n; break; }
+				if (result == offset) {
+					succeeded = true;
+					homenode = n;
+					break;
+				}
 				offset = result;
 			}
 			/* cache the offset returned from a remote CAS operation */
@@ -300,7 +300,6 @@ void first_touch_distribution<instance>::first_touch(const std::size_t& addr) {
 		if (!succeeded) {
 			std::cerr << msg_first_touch_fail << std::endl;
 			throw std::system_error(std::make_error_code(static_cast<std::errc>(errno)), msg_first_touch_fail);
-			exit(EXIT_FAILURE);
 		}
 
 		/* store page info in the local window */

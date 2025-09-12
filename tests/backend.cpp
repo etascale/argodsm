@@ -35,8 +35,8 @@ constexpr std::size_t cache_size = size;
 /** @brief ArgoDSM array size */
 constexpr std::size_t array_size = 1<<19;
 
-/** @brief Time to wait before assuming a deadlock has occured */
-constexpr std::chrono::minutes deadlock_threshold{1};  // Choosen for no reason
+/** @brief Time to wait before assuming a deadlock has occurred */
+constexpr std::chrono::minutes deadlock_threshold{1};  // Chosen for no reason
 
 /** @brief A random char constant */
 constexpr char c_const = 'a';

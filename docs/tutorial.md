@@ -66,7 +66,7 @@ application to ArgoDSM.
 
 1. Remove data races.
 2. Allocate shared (ArgoDSM) data using the ArgoDSM allocators.
-3. Replace any Pthreads synchronization primitives with corresponsing primitives
+3. Replace any Pthreads synchronization primitives with corresponding primitives
    provided by ArgoDSM.
 4. Take care of the changes introduced by the new multiple process model.
 

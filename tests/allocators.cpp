@@ -369,24 +369,25 @@ TEST_F(AllocatorTest, PerfectForwardingCollectiveNew) {
  * @brief Test the "parser" for the allocation parameters
  */
 TEST_F(AllocatorTest, AllocationParametersParsing) {
-	using namespace argo;
-	using namespace argo::_internal;
+	using alloc = argo::allocation;
 
-	ASSERT_TRUE((alloc_param_in<allocation::initialize,
-		allocation::initialize>::value));
-	ASSERT_TRUE((alloc_param_in<allocation::no_initialize,
-		allocation::no_initialize>::value));
-	ASSERT_TRUE((alloc_param_in<allocation::deinitialize,
-		allocation::deinitialize>::value));
-	ASSERT_TRUE((alloc_param_in<allocation::no_deinitialize,
-		allocation::no_deinitialize>::value));
-	ASSERT_TRUE((alloc_param_in<allocation::synchronize,
-		allocation::synchronize>::value));
-	ASSERT_TRUE((alloc_param_in<allocation::no_synchronize,
-		allocation::no_synchronize>::value));
+	using argo::_internal::alloc_param_in;
+	ASSERT_TRUE((alloc_param_in<alloc::initialize,
+		alloc::initialize>::value));
+	ASSERT_TRUE((alloc_param_in<alloc::no_initialize,
+		alloc::no_initialize>::value));
+	ASSERT_TRUE((alloc_param_in<alloc::deinitialize,
+		alloc::deinitialize>::value));
+	ASSERT_TRUE((alloc_param_in<alloc::no_deinitialize,
+		alloc::no_deinitialize>::value));
+	ASSERT_TRUE((alloc_param_in<alloc::synchronize,
+		alloc::synchronize>::value));
+	ASSERT_TRUE((alloc_param_in<alloc::no_synchronize,
+		alloc::no_synchronize>::value));
 
-	using all_yes = alloc_params<allocation::initialize,
-		allocation::deinitialize, allocation::synchronize>;
+	using argo::_internal::alloc_params;
+	using all_yes = alloc_params<alloc::initialize,
+		alloc::deinitialize, alloc::synchronize>;
 	ASSERT_TRUE(all_yes::initialize);
 	ASSERT_TRUE(all_yes::deinitialize);
 	ASSERT_TRUE(all_yes::synchronize);
@@ -394,8 +395,8 @@ TEST_F(AllocatorTest, AllocationParametersParsing) {
 	ASSERT_FALSE(all_yes::no_deinitialize);
 	ASSERT_FALSE(all_yes::no_synchronize);
 
-	using all_no = alloc_params<allocation::no_initialize,
-		allocation::no_deinitialize, allocation::no_synchronize>;
+	using all_no = alloc_params<alloc::no_initialize,
+		alloc::no_deinitialize, alloc::no_synchronize>;
 	ASSERT_FALSE(all_no::initialize);
 	ASSERT_FALSE(all_no::deinitialize);
 	ASSERT_FALSE(all_no::synchronize);
@@ -403,7 +404,7 @@ TEST_F(AllocatorTest, AllocationParametersParsing) {
 	ASSERT_TRUE(all_no::no_deinitialize);
 	ASSERT_TRUE(all_no::no_synchronize);
 
-	using just_one = alloc_params<allocation::synchronize>;
+	using just_one = alloc_params<alloc::synchronize>;
 	ASSERT_FALSE(just_one::initialize);
 	ASSERT_FALSE(just_one::deinitialize);
 	ASSERT_TRUE(just_one::synchronize);
