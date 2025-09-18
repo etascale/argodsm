@@ -17,7 +17,7 @@ jobs:
       ARGO_VM:  ${{ matrix.vm  }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
       - name: Install packages
         run: |
           sudo apt-get update
