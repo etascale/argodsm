@@ -7,4 +7,4 @@ jobs:
     - uses: actions/checkout@v6
     - uses: actions/setup-python@v6
     - run: pip install cpplint
-    - run: cpplint --quiet --root=../ --filter=-build/c++11,-build/include,-runtime/array,-runtime/string,-whitespace/braces,-whitespace/indent,-whitespace/line_length,-whitespace/tab --recursive src tests
+    - run: cpplint --quiet --root=../ --filter=-build/c++11,-build/include,-runtime/string,-whitespace/braces,-whitespace/indent,-whitespace/line_length,-whitespace/tab --recursive src tests
